@@ -24,5 +24,8 @@ dvs_add_r <- function(files, message) .Call(wrap__dvs_add_r, files, message)
 #' @export
 dvs_get_r <- function(globs) .Call(wrap__dvs_get_r, globs)
 
+#' @export
+dvs_status_r <- function(files) .Call(wrap__dvs_status_r, files)
+
 
 # nolint end

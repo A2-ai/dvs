@@ -20,3 +20,7 @@ dvs_get <- function(files) {
   dvs_get_r(files)
 }
 
+dvs_status <- function(files = c("")) {
+  dvs_status_r(files)
+}
+

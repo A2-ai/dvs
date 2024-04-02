@@ -3,5 +3,6 @@
 export(dvs_add_r)
 export(dvs_get_r)
 export(dvs_init_r)
+export(dvs_status_r)
 export(hello_world)
 useDynLib(Rdevious, .registration = TRUE)

@@ -25,7 +25,7 @@ pub fn parse_globs(globs: &Vec<String>) -> Vec<PathBuf> {
     return meta_files;
 }
 
-pub fn get_all_meta_files(dir: PathBuf) -> Vec<PathBuf> {
+pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
     //let mut meta_files: Vec<String> = Vec::new();
     WalkDir::new(&dir)
         .into_iter()
