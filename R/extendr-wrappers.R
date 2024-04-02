@@ -18,5 +18,8 @@ hello_world <- function() .Call(wrap__hello_world)
 #' @export
 dvs_init_r <- function(storage_dir, mode, group) .Call(wrap__dvs_init_r, storage_dir, mode, group)
 
+#' @export
+dvs_add_r <- function(files, message) .Call(wrap__dvs_add_r, files, message)
+
 
 # nolint end

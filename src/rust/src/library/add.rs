@@ -1,15 +1,22 @@
 use std::path::PathBuf;
 use std::os::unix::fs::PermissionsExt;
+use extendr_api::IntoDataFrameRow;
+use extendr_api::Dataframe;
+use extendr_api::eval_string;
+use extendr_api::prelude::*;
+use extendr_api::robj::Robj;
+use extendr_api::ToVectorValue;
 use serde::Serialize;
 use file_owner::{Group, PathExt};
 use std::{fs, u32};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context};
 use crate::helpers::hash;
 use crate::helpers::copy;
 use crate::helpers::file;
 use crate::helpers::ignore;
 use crate::helpers::config;
 use crate::helpers::repo;
+// use crate::helpers::repo;
 
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
@@ -18,21 +25,36 @@ enum Outcome {
     Error
 }
 
-#[derive(Clone, PartialEq, Serialize)]
+impl Outcome {
+    fn outcome_to_string(&self) -> String {
+        match self {
+            Outcome::Success => String::from("Success"),
+            Outcome::Error => String::from("Error"),
+            Outcome::AlreadyPresent => String::from("Already Present")
+        }
+    }
+}
+
+
+
+#[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct AddedFile {
-    path: PathBuf,
+    path: String,
     hash: Option<String>,
-    outcome: Outcome,
+    outcome: String,
     error: Option<String>,
     size: Option<u64>,
 }
 
-pub fn dvs_add(files: &Vec<String>, message: &String) -> Result<Vec<AddedFile>> {
-    // Get git root
-    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).with_context(|| "could not find git repo root - make sure you're in an active git repository")?;
+pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, message: &String) -> Result<Vec<AddedFile>> {
+//     // Get git root
+//     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).with_context(|| "could not find git repo root - make sure you're in an active git repository")?;
 
-    // load the config
-    let conf = config::read(&git_dir).with_context(|| "could not load configuration file - no dvs.yaml in directory - be sure to initiate devious")?;
+//     // load the config
+//     let conf = config::read(&git_dir).with_context(|| "could not load configuration file - no dvs.yaml in directory - be sure to initiate devious")?;
+    
+    //.with_context(|| "could not load configuration file - no dvs.yaml in directory - be sure to initiate devious")?;
+
 
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
@@ -77,14 +99,16 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         error = Some(String::from("file owner not found"));
     }
 
-    // check group
-    let group: Option<Group> = match Group::from_name(&conf.group) {
-        Ok(group) => Some(group),
-        Err(_) => {
-            if error.is_none() {error = Some(String::from("group not found"))}
-            None
-        }
-    };
+    // check group if group was specified
+    let group_name = &conf.group;
+    if group_name != "" {
+        match Group::from_name(group_name) {
+            Ok(_) => {}
+            Err(_) => {
+                if error.is_none() {error = Some(String::from("group not found"))}
+            }
+        };
+    }
 
     // now see if file can be added
     let storage_dir_abs: Option<PathBuf> = match conf.storage_dir.canonicalize() {
@@ -95,14 +119,11 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
 
-
-    
-
     if error.is_some() {
         return AddedFile{
-            path: local_path.clone(), 
+            path: local_path.display().to_string(), 
             hash: file_hash,
-            outcome: Outcome::Error,
+            outcome: Outcome::Error.outcome_to_string(),
             error: error,
             size: file_size
         };
@@ -119,7 +140,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let mut outcome: Outcome = Outcome::Success;
     if !dest_path.exists() {
         // copy
-        copy_file_to_storage_directory(local_path, &dest_path, &conf.permissions, &group.unwrap());
+        copy_file_to_storage_directory(local_path, &dest_path, &conf.permissions, &group_name);
     }
     else {
         outcome = Outcome::AlreadyPresent;
@@ -151,9 +172,9 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     if error.is_some() {outcome = Outcome::Error}
 
     return AddedFile {
-        path: local_path.clone(),
+        path: local_path.display().to_string(),
         hash: file_hash.clone(),
-        outcome,
+        outcome: outcome.outcome_to_string(),
         error,
         size: file_size
     }
@@ -191,7 +212,7 @@ fn get_file_size(local_path: &PathBuf) -> Option<u64> {
 
 
 fn get_user_name(local_path: &PathBuf) -> Option<String> {
-    let owner = match local_path.owner().with_context(|| format!("")) {
+    let owner = match local_path.owner().with_context(|| format!("owner not found")) {
         Ok(owner) => owner,
         Err(_) => return None,
     };
@@ -202,7 +223,7 @@ fn get_user_name(local_path: &PathBuf) -> Option<String> {
 }
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group: &Group) -> Option<String> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String) -> Option<String> {
     let mut error = None;
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
@@ -218,18 +239,22 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
                 }
             };
 
-            // set group ownership
-            match dest_path.set_group(group.clone()) {
-                Ok(_) => {},
-                Err(_) => {
-                    // set error
-                    if error.is_none() {error = Some(String::from("could not set file group ownership"))}
-                    // delete copied file
-                    fs::remove_file(&dest_path)
-                    .expect(format!("could not set group ownership after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
+            if group_name != "" {
+                // set group ownership
+                let group = Group::from_name(group_name).with_context(|| format!("group not found: {group_name}")).unwrap();
+                match dest_path.set_group(group.clone()) {
+                    Ok(_) => {},
+                    Err(_) => {
+                        // set error
+                        if error.is_none() {error = Some(String::from("could not set file group ownership"))}
+                        // delete copied file
+                        fs::remove_file(&dest_path)
+                        .expect(format!("could not set group ownership after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
 
-                }
-            };
+                    }
+                };
+            }
+          
         } // Ok, could copy
         Err(_) => {
             if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
@@ -242,6 +267,6 @@ fn set_permissions(mode: &u32, dest_path: &PathBuf) -> Result<()> {
     dest_path.metadata().unwrap().permissions().set_mode(*mode);
     let _file_mode = dest_path.metadata().unwrap().permissions().mode();
     let new_permissions = fs::Permissions::from_mode(*mode);
-    fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode))?;
+    fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode)).unwrap();
     Ok(())
 }
