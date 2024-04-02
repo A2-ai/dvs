@@ -1,13 +1,10 @@
 
 use std::path::PathBuf;
-use anyhow::Context;
 use crate::helpers::config::Config;
 use crate::helpers::file::Metadata;
 use crate::helpers::hash;
 use crate::helpers::copy;
 use crate::helpers::file;
-use crate::helpers::config;
-use crate::helpers::repo;
 use crate::helpers::parse;
 use extendr_api::IntoDataFrameRow;
 use extendr_api::Dataframe;
@@ -63,7 +60,7 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
     let metadata: Option<Metadata> = match file::load(&local_path) {
         Ok(data) => Some(data),
         Err(e) => {
-            if error.is_none() {error = Some(format!("metadata file not found: {e}"))}
+            if error.is_none() {error = Some(format!("metadata file not found: \n{e}"))}
             None
         }
     };
@@ -105,7 +102,7 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
             }
             Err(e) => {
                 outcome = Outcome::Error;
-                error = Some(format!("file not copied {e}"));
+                error = Some(format!("file not copied \n{e}"));
             }
         };
     }

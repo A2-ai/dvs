@@ -1,12 +1,10 @@
 use std::path::PathBuf;
-use anyhow::{Context};
 use serde::{Serialize, Deserialize};
 use extendr_api::prelude::*;
 use extendr_api::IntoDataFrameRow;
 use extendr_api::eval_string;
 use extendr_api::Pairlist;
 use extendr_api::Dataframe;
-use crate::helpers::config;
 use crate::helpers::hash;
 use crate::helpers::repo;
 use crate::helpers::file;

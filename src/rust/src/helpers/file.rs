@@ -30,7 +30,7 @@ pub fn load(path: &PathBuf) -> Result<Metadata> {
     let metadata_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
     let metafile_path_abs = match metadata_path.canonicalize() {
         Ok(path) => path,
-        Err(e) => return Err(anyhow!(format!("path {} not found: {e}", path.display())))
+        Err(e) => return Err(anyhow!(format!("path {} not found: be sure to add this file to devious \n{e} ", metadata_path.display())))
     };
     let contents = match fs::read_to_string(metafile_path_abs) {
         Ok(contents) => contents,

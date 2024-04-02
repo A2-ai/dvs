@@ -4,19 +4,15 @@ use extendr_api::IntoDataFrameRow;
 use extendr_api::Dataframe;
 use extendr_api::eval_string;
 use extendr_api::prelude::*;
-use extendr_api::robj::Robj;
-use extendr_api::ToVectorValue;
 use serde::Serialize;
 use file_owner::{Group, PathExt};
 use std::{fs, u32};
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use crate::helpers::hash;
 use crate::helpers::copy;
 use crate::helpers::file;
 use crate::helpers::ignore;
 use crate::helpers::config;
-use crate::helpers::repo;
-// use crate::helpers::repo;
 
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
@@ -70,7 +66,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     // set error to None by default
     let mut error: Option<String> = None;
 
-    if error.is_none() {error = get_preliminary_errors(local_path, git_dir, conf, message)}
+    if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
 
     // get file hash
     let file_hash = hash::get_file_hash(&local_path);
@@ -171,7 +167,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     }
 }
 
-fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String) -> Option<String> {
+fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<String> {
     // check if file exists
     match local_path.canonicalize() {
         Ok(local_path) => { // file exists
@@ -188,7 +184,7 @@ fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf, conf: &config
     if local_path.is_dir() {
         return Some(String::from("path is a directory"))
     }
-    
+
     None
 }
 

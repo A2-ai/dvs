@@ -1,40 +1,24 @@
-use extendr_api::dataframe;
 use extendr_api::prelude::*;
 use helpers::config;
 use helpers::repo;
 use library::get::dvs_get;
 use library::status::dvs_status;
-// use extendr_api::robj::{Robj, IntoRobj};
 pub mod helpers;
 pub mod library;
 use std::path::PathBuf;
 use crate::library::init;
 use crate::library::add;
 use extendr_api::robj::Robj;
-// use crate::helpers::repo;
-// use crate::helpers::config;
-// use std::fs::create_dir;
-// use path_absolutize::Absolutize;
-// use file_owner::Group;
-use anyhow::{anyhow, Context};
-// use anyhow::anyhow;
-
+use anyhow::anyhow;
 use std::convert::TryFrom;
 
-/// Return string `"Hello world!"` to R.
 /// @export
 #[extendr]
-fn hello_world() -> &'static str {
-    "Hello world!"
-}
-
-/// @export
-#[extendr]
-pub fn dvs_init_r(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
+fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
     let storage_dir_in = PathBuf::from(storage_dir);
     let mode_in = match u32::try_from(mode) {
         Ok(mode) => mode,
-        Err(e) => return Err(anyhow!("could not convert permissions to unsigned integer {e}").to_string())
+        Err(e) => return Err(anyhow!("could not convert permissions to unsigned integer \n{e}").to_string())
     };
     match init::dvs_init(&storage_dir_in, &mode_in, group) {
         Ok(_) => {},
@@ -42,22 +26,22 @@ pub fn dvs_init_r(storage_dir: &str, mode: i32, group: &str) -> std::result::Res
     };
 
     Ok(())
-} // dvs_init_r
+} // dvs_init_impl
 
 
 /// @export
 #[extendr]
-pub fn dvs_add_r(files: Vec<String>, message: &str) -> Robj {
+fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: {e}")),
+        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
     };
 
     // load the config
     let conf = match config::read(&git_dir) {
         Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: {e}")),
+        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
     };
 
     let res = match add::dvs_add(&files, &git_dir, &conf, &String::from(message)) {
@@ -69,21 +53,22 @@ pub fn dvs_add_r(files: Vec<String>, message: &str) -> Robj {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
     }
-} // dvs_add_r
+} // dvs_add_impl
+
 
 /// @export
 #[extendr]
-pub fn dvs_get_r(globs: Vec<String>) -> Robj {
+fn dvs_get_impl(globs: Vec<String>) -> Robj {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: {e}")),
+        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
     };
 
     // load the config
     let conf = match config::read(&git_dir) {
         Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: {e}")),
+        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
     };
 
     let retrieved_files = match dvs_get(&globs, &conf) {
@@ -95,21 +80,22 @@ pub fn dvs_get_r(globs: Vec<String>) -> Robj {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
     }
-} // dvs_get_r
+} // dvs_get_impl
+
 
 /// @export
 #[extendr]
-pub fn dvs_status_r(files: Vec<String>) -> Robj {
+fn dvs_status_impl(files: Vec<String>) -> Robj {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: {e}")),
+        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
     };
 
     // load the config
     match config::read(&git_dir) {
         Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: {e}")),
+        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
     };
 
     let status = match dvs_status(&files, &git_dir) {
@@ -121,7 +107,7 @@ pub fn dvs_status_r(files: Vec<String>) -> Robj {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
     }
-}
+} // dvs_status_impl
 
 
 // Macro to generate exports.
@@ -129,9 +115,8 @@ pub fn dvs_status_r(files: Vec<String>) -> Robj {
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod Rdevious;
-    fn hello_world;
-    fn dvs_init_r;
-    fn dvs_add_r;
-    fn dvs_get_r;
-    fn dvs_status_r;
+    fn dvs_init_impl;
+    fn dvs_add_impl;
+    fn dvs_get_impl;
+    fn dvs_status_impl;
 }
