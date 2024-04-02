@@ -11,16 +11,12 @@
 #' @useDynLib Rdevious, .registration = TRUE
 NULL
 
-#' @export
 dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)
 
-#' @export
 dvs_add_impl <- function(files, message) .Call(wrap__dvs_add_impl, files, message)
 
-#' @export
 dvs_get_impl <- function(globs) .Call(wrap__dvs_get_impl, globs)
 
-#' @export
 dvs_status_impl <- function(files) .Call(wrap__dvs_status_impl, files)
 
 

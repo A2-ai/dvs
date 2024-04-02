@@ -12,7 +12,6 @@ use extendr_api::robj::Robj;
 use anyhow::anyhow;
 use std::convert::TryFrom;
 
-/// @export
 #[extendr]
 fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
     let storage_dir_in = PathBuf::from(storage_dir);
@@ -29,7 +28,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 } // dvs_init_impl
 
 
-/// @export
+
 #[extendr]
 fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
     // Get git root
@@ -56,7 +55,7 @@ fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
 } // dvs_add_impl
 
 
-/// @export
+
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>) -> Robj {
     // Get git root
@@ -83,7 +82,7 @@ fn dvs_get_impl(globs: Vec<String>) -> Robj {
 } // dvs_get_impl
 
 
-/// @export
+
 #[extendr]
 fn dvs_status_impl(files: Vec<String>) -> Robj {
     // Get git root
