@@ -4,7 +4,7 @@
 # dvs_init("test_directory")
 library(rlang)
 
-dvs_init <- function(directory, permissions = 666, group = "") {
+dvs_init <- function(directory, permissions = 511, group = "") {
   res <- dvs_init_r(directory, permissions, group)
   if (!is.null(res$error)) {
     rlang::abort(res$error)
@@ -13,10 +13,10 @@ dvs_init <- function(directory, permissions = 666, group = "") {
 }
 
 dvs_add <- function(files, message = "") {
-  res <- dvs_add_r(files, message)
-  # if (!is.null(res$error)) {
-  #   rlang::abort(res$error)
-  # }
-  res
+  dvs_add_r(files, message)
+}
+
+dvs_get <- function(files) {
+  dvs_get_r(files)
 }
 

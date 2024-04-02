@@ -47,15 +47,6 @@ pub struct AddedFile {
 }
 
 pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, message: &String) -> Result<Vec<AddedFile>> {
-//     // Get git root
-//     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).with_context(|| "could not find git repo root - make sure you're in an active git repository")?;
-
-//     // load the config
-//     let conf = config::read(&git_dir).with_context(|| "could not load configuration file - no dvs.yaml in directory - be sure to initiate devious")?;
-    
-    //.with_context(|| "could not load configuration file - no dvs.yaml in directory - be sure to initiate devious")?;
-
-
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for file_in in files {
@@ -197,7 +188,6 @@ fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf, conf: &config
     if local_path.is_dir() {
         return Some(String::from("path is a directory"))
     }
-
     
     None
 }

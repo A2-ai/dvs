@@ -21,5 +21,8 @@ dvs_init_r <- function(storage_dir, mode, group) .Call(wrap__dvs_init_r, storage
 #' @export
 dvs_add_r <- function(files, message) .Call(wrap__dvs_add_r, files, message)
 
+#' @export
+dvs_get_r <- function(globs) .Call(wrap__dvs_get_r, globs)
+
 
 # nolint end

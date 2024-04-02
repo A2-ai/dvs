@@ -2,6 +2,7 @@ use extendr_api::dataframe;
 use extendr_api::prelude::*;
 use helpers::config;
 use helpers::repo;
+use library::get::dvs_get;
 // use extendr_api::robj::{Robj, IntoRobj};
 pub mod helpers;
 pub mod library;
@@ -69,6 +70,32 @@ pub fn dvs_add_r(files: Vec<String>, message: &str) -> Robj {
     }
 } // dvs_add_r
 
+/// @export
+#[extendr]
+pub fn dvs_get_r(globs: Vec<String>) -> Robj {
+    // Get git root
+    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
+        Ok(git_dir) => git_dir,
+        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: {e}")),
+    };
+
+    // load the config
+    let conf = match config::read(&git_dir) {
+        Ok(conf) => conf,
+        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: {e}")),
+    };
+
+    let retrieved_files = match dvs_get(&globs, &conf) {
+        Ok(files) => files,
+        Err(e) => return Robj::from(e),
+    };
+
+    match retrieved_files.into_dataframe() {
+        Ok(dataframe) => dataframe.as_robj().clone(),
+        Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
+    }
+} // dvs_get_r
+
 
 
 // Macro to generate exports.
@@ -79,5 +106,6 @@ extendr_module! {
     fn hello_world;
     fn dvs_init_r;
     fn dvs_add_r;
+    fn dvs_get_r;
     
 }
