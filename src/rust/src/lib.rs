@@ -119,3 +119,16 @@ extendr_module! {
     fn dvs_get_impl;
     fn dvs_status_impl;
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use self::init::dvs_init;
+
+//     use super::*;
+
+    // #[test]
+    // fn test_globs() {
+    //     let mode: u32 = 511;
+    //     dvs_init(&PathBuf::from("storage_dir"), &mode, "datascience");
+    // }
+// }

@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::os::unix::fs::PermissionsExt;
 use extendr_api::IntoDataFrameRow;
@@ -13,6 +14,7 @@ use crate::helpers::copy;
 use crate::helpers::file;
 use crate::helpers::ignore;
 use crate::helpers::config;
+use glob::glob;
 
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
@@ -45,17 +47,44 @@ pub struct AddedFile {
 pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, message: &String) -> Result<Vec<AddedFile>> {
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
-    for file_in in files {
-        let file_without_meta = file_in.replace(".dvsmeta", "");
-        let file = PathBuf::from(file_without_meta);
+    for entry in files {
+        let glob = match glob(&entry) {
+            Ok(paths) => paths,
+            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+        };
 
-        if queued_paths.contains(&file) {
-            println!("skipping repeated path: {}", file.display());
-            continue
-        }
+        for file in glob {
+            match file {
+                Ok(path) => {
+                    match path.extension().and_then(OsStr::to_str) {
+                        Some(ext) => {
+                            if ext == "dvsmeta" { // avoid dvs files and .gitignore
+                                println!("skipping .dvsmeta file {}", path.display());
+                                continue
+                            }
+                        }
+                        None => {
+                            println!("skipping path with invalid extension {}", path.display());
+                            continue
+                        } // takes care of .gitignore
+                    }
 
-        queued_paths.push(file);
-    } // for
+                   
+                    
+                    if queued_paths.contains(&path) {
+                        println!("skipping repeated path: {}", path.display());
+                        continue
+                    }
+                    queued_paths.push(path);
+                },
+                Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+            }
+        } // for files in glob
+    } // for entry in files
+
+    if queued_paths.is_empty() {
+        println!("warning: no paths queued to add to devious")
+    }
     
     // add each file in queued_paths to storage
     let added_files = queued_paths.into_iter().map(|file| {
