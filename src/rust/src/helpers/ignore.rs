@@ -8,8 +8,7 @@ pub fn add_gitignore_entry(path: &PathBuf) -> Result<()> {
     // get relative path
     let ignore_entry_temp = repo::get_relative_path(&dir, path).with_context(|| format!("could not create .gitignore entry for {}", path.display()))?;
     // Add leading slash
-    let path = ignore_entry_temp.display().to_string();
-    let ignore_entry = format!("/{path}");
+    let ignore_entry = ignore_entry_temp.display().to_string();
 
     // open the gitignore file, creating one if it doesn't exist
     let ignore_file = dir.join(".gitignore");
