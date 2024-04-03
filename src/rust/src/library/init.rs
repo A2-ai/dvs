@@ -10,21 +10,20 @@ pub fn dvs_init(storage_dir: &PathBuf, mode: &u32, group_name: &str) -> Result<(
     // Get git root
    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).with_context(|| "could not find git repo root - make sure you're in an active git repository")?;
 
-    if !storage_dir.is_dir() {
-        return Err(anyhow!("{} is not a directory", storage_dir.display()))
-    }
-
     // get absolute path, but don't check if it exists yet
     let storage_dir_abs = PathBuf::from(storage_dir.absolutize().unwrap());
     
     // check if directory exists
     if !storage_dir_abs.exists() { // if storage directory doesn't exist
-        println!("storage directory doesn't exist. Creating storage directory...");
+        println!("storage directory doesn't exist\ncreating storage directory...");
         // create storage dir
-        create_dir(&storage_dir_abs).with_context(|| format!("Failed to create storage directory: {}", storage_dir.display()))?;
+        create_dir(&storage_dir_abs).with_context(|| format!("failed to create storage directory: {}", storage_dir.display()))?;
     } // if
-
     else { // else, storage directory exists
+        if !storage_dir.is_dir() {
+            return Err(anyhow!("{} is not a directory", storage_dir.display()))
+        }
+
         println!("storage directory already exists");
 
         //  Warn if storage dir is not empty

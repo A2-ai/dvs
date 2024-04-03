@@ -49,7 +49,10 @@ pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, me
         let file_without_meta = file_in.replace(".dvsmeta", "");
         let file = PathBuf::from(file_without_meta);
 
-        if queued_paths.contains(&file) {continue}
+        if queued_paths.contains(&file) {
+            println!("skipping repeated path: {}", file.display());
+            continue
+        }
 
         queued_paths.push(file);
     } // for
@@ -72,27 +75,51 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let file_hash = hash::get_file_hash(&local_path);
     if file_hash.is_none() && error.is_none() {
         error = Some(String::from("hash not found"));
+        println!("error: hash not found for {}", local_path.display());
     }
 
     // get file size
-    let file_size = get_file_size(&local_path);
-    if file_size.is_none() && error.is_none() {
-        error = Some(String::from("file size not found"));
-    }
+    let file_size: Option<u64> = match local_path.metadata() {
+        Ok(data) => Some(data.len()),
+        Err(e) => {
+            if error.is_none() {
+                error = Some(String::from("size not found"));
+                println!("error: file size not found for {}\n{e}", local_path.display());
+            }
+            None
+        }
+    };
 
     // get user name
-    let user_name = get_user_name(&local_path);
-    if user_name.is_none() && error.is_none() {
-        error = Some(String::from("file owner not found"));
-    }
+    let user_name: Option<String> = match local_path.owner().with_context(|| format!("owner not found")) {
+        Ok(owner) => {
+            let owner_name = match owner.name() {
+                Ok(name) => Some(name.unwrap()),
+                Err(e) => {
+                    error = Some(String::from("owner name not found"));
+                    println!("error: owner name not found for {}\n{e}", local_path.display());
+                    None
+                }
+            };
+            owner_name
+        }
+        Err(e) => {
+            if error.is_none() {
+                error = Some(String::from("owner not found"));
+                println!("error: owner not found for {}\n{e}", local_path.display());
+            }
+            None
+        }
+    };
 
     // check group if group was specified
     let group_name = &conf.group;
     if group_name != "" {
         match Group::from_name(group_name) {
             Ok(_) => {}
-            Err(_) => {
+            Err(e) => {
                 if error.is_none() {error = Some(String::from("group not found"))}
+                println!("group {group_name} not found for {}\n{e}", local_path.display());
             }
         };
     }
@@ -100,8 +127,9 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     // now see if file can be added
     let storage_dir_abs: Option<PathBuf> = match conf.storage_dir.canonicalize() {
         Ok(path) => Some(path),
-        Err(_) => {
+        Err(e) => {
             if error.is_none() {error = Some(String::from("storage directory not found"))}
+            println!("storage directory {} not found\n{e}", conf.storage_dir.display());
             None
         }
     };
@@ -145,14 +173,20 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     // write metadata file
     match file::save(&metadata, &local_path) {
         Ok(_) => {},
-        Err(_) => if error.is_none() {error = Some(String::from("could not save metadata file"))}
+        Err(e) => if error.is_none() {
+            error = Some(String::from("could not save metadata file"));
+            println!("could not save metadata file for {}\n{e}", local_path.display());
+        }
     };
 
     // Add file to gitignore
     match ignore::add_gitignore_entry(local_path) {
         Ok(_) => {},
-        Err(_) => {
-            if error.is_none() {error = Some(String::from("could not add .gitignore entry"))}
+        Err(e) => {
+            if error.is_none() {
+                error = Some(String::from("could not add .gitignore entry"));
+                println!("could not save metadata file for {}\n{e}", local_path.display());
+            }
         }
     };
     
@@ -173,39 +207,22 @@ fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<Str
         Ok(local_path) => { // file exists
             // if file is outside of git repository
             if local_path.strip_prefix(&git_dir).unwrap() == local_path {
+                println!("error: file {} not in git repository", local_path.display());
                 return Some(String::from("file not in git repository"));
             }
         }
-        Err(_) => { 
-            return Some(String::from("file not found"))
+        Err(e) => { 
+            println!("error: file {} not found\n{e}",local_path.display());
+            return Some(String::from("file not found"));
         }
     };
 
     if local_path.is_dir() {
+        println!("error: path {} is a directory", local_path.display());
         return Some(String::from("path is a directory"))
     }
 
     None
-}
-
-
-fn get_file_size(local_path: &PathBuf) -> Option<u64> {
-    match local_path.metadata() {
-        Ok(data) => return Some(data.len()),
-        Err(_) => return None,
-    };
-}
-
-
-fn get_user_name(local_path: &PathBuf) -> Option<String> {
-    let owner = match local_path.owner().with_context(|| format!("owner not found")) {
-        Ok(owner) => owner,
-        Err(_) => return None,
-    };
-    match owner.name() {
-        Ok(name) => return Some(name.unwrap()),
-        Err(_) => return None,
-    };
 }
 
 
@@ -216,9 +233,10 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
             // set permissions
             match set_permissions(&mode, &dest_path) {
                 Ok(_) => {},
-                Err(_) => {
+                Err(e) => {
                     // set error
-                    if error.is_none() {error = Some(String::from("could not set file permissions"))}
+                    if error.is_none() {error = Some(String::from("could not set permissions"))}
+                    println!("error: could not set permissions for {} in storage directory\n{e}", local_path.display());
                     // delete copied file
                     fs::remove_file(&dest_path)
                     .expect(format!("could not set permissions after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
@@ -230,19 +248,21 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
                 let group = Group::from_name(group_name).with_context(|| format!("group not found: {group_name}")).unwrap();
                 match dest_path.set_group(group.clone()) {
                     Ok(_) => {},
-                    Err(_) => {
+                    Err(e) => {
                         // set error
-                        if error.is_none() {error = Some(String::from("could not set file group ownership"))}
+                        if error.is_none() {error = Some(String::from("could not set group"))}
+                        println!("error: could not set group for {} in storage directory\n{e}", local_path.display());
                         // delete copied file
                         fs::remove_file(&dest_path)
-                        .expect(format!("could not set group ownership after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
+                        .expect(format!("could not set group after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
 
                     }
                 };
             }
           
         } // Ok, could copy
-        Err(_) => {
+        Err(e) => {
+            println!("error: could copy {} to storage directory\n{e}", local_path.display());
             if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
         }
     };

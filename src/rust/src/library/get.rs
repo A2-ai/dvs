@@ -60,7 +60,8 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
     let metadata: Option<Metadata> = match file::load(&local_path) {
         Ok(data) => Some(data),
         Err(e) => {
-            if error.is_none() {error = Some(format!("metadata file not found: \n{e}"))}
+            if error.is_none() {error = Some(format!("metadata file not found"))}
+            println!("{e}");
             None
         }
     };
@@ -102,7 +103,8 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
             }
             Err(e) => {
                 outcome = Outcome::Error;
-                error = Some(format!("file not copied \n{e}"));
+                error = Some(format!("file not copied"));
+                println!("{e}");
             }
         };
     }
