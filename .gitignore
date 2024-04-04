@@ -1,4 +1,5 @@
 .Rproj.user
 
-R/test_storage_directory
+R/storage_dir
+
 
