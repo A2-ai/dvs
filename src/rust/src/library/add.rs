@@ -63,13 +63,13 @@ pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, me
                                 continue
                             }
                         }
-                        None => {
-                            println!("skipping path with invalid extension {}", path.display());
-                            continue
-                        } // takes care of .gitignore
+                        None => {} // takes care of .gitignore
                     }
 
-                   
+                    if path.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
+                        println!("skipping .gitignore file {}", path.display());
+                        continue
+                    }
                     
                     if queued_paths.contains(&path) {
                         println!("skipping repeated path: {}", path.display());
