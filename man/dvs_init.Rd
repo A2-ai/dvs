@@ -4,7 +4,7 @@
 \alias{dvs_init}
 \title{initialize devious}
 \usage{
-dvs_init(directory, permissions = 511, group = "")
+dvs_init(directory, permissions = 777, group = "")
 }
 \arguments{
 \item{directory}{path to storage directory}

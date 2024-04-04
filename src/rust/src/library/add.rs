@@ -63,7 +63,7 @@ pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, me
                                 continue
                             }
                         }
-                        None => {} // takes care of .gitignore
+                        None => {} 
                     }
 
                     if path.file_name().and_then(OsStr::to_str) == Some(".gitignore") {

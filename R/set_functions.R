@@ -11,7 +11,7 @@ library(rlang)
 #' @return nothing, or errors initializing
 #'
 #' @export
-dvs_init <- function(directory, permissions = 511, group = "") {
+dvs_init <- function(directory, permissions = 777, group = "") {
   res <- dvs_init_impl(directory, permissions, group)
   if (!is.null(res$error)) {
     rlang::abort(res$error)

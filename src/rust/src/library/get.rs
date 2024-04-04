@@ -39,42 +39,56 @@ pub struct RetrievedFile {
 }
 
 pub fn dvs_get(files: &Vec<String>, conf: &Config) -> Result<Vec<RetrievedFile>> {
-    
     // parse each glob
     //let queued_paths = parse::parse_globs(globs);
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in files {
-        // remove meta file extension
-        // let entry_string = entry.replace(".dvsmeta", "");
+        if PathBuf::from(entry).extension().and_then(OsStr::to_str).is_some() {
+            let path_clean = PathBuf::from(entry.replace(".dvsmeta", ""));
 
-        let glob = match glob(&entry) {
-            Ok(paths) => paths,
-            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
-        };
-
-        for file in glob {
-            match file {
-                Ok(path) => {
-                    let path_clean = PathBuf::from(path.display().to_string().replace(".dvsmeta", ""));
-
-                    if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
-                        println!("skipping .gitignore file {}", path.display());
-                        continue
+            if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
+                println!("skipping .gitignore file {}", path_clean.display());
+                continue
+            }
+            
+            if queued_paths.contains(&path_clean) {
+                println!("skipping repeated path: {}", path_clean.display());
+                continue
+            }
+            
+            queued_paths.push(path_clean);
+        }
+        else {
+            let glob = match glob(&entry) {
+                Ok(paths) => paths,
+                Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+            };
+    
+            for file in glob {
+                match file {
+                    Ok(path) => {
+                        let path_clean = PathBuf::from(path.display().to_string().replace(".dvsmeta", ""));
+    
+                        if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
+                            println!("skipping .gitignore file {}", path.display());
+                            continue
+                        }
+                        
+                        if queued_paths.contains(&path_clean) {
+                            println!("skipping repeated path: {}", path_clean.display());
+                            continue
+                        }
+                        
+                        queued_paths.push(path_clean);
                     }
-                    
-                    if queued_paths.contains(&path_clean) {
-                        println!("skipping repeated path: {}", path_clean.display());
-                        continue
+                    Err(e) => {
+                        return Err(extendr_api::error::Error::Other(e.to_string()));
                     }
-                    queued_paths.push(path_clean);
-                }
-                Err(e) => {
-                    return Err(extendr_api::error::Error::Other(e.to_string()));
-                }
-
-            } // match file
-        } // for file in glob
+    
+                } // match file
+            } // for file in glob
+        }
     } // for entry in files
 
     if queued_paths.is_empty() {
@@ -122,7 +136,7 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
     let local_hash: String = match local_hash_result.clone() {
         Some(hash) => hash,
         None => String::from(""),
-    };
+    }; 
     
     let mut outcome = Outcome::AlreadyPresent;
 

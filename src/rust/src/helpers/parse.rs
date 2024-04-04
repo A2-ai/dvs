@@ -9,13 +9,10 @@ pub fn parse_globs(globs: &Vec<String>) -> Vec<PathBuf> {
         let file_string = glob.replace(".dvsmeta", "");
         let file_path = PathBuf::from(file_string);
 
-        // skip is already queued
+        // skip if already queued
         if meta_files.contains(&file_path) {continue}
 
-        // skip directories
-        
         if file_path.is_dir() {
-            // json skipping directory
             continue
         }
 
@@ -24,6 +21,7 @@ pub fn parse_globs(globs: &Vec<String>) -> Vec<PathBuf> {
     
     return meta_files;
 }
+
 
 pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
     //let mut meta_files: Vec<String> = Vec::new();

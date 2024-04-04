@@ -10,15 +10,16 @@ use crate::library::init;
 use crate::library::add;
 use extendr_api::robj::Robj;
 use anyhow::anyhow;
-use std::convert::TryFrom;
 
 #[extendr]
 fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
     let storage_dir_in = PathBuf::from(storage_dir);
-    let mode_in = match u32::try_from(mode) {
+
+    let mode_in = match u32::from_str_radix(&mode.to_string(), 8) {
         Ok(mode) => mode,
         Err(e) => return Err(anyhow!("could not convert permissions to unsigned integer \n{e}").to_string())
     };
+
     match init::dvs_init(&storage_dir_in, &mode_in, group) {
         Ok(_) => {},
         Err(e) => return Err(anyhow!(e).to_string())
