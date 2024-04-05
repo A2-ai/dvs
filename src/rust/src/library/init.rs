@@ -6,7 +6,7 @@ use path_absolutize::Absolutize;
 use file_owner::Group;
 use anyhow::{anyhow, Context, Result};
 
-pub fn dvs_init(storage_dir: &PathBuf, mode: &u32, group_name: &str) -> Result<()> { 
+pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<()> { 
     // Get git root
    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).with_context(|| "could not find git repo root - make sure you're in an active git repository")?;
 
@@ -49,11 +49,17 @@ pub fn dvs_init(storage_dir: &PathBuf, mode: &u32, group_name: &str) -> Result<(
         group_name_for_config = String::from("");
     }
 
+    let mode = match u32::from_str_radix(&octal_permissions.to_string(), 8) {
+        Ok(mode) => mode,
+        Err(e) => return Err(anyhow!("could not convert permissions to unsigned integer \n{e}"))
+    };
+
     // write config
     config::write(
         &config::Config{
             storage_dir: storage_dir_abs.clone(), 
-            permissions: mode.clone(), 
+            permissions: octal_permissions.clone(),
+            mode,
             group: group_name_for_config
         }, 
         &git_dir)

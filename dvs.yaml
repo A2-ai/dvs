@@ -1,3 +1,4 @@
 storage_dir: /cluster-data/user-homes/jenna/Projects/Rdevious/R/storage_dir
-permissions: 510
+permissions: 777
+mode: 511
 group: ''

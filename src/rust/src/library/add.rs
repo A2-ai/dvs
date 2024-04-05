@@ -179,8 +179,9 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     // Copy the file to the storage directory if it's not already there
     let mut outcome: Outcome = Outcome::Success;
     if !dest_path.exists() {
-        // copy
-        copy_file_to_storage_directory(local_path, &dest_path, &conf.permissions, &group_name);
+        // copy 
+        //let perms = u32::from_str_radix(&conf.permissions.to_string(), 8);
+        copy_file_to_storage_directory(local_path, &dest_path, &conf.mode, &group_name);
     }
     else {
         outcome = Outcome::AlreadyPresent;

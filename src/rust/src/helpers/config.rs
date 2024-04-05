@@ -5,7 +5,8 @@ use std::path::PathBuf;
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Config {
     pub storage_dir: PathBuf,
-    pub permissions: u32,
+    pub permissions: i32,
+    pub mode: u32,
     pub group: String
 }
 
