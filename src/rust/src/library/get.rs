@@ -12,7 +12,6 @@ use extendr_api::IntoDataFrameRow;
 use extendr_api::Dataframe;
 use extendr_api::prelude::*;
 use glob::glob;
-use std::fmt::Octal;
 
 enum Outcome {
     Copied,
