@@ -1,10 +1,6 @@
 use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::os::unix::fs::PermissionsExt;
-use extendr_api::IntoDataFrameRow;
-use extendr_api::Dataframe;
-use extendr_api::eval_string;
-use extendr_api::prelude::*;
+use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
 use serde::Serialize;
 use file_owner::{Group, PathExt};
 use std::{fs, u32};
@@ -194,7 +190,8 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let metadata = file::Metadata{
         file_hash: file_hash_value,
         file_size: file_size.unwrap(),
-        time_stamp: chrono::offset::Local::now().to_string(),
+        time_stamp: chrono::Local::now().to_string(),
+        //time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),
         saved_by: user_name.unwrap()
     };
@@ -260,7 +257,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
             // set permissions
-            match set_permissions(&mode, &dest_path) {
+            match copy::set_file_permissions(&mode, &dest_path) {
                 Ok(_) => {},
                 Err(e) => {
                     // set error
@@ -298,10 +295,10 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
     return error
 }
 
-fn set_permissions(mode: &u32, dest_path: &PathBuf) -> Result<()> {
-    dest_path.metadata().unwrap().permissions().set_mode(*mode);
-    let _file_mode = dest_path.metadata().unwrap().permissions().mode();
-    let new_permissions = fs::Permissions::from_mode(*mode);
-    fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode)).unwrap();
-    Ok(())
-}
+// fn set_permissions(mode: &u32, dest_path: &PathBuf) -> Result<()> {
+//     dest_path.metadata().unwrap().permissions().set_mode(*mode);
+//     let _file_mode = dest_path.metadata().unwrap().permissions().mode();
+//     let new_permissions = fs::Permissions::from_mode(*mode);
+//     fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode)).unwrap();
+//     Ok(())
+// }

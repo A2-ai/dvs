@@ -1,12 +1,13 @@
 
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::ffi::OsStr;
 use crate::helpers::config::Config;
+use crate::helpers::copy::set_file_permissions;
 use crate::helpers::file::Metadata;
 use crate::helpers::hash;
 use crate::helpers::copy;
 use crate::helpers::file;
-// use crate::helpers::parse;
 use extendr_api::IntoDataFrameRow;
 use extendr_api::Dataframe;
 use extendr_api::prelude::*;
@@ -15,7 +16,8 @@ use glob::glob;
 enum Outcome {
     Copied,
     AlreadyPresent,
-    Error
+    Error,
+    PermissionsUpdated
 }
 
 impl Outcome {
@@ -23,7 +25,8 @@ impl Outcome {
         match self {
             Outcome::Copied => String::from("Copied"),
             Outcome::AlreadyPresent => String::from("Already Present"),
-            Outcome::Error => String::from("Error")
+            Outcome::Error => String::from("Error"),
+            Outcome::PermissionsUpdated => String::from("Permissions Updated")
         }
     }
 }
@@ -96,7 +99,7 @@ pub fn dvs_get(files: &Vec<String>, conf: &Config) -> Result<Vec<RetrievedFile>>
      }
 
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get(&file, &conf.storage_dir)
+        get(&file, &conf)
     }).collect::<Vec<RetrievedFile>>();
 
     Ok(retrieved_files)
@@ -104,7 +107,8 @@ pub fn dvs_get(files: &Vec<String>, conf: &Config) -> Result<Vec<RetrievedFile>>
 
 
 // gets a file from storage
-pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
+pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
+    
     let mut error: Option<String> = None;
 
     if local_path.is_dir() && error.is_none() {
@@ -115,8 +119,8 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
     let metadata: Option<Metadata> = match file::load(&local_path) {
         Ok(data) => Some(data),
         Err(e) => {
-            if error.is_none() {error = Some(format!("metadata file not found"))}
-            println!("{e}");
+            if error.is_none() {error = Some(format!("dvs metadata file not found"))}
+            println!("unable to find dvs metadata file for {}\n{e}", local_path.display());
             None
         }
     };
@@ -147,24 +151,65 @@ pub fn get(local_path: &PathBuf, storage_dir: &PathBuf) -> RetrievedFile {
 
 
     // get storage data
-    let storage_path = hash::get_storage_path(storage_dir, &metadata_hash);
+    let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata_hash);
 
     // check if up-to-date file is already present locally
     if !local_path.exists() || metadata_hash == String::from("") || local_hash == String::from("") || local_hash != metadata_hash {
         match copy::copy(&storage_path, &local_path) {
             Ok(_) => {
-                outcome = Outcome::Copied;
-
-            }
+                match set_file_permissions(&conf.permissions, &local_path) {
+                    Ok(_) => {
+                        outcome = Outcome::Copied;
+                    }
+                    Err(e) => {
+                        // TODO: delete file
+                        outcome = Outcome::Error;
+                        error = Some(format!("permissions not set"));
+                        println!("unable to set permissions for  {}\n{e}", local_path.display());
+                    }
+                }; // match set_file_permissions(
+            } // ok copy
             Err(e) => {
                 outcome = Outcome::Error;
                 error = Some(format!("file not copied"));
-                println!("{e}");
+                println!("unable to copy file to {}\n{e}", local_path.display());
             }
         };
+    } // match copy
+    else { // else already present and up to date
+        // if permissions don't match, update them
+        match local_path.metadata() {
+            Ok(metadata) => {
+                if metadata.permissions().mode() & 0o777 != conf.permissions { // need to do bitwise & for mysterious reasons
+                    //println!("file perms: {} conf perms: {}", metadata.permissions().mode() & 0o777, conf.permissions);
+                    match set_file_permissions(&conf.permissions, &local_path) {
+                        Ok(_) => {
+                            outcome = Outcome::PermissionsUpdated;
+                        }
+                        Err(e) => {
+                            // TODO: delete file
+                            if error.is_none() {
+                                outcome = Outcome::Error;
+                                error = Some(format!("permissions not set"));
+                            }
+                            println!("unable to set permissions for {}\n{e}", local_path.display());
+                        }
+                    }; // match set_file_permissions
+                }
+            }
+            Err(e) => {
+                if error.is_none() {
+                    outcome = Outcome::Error;
+                    error = Some(format!("metadata inaccessible"));
+                }
+                println!("metadata inaccessible for {}\n{e}", local_path.display());
+            }
+        };
+        
+       
     }
 
-    RetrievedFile{
+    RetrievedFile {
         path: local_path.display().to_string(),
         hash: Some(metadata_hash),
         outcome: outcome.outcome_to_string(),
