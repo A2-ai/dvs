@@ -1,0 +1,20 @@
+Initializing Devious sets up files to be copied to a storage directory where they can be retrieved later. 
+
+In R, this command may look like:
+
+```{r}
+dvs_init(storage_directory = "path/to/storage/directory", permissions = 777, group = "datascience")
+```
+
+-   **storage_directory** is a character of the relative or absolute (TODO) path to the desired storage directory. If this directory doesn't exist, it creates it. 
+
+-   **permissions** is the octal value of the desired linux file permissions to set for retrieved files. This argument is option and is 777 by default.
+
+-   **group** is the name of the linux group to set for retrieved files. This argument is optional and is unchanged by default.
+
+
+Caveats:
+-   you may only initialize Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents accidental initializations.
+
+- storage_directory must be a path to a directory, not a file. Devious doesn't assume the user meant to indicate the directory of the file to prevent accidental initializations.
+

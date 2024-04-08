@@ -5,14 +5,14 @@ library(rlang)
 #' initialize devious
 #'
 #' @param directory path to storage directory
-#' @param permissions optional argument to set permissions of files stored
+#' @param permissions optional argument to set linux file permissions (in octal format)
 #' @param group optional argument to set group of files stored
 #'
 #' @return nothing, or errors initializing
 #'
 #' @export
-dvs_init <- function(directory, permissions = 777, group = "") {
-  res <- dvs_init_impl(directory, permissions, group)
+dvs_init <- function(storage_directory, permissions = 777, group = "") {
+  res <- dvs_init_impl(storage_directory, permissions, group)
   if (!is.null(res$error)) {
     rlang::abort(res$error)
   }
