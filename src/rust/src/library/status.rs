@@ -34,6 +34,7 @@ pub fn dvs_status(files: &Vec<String>, git_dir: &PathBuf) -> Result<Vec<JsonFile
         // get meta files
        meta_paths = [meta_paths, parse::get_all_meta_files(git_dir)].concat();
     } // if doing all files
+
     else {
         meta_paths = [meta_paths, parse::parse_globs(files)].concat();
     } // else specific files
@@ -47,7 +48,7 @@ pub fn dvs_status(files: &Vec<String>, git_dir: &PathBuf) -> Result<Vec<JsonFile
         // get file info
         let metadata = file::load(&path).expect("couldn't get metadata");
         
-        // asign status: not-present by default
+        // assign status: not-present by default
         let mut status = String::from("out-of-date");
         // if the file path doesn't exist assign status to "not-present"
         if !path.exists() {status = String::from("not-present")}
