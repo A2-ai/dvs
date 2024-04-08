@@ -1,4 +1,4 @@
 storage_dir: /cluster-data/user-homes/jenna/Rdevious/R/storage_dir
-permissions: 777
-mode: 511
-group: ''
+permissions: 666
+mode: 438
+group: datascience

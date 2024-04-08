@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::fs::{create_dir_all, File};
 use std::fs;
 use anyhow::{anyhow, Context, Result};
+use file_owner::{Group, PathExt};
 
 pub fn copy(src_path: &PathBuf, dest_path: &PathBuf) -> Result<()> {
     // Ignore .. and . paths
@@ -52,5 +53,32 @@ pub fn set_file_permissions(mode: &u32, dest_path: &PathBuf) -> Result<()> {
     let _file_mode = dest_path.metadata().unwrap().permissions().mode();
     let new_permissions = fs::Permissions::from_mode(*mode);
     fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode)).unwrap();
+    Ok(())
+}
+
+
+pub fn set_file_group(group_name: &String, dest_path: &PathBuf) -> Result<()> {
+    if group_name == "" {return Ok(())}
+
+    // check if group exists
+    let group = match Group::from_name(group_name) {
+        Ok(group) => {group}
+        Err(e) => {
+            return Err(anyhow!(e))
+        }
+    };
+
+    // set group
+    match dest_path.set_group(group.clone()) {
+        Ok(_) => {},
+        Err(e) => {
+            // set error
+            return Err(anyhow!(e));
+            // delete copied file
+            // fs::remove_file(&dest_path)
+            // .expect("could not set group.");
+        }
+    };
+
     Ok(())
 }
