@@ -59,7 +59,6 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         &config::Config{
             storage_dir: storage_dir_abs.clone(), 
             permissions: octal_permissions.clone(),
-            mode,
             group: group_name_for_config
         }, 
         &git_dir)

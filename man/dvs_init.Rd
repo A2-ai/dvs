@@ -4,14 +4,14 @@
 \alias{dvs_init}
 \title{initialize devious}
 \usage{
-dvs_init(directory, permissions = 777, group = "")
+dvs_init(storage_directory, permissions = 777, group = "")
 }
 \arguments{
-\item{directory}{path to storage directory}
-
-\item{permissions}{optional argument to set permissions of files stored}
+\item{permissions}{optional argument to set linux file permissions (in octal format)}
 
 \item{group}{optional argument to set group of files stored}
+
+\item{directory}{path to storage directory}
 }
 \value{
 nothing, or errors initializing

@@ -1,4 +1,4 @@
-Initializing Devious sets up files to be copied to a storage directory where they can be retrieved later. 
+Initializing Devious sets up files to be copied to a storage directory where they can be retrieved later.
 
 In R, this command may look like:
 
@@ -6,15 +6,27 @@ In R, this command may look like:
 dvs_init(storage_directory = "path/to/storage/directory", permissions = 777, group = "datascience")
 ```
 
--   **storage_directory** is a character of the relative or absolute (TODO) path to the desired storage directory. If this directory doesn't exist, it creates it. 
+-   `storage_directory` is a character of the relative or absolute path to the desired storage directory. If this directory doesn't exist, it creates it.
 
--   **permissions** is the octal value of the desired linux file permissions to set for retrieved files. This argument is option and is 777 by default.
+-   `permissions` is the octal value of the desired linux file permissions to set for retrieved files. This argument is option and is 777 by default.
 
--   **group** is the name of the linux group to set for retrieved files. This argument is optional and is unchanged by default.
+-   `group` is the name of the linux group to set for retrieved files. This argument is optional and is unchanged by default.
 
+Implementation Details:
 
-Caveats:
--   you may only initialize Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents accidental initializations.
+-   you may only initialize Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents accidental initialization.
 
-- storage_directory must be a path to a directory, not a file. Devious doesn't assume the user meant to indicate the directory of the file to prevent accidental initializations.
+-   `storage_directory` must be a path to a directory, not a file. Devious doesn't assume the user meant to indicate the directory of the file to prevent accidental initialization.
 
+-   to get the most out of Devious, `storage_directory` should be an accessible location to other collaborators who will retrieve files added by Devious.
+
+-   Devious will notify the user if the storage directory already exists or is created at initialization
+
+-   Devious will notify the user if the directory is not empty to prevent unexpected behavior
+
+-   At initialization, Devious will check that the inputted group name is valid and that `permissions` can be converted to u32
+
+-   Because the function of Devious is to prevent sensitive or large files from being tracked by Git, Devious automatically generates a `.gitignore` with entries for each file added to it. The `.gitignore` is located in the immediate directory of a given file added to Devious. If a `.gitignore` already exists in this directory, it keeps it and appends the entries of added files.
+
+-   To keep track of initialization information (`storage_directory`, `permissions`, etc), Devious generates a `dvs.yaml` file in the project directory. When performing subsequent commands, Devious refers to the information in this file.
+[]()

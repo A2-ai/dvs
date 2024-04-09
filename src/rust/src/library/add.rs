@@ -159,6 +159,16 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
 
+    // get file permissions
+    let conf_mode_option: Option<u32> = match config::get_mode_u32(&conf.permissions) {
+        Ok(mode) => Some(mode),
+        Err(e) => {
+            if error.is_none() {error = Some(format!("permissions not parsed"))}
+            println!("unable to parse file permissions {} for {}\n{e}", &conf.permissions, local_path.display());
+            None
+        }
+    };
+
     if error.is_some() {
         return AddedFile{
             path: local_path.display().to_string(), 
@@ -172,6 +182,8 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     // can safely unwrap storage_dir_abs and file_hash 
     let storage_dir_abs_value = storage_dir_abs.unwrap();
     let file_hash_value = file_hash.clone().unwrap();
+
+    let conf_mode = conf_mode_option.unwrap();
     
     // get storage path
     let dest_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
@@ -180,8 +192,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let mut outcome: Outcome = Outcome::Success;
     if !dest_path.exists() {
         // copy 
-        //let perms = u32::from_str_radix(&conf.permissions.to_string(), 8);
-        copy_file_to_storage_directory(local_path, &dest_path, &conf.mode, &group_name);
+        copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name);
     }
     else {
         outcome = Outcome::AlreadyPresent;

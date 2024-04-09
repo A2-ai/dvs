@@ -1,12 +1,12 @@
 use serde::{Serialize, Deserialize};
 use std::fs;
+use std::num::ParseIntError;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Config {
     pub storage_dir: PathBuf,
     pub permissions: i32,
-    pub mode: u32,
     pub group: String
 }
 
@@ -23,6 +23,13 @@ pub fn write(config: &Config, dir: &PathBuf) -> std::io::Result<()> {
     fs::write(dir.join(PathBuf::from(r"dvs.yaml")), yaml)?;
     Ok(())
 } // write
+
+pub fn get_mode_u32(permissions: &i32) -> Result<u32, ParseIntError> {
+    match u32::from_str_radix(&permissions.to_string(), 8) {
+        Ok(mode) => return Ok(mode),
+        Err(e) => return Err(e)
+    };
+}
 
 
 

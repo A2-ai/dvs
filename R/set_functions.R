@@ -12,6 +12,7 @@ library(rlang)
 #'
 #' @export
 dvs_init <- function(storage_directory, permissions = 777, group = "") {
+  storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
   res <- dvs_init_impl(storage_directory, permissions, group)
   if (!is.null(res$error)) {
     rlang::abort(res$error)

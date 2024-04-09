@@ -2,6 +2,7 @@
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::ffi::OsStr;
+use crate::helpers::config;
 use crate::helpers::config::Config;
 use crate::helpers::copy;
 use crate::helpers::file::Metadata;
@@ -43,8 +44,9 @@ pub struct RetrievedFile {
     pub outcome: String,
     pub error: Option<String>,
     pub size: Option<u64>
-
 }
+
+
 
 pub fn dvs_get(files: &Vec<String>, conf: &Config) -> Result<Vec<RetrievedFile>> {
     // parse each glob
@@ -130,6 +132,16 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
         }
     };
 
+    // get file permissions
+    let conf_mode_option: Option<u32> = match config::get_mode_u32(&conf.permissions) {
+        Ok(mode) => Some(mode),
+        Err(e) => {
+            if error.is_none() {error = Some(format!("permissions not parsed"))}
+            println!("unable to parse file permissions {} for {}\n{e}", &conf.permissions, local_path.display());
+            None
+        }
+    };
+
     if error.is_some() {
         return RetrievedFile{
             path: local_path.display().to_string(),
@@ -154,9 +166,13 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
     let metadata_hash = metadata_unwrapped.file_hash;
     let file_size = metadata_unwrapped.file_size;
 
+    let conf_mode = conf_mode_option.unwrap();
+
 
     // get storage data
     let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata_hash);
+
+    
 
     // check if up-to-date file is already present locally
     if !local_path.exists() || metadata_hash == String::from("") || local_hash == String::from("") || local_hash != metadata_hash {
@@ -164,7 +180,8 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
             Ok(_) => {
                 outcome = Outcome::Copied;
                 // set file permissions
-                match copy::set_file_permissions(&conf.mode, &local_path) {
+                
+                match copy::set_file_permissions(&conf_mode, &local_path) {
                     Ok(_) => {}
                     Err(e) => {
                         // TODO: delete file
@@ -200,9 +217,9 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
         // if permissions don't match, update them
         match local_path.metadata() {
             Ok(metadata) => {
-                if metadata.permissions().mode() & 0o777 != conf.mode { // need to do bitwise & for mysterious reasons
-                    println!("Permissions changed:\nprevious permissions: {:o}, new permissions: {:o}", metadata.permissions().mode() & 0o777, conf.mode);
-                    match copy::set_file_permissions(&conf.mode, &local_path) {
+                if metadata.permissions().mode() & 0o777 != conf_mode { // need to do bitwise & for mysterious reasons
+                    println!("Permissions changed:\nprevious permissions: {:o}, new permissions: {:o}", metadata.permissions().mode() & 0o777, conf_mode);
+                    match copy::set_file_permissions(&conf_mode, &local_path) {
                         Ok(_) => {
                             outcome = Outcome::PermissionsUpdated;
                         }
@@ -220,7 +237,7 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
                 match get_current_group(&local_path) {
                     Some(current_group) => {
                         if current_group != conf.group {
-                            println!("group changed:\nprevious group: {current_group}, new group: {}", conf.group);
+                            println!("group changed\nprevious group: {current_group}, new group: {}", conf.group);
                             match copy::set_file_group(&conf.group, &local_path) {
                                 Ok(_) => {
                                     if outcome == Outcome::PermissionsUpdated {
@@ -248,8 +265,6 @@ pub fn get(local_path: &PathBuf, conf: &Config) -> RetrievedFile {
                         }
                     }
                 }; // match get_current_group
-                
- 
             } // Ok(metadata)
             Err(e) => {
                 if error.is_none() {
