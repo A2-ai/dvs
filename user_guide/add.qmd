@@ -1,6 +1,6 @@
 ## Adding to Devious
 
-Executing this command for a given file is necessary to retrieve it later. This command copies files to a storage directory from which they can be retrieved later.
+Executing this command for a given file is necessary to retrieve it later. This command copies files to a storage directory from which they can be retrieved later. It also generates a metadata file `<filename>.dvsmeta` for each added file. This is essential to ensure that the current version of the file in a user's working directory is the most up-to-date one stored in Devious.
 
 #### R Command
 
@@ -18,7 +18,7 @@ dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data s
     -   `hash`: from blake3 (if successfully created)
     -   `outcome` of adding (`Success`, `Error`, or `Already Present`)
     -   `error` summary if the `outcome` was `Error`
-    -   `size`
+    -   `size` in bytes
 
 #### Shell Command
 
@@ -31,3 +31,32 @@ dvs init path/to/file1 path/to/file2 --message="assembled data sets for project 
 -   the first argument is a space separated list in the CLI containing file globs representing the set of files to be copied to the initialized storage_directory
 
 -   `message` is a contextualizing message for future file retrievers
+
+#### Implementation Details:
+
+-   you may only add files to Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents unexpected behavior.
+
+-   deleting/moving configuration file (`dvs.yaml`) will cause this command to error. To prevent unexpected behavior, it is recommended to not modify the configuration file, and instead update its contents by re-initializing if necessary.
+
+-   `.gitignore` files, `.dvsmeta` files, and repeated files are skipped in the first argument to prevent unexpected behavior, especially from file globs that use wildcard `*`.
+
+#### Errors
+
+In R, if any errors occur, the first one is given in the `error` column of the returned data frame.
+
+In both R and the CLI, an error message with more context is printed for each present error.
+
+#### List of Potential Errors
+
+-   file not in git repository
+-   file not found
+-   path is a directory
+-   hash not found
+-   size not found
+-   owner not found
+-   owner name not found
+-   group not found
+-   storage directory not found
+-   permissions not valid
+-   metadata not saved
+-   .gitignore entry not added

@@ -28,7 +28,7 @@ dvs init path/to/storage_directory --permissions=777 --group="datascience"
 
 -   `group` is an optional flag representing the name of the linux group to set for retrieved files. This value is unchanged by default.
 
-### Implementation Details:
+#### Implementation Details:
 
 -   you may only initialize Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents accidental initialization.
 
