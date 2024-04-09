@@ -43,7 +43,7 @@ pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
     let mut meta_paths: Vec<PathBuf> = Vec::new();
 
     // if no arguments are provided, get the status of all files in the current git repository
-    if files.len() == 1 && files.contains(&String::from("")) {
+    if files.len() == 0 {
         // get meta files
        meta_paths = [meta_paths, parse::get_all_meta_files(&git_dir)].concat();
     } // if doing all files
@@ -56,6 +56,7 @@ pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
 
     json_logger  = meta_paths.into_iter().map(|path| {
         // get relative path
+        // get relative local path to display in struct
         let rel_path = repo::get_relative_path(&PathBuf::from("."), &path).expect("couldn't get relative path");
         
         // get file info

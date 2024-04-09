@@ -1,0 +1,27 @@
+### Getting from Devious
+
+This command retrieves any set of the most recent versions of added files to Devious by the user or any collaborators. This includes most recent file changes stored in Devious or current file permissions and group specifications in the configuration file.
+
+#### R Command
+
+```{r}
+dvs_get(files = c("path/to/file1", "path/to/file2"))
+```
+
+-   `files` is a vector of file glob characters representing the set of files to be copied from the initialized storage directory to the directory in which its metadata file exists.
+
+-   its output is a data frame whose rows are the added files and the columns for a given file are its:
+
+    -   `path`: relative to the git directory
+    -   `hash`: from blake3 (if successfully created)
+    -   `outcome` of getting - one of the following:
+        -   `Copied`
+        -   `Error`
+        -   `Already Present`
+        -   `Permissions Updated`
+        -   `Group Updated`
+        -   `Group and Permissions Updated`
+    -   `error` summary if the `outcome` was `Error`
+    -   `size` in bytes
+
+#### Shell Command

@@ -4,7 +4,7 @@
 \alias{dvs_status}
 \title{get the status of any file previously added to the storage directory}
 \usage{
-dvs_status(files = c(""))
+dvs_status(files = c())
 }
 \arguments{
 \item{files}{optional argument, when specified, returns data frame with only these specified files}

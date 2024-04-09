@@ -53,7 +53,8 @@ dvs_get <- function(files) {
 #' @return a data frame with the statuses of files previously added
 #'
 #' @export
-dvs_status <- function(files = c("")) { # this is shoddy, but it won't accept c()
+dvs_status <- function(files = c()) {
+    files <- files |> map_chr(normalizePath, mustWork = FALSE)
   dvs_status_impl(files)
 }
 

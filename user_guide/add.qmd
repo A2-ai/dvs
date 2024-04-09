@@ -8,7 +8,7 @@ Executing this command for a given file is necessary to retrieve it later. This 
 dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data sets for project X")
 ```
 
--   `files` is a vector of file glob characters representing the set of files to be copied to the initialized storage_directory
+-   `files` is a vector of file glob characters representing the set of files to be copied to the initialized storage directory
 
 -   `message` is a character that gives a contextualizing message for future file retrievers
 
@@ -19,6 +19,8 @@ dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data s
     -   `outcome` of adding (`Success`, `Error`, or `Already Present`)
     -   `error` summary if the `outcome` was `Error`
     -   `size` in bytes
+    
+(TODO: add picture)
 
 #### Shell Command
 
