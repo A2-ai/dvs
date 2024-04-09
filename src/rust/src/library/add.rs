@@ -182,9 +182,15 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
 
+    // get relative local path to display in struct
+    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(_) => local_path.display().to_string(),
+    };
+
     if error.is_some() {
         return AddedFile{
-            path: local_path.display().to_string(), 
+            path: local_path_display, 
             hash: file_hash,
             outcome: Outcome::Error.outcome_to_string(),
             error: error,
@@ -243,10 +249,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     
     if error.is_some() {outcome = Outcome::Error}
 
-    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
-        Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => local_path.display().to_string(),
-    };
+    
 
     return AddedFile {
         path: local_path_display,
@@ -256,6 +259,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         size: file_size
     }
 }
+
 
 fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<String> {
     // check if file exists
@@ -324,11 +328,3 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
     };
     return error
 }
-
-// fn set_permissions(mode: &u32, dest_path: &PathBuf) -> Result<()> {
-//     dest_path.metadata().unwrap().permissions().set_mode(*mode);
-//     let _file_mode = dest_path.metadata().unwrap().permissions().mode();
-//     let new_permissions = fs::Permissions::from_mode(*mode);
-//     fs::set_permissions(&dest_path, new_permissions).with_context(|| format!("unable to set permissions: {}", mode)).unwrap();
-//     Ok(())
-// }

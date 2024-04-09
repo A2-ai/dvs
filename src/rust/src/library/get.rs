@@ -155,9 +155,15 @@ pub fn get(local_path: &PathBuf, conf: &Config, git_dir: &PathBuf) -> RetrievedF
         }
     };
 
+    // path to display in struct
+    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(_) => local_path.display().to_string(),
+    };
+
     if error.is_some() {
         return RetrievedFile{
-            path: local_path.display().to_string(),
+            path: local_path_display,
             hash: None,
             outcome: Outcome::Error.outcome_to_string(),
             error,

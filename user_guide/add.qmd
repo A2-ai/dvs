@@ -1,8 +1,8 @@
-### Adding to Devious
+## Adding to Devious
 
-Executing this command is the essential prerequisite to retrieving files later. This command copies files to a storage directory from which they can be retrieved later.
+Executing this command for a given file is necessary to retrieve it later. This command copies files to a storage directory from which they can be retrieved later.
 
-In R, this command may look like:
+#### R Command
 
 ```{r}
 dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data sets for project X")
@@ -12,16 +12,22 @@ dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data s
 
 -   `message` is a character that gives a contextualizing message for future file retrievers
 
--   the output is a data frame whose rows are the added files and columns are the paths to the 
+-   the output is a data frame whose rows are the added files and the columns for a given file are its:
 
+    -   `path`: relative to the git directory
+    -   `hash`: from blake3 (if successfully created)
+    -   `outcome` of adding (`Success`, `Error`, or `Already Present`)
+    -   `error` summary if the `outcome` was `Error`
+    -   `size`
 
-In Shell, this command may look like: (TODO: implement) (TODO: check if quotes are needed for message)
+#### Shell Command
 
 ```         
 dvs init path/to/file1 path/to/file2 --message="assembled data sets for project X"
 ```
 
+(TODO: implement) (TODO: check if quotes are needed for message)
+
 -   the first argument is a space separated list in the CLI containing file globs representing the set of files to be copied to the initialized storage_directory
 
 -   `message` is a contextualizing message for future file retrievers
-

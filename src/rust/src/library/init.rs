@@ -19,6 +19,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         // create storage dir
         create_dir(&storage_dir_abs).with_context(|| format!("failed to create storage directory: {}", storage_dir.display()))?;
     } // if
+
     else { // else, storage directory exists
         if !storage_dir.is_dir() {
             return Err(anyhow!("{} is not a directory", storage_dir.display()))
@@ -34,7 +35,6 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
                 }
             }
             Err(e) => {
-                //json
                 return Err(anyhow!("unable to check if directory is empty: {}", e))
             }
         }

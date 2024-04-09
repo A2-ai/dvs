@@ -11,26 +11,24 @@ use anyhow::anyhow;
 
 #[extendr]
 fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
-    let storage_dir_in = PathBuf::from(storage_dir);
-
-    match init::dvs_init(&storage_dir_in, &mode, group) {
-        Ok(_) => {},
+    match init::dvs_init(&PathBuf::from(storage_dir), &mode, group) {
+        Ok(_) => {return Ok(())},
         Err(e) => return Err(anyhow!(e).to_string())
     };
-
-    Ok(())
 } // dvs_init_impl
 
 
 
 #[extendr]
 fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
-    let res = match add::dvs_add(&files, &String::from(message)) {
-        Ok(res) => res,
+    // dvs add
+    let added_files = match add::dvs_add(&files, &String::from(message)) {
+        Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
 
-    match res.into_dataframe() {
+    // convert to data frame
+    match added_files.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
     }
@@ -40,11 +38,13 @@ fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
 
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>) -> Robj {
+    // dvs get
     let retrieved_files = match get::dvs_get(&globs) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
 
+    // convert to data frame
     match retrieved_files.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
@@ -55,11 +55,13 @@ fn dvs_get_impl(globs: Vec<String>) -> Robj {
 
 #[extendr]
 fn dvs_status_impl(files: Vec<String>) -> Robj {
+    // dvs status
     let status = match status::dvs_status(&files) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
 
+    // convert to data frame
     match status.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
