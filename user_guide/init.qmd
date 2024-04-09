@@ -2,11 +2,19 @@
 
 Executing this command is the essential prerequisite to all subsequent commands. Initializing sets up files to be copied to a storage directory from which they can be retrieved later.
 
+This command prints statements about the status of initialization, but nothing is returned unless an error occurs.
+
 In R, this command may look like:
 
 ```{r}
 dvs_init(storage_directory = "path/to/storage/directory", permissions = 777, group = "datascience")
 ```
+
+-   `storage_directory` is a character representing the relative or absolute path to the desired storage directory. If this directory doesn't exist, it creates it.
+
+-   `permissions` is an i32 representing the octal value of the desired linux file permissions to set for retrieved files. This argument is optional and 777 by default.
+
+-   `group` is the name of the linux group to set for retrieved files. This argument is optional and left unchanged for added files by default.
 
 In Shell, this command may look like: (TODO: implement)
 
@@ -16,9 +24,9 @@ dvs init path/to/storage_directory --permissions=777 --group="datascience"
 
 -   `storage_directory` or the first CLI argument is the relative or absolute path to the desired storage directory. If this directory doesn't exist, it creates it.
 
--   `permissions` is the octal value of the desired linux file permissions to set for retrieved files. This argument is optional and 777 by default.
+-   `permissions` is an optional flag representing the octal value of the desired linux file permissions to set for retrieved files. This value is 777 by default.
 
--   `group` is the name of the linux group to set for retrieved files. This argument is optional and left unchanged for added files by default.
+-   `group` is an optional flag representing the name of the linux group to set for retrieved files. This value is unchanged by default.
 
 ### Implementation Details:
 
@@ -32,7 +40,7 @@ dvs init path/to/storage_directory --permissions=777 --group="datascience"
 
 -   the user will be notified if the directory is not empty to prevent unexpected behavior
 
--   Devious will check that the inputted group name is valid and that `permissions` can be converted to u32
+-   Devious will check that the inputted `group` is valid and that `permissions` can be converted to u32
 
 -   Because the function of Devious is to prevent sensitive or large files from being tracked by Git, Devious automatically generates a `.gitignore` with entries for each file added to it. The `.gitignore` is located in the immediate directory of a given file added to Devious. If a `.gitignore` already exists in this directory, it keeps it and appends the entries of added files. (TODO: insert picture here)
 

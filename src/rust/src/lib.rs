@@ -1,8 +1,6 @@
 use extendr_api::prelude::*;
-use helpers::config;
-use helpers::repo;
-use library::get::dvs_get;
-use library::status::dvs_status;
+use library::get;
+use library::status;
 pub mod helpers;
 pub mod library;
 use std::path::PathBuf;
@@ -27,19 +25,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 
 #[extendr]
 fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
-    // Get git root
-    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
-        Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
-    };
-
-    // load the config
-    let conf = match config::read(&git_dir) {
-        Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
-    };
-
-    let res = match add::dvs_add(&files, &git_dir, &conf, &String::from(message)) {
+    let res = match add::dvs_add(&files, &String::from(message)) {
         Ok(res) => res,
         Err(e) => return Robj::from(e),
     };
@@ -54,19 +40,7 @@ fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
 
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>) -> Robj {
-    // Get git root
-    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
-        Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
-    };
-
-    // load the config
-    let conf = match config::read(&git_dir) {
-        Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
-    };
-
-    let retrieved_files = match dvs_get(&globs, &conf) {
+    let retrieved_files = match get::dvs_get(&globs) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
@@ -81,19 +55,7 @@ fn dvs_get_impl(globs: Vec<String>) -> Robj {
 
 #[extendr]
 fn dvs_status_impl(files: Vec<String>) -> Robj {
-    // Get git root
-    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
-        Ok(git_dir) => git_dir,
-        Err(e) => return Robj::from(format!("could not find git repo root - make sure you're in an active git repository: \n{e}")),
-    };
-
-    // load the config
-    match config::read(&git_dir) {
-        Ok(conf) => conf,
-        Err(e) => return Robj::from(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")),
-    };
-
-    let status = match dvs_status(&files, &git_dir) {
+    let status = match status::dvs_status(&files) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
@@ -115,16 +77,3 @@ extendr_module! {
     fn dvs_get_impl;
     fn dvs_status_impl;
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use self::init::dvs_init;
-
-//     use super::*;
-
-    // #[test]
-    // fn test_globs() {
-    //     let mode: u32 = 511;
-    //     dvs_init(&PathBuf::from("storage_dir"), &mode, "datascience");
-    // }
-// }

@@ -5,6 +5,7 @@ use extendr_api::IntoDataFrameRow;
 use extendr_api::eval_string;
 use extendr_api::Pairlist;
 use extendr_api::Dataframe;
+use crate::helpers::config;
 use crate::helpers::hash;
 use crate::helpers::repo;
 use crate::helpers::file;
@@ -22,7 +23,19 @@ pub struct JsonFileResult {
     pub message: String
 }
 
-pub fn dvs_status(files: &Vec<String>, git_dir: &PathBuf) -> Result<Vec<JsonFileResult>> {
+pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
+    // Get git root
+    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
+        Ok(git_dir) => git_dir,
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))),
+    };
+
+    // load the config
+    match config::read(&git_dir) {
+        Ok(conf) => conf,
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))),
+    };
+
     // struct for each file's status and such
     let mut json_logger: Vec<JsonFileResult> = Vec::new();
 
@@ -32,7 +45,7 @@ pub fn dvs_status(files: &Vec<String>, git_dir: &PathBuf) -> Result<Vec<JsonFile
     // if no arguments are provided, get the status of all files in the current git repository
     if files.len() == 1 && files.contains(&String::from("")) {
         // get meta files
-       meta_paths = [meta_paths, parse::get_all_meta_files(git_dir)].concat();
+       meta_paths = [meta_paths, parse::get_all_meta_files(&git_dir)].concat();
     } // if doing all files
 
     else {

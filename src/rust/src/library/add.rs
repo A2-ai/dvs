@@ -10,6 +10,7 @@ use crate::helpers::copy;
 use crate::helpers::file;
 use crate::helpers::ignore;
 use crate::helpers::config;
+use crate::helpers::repo;
 use glob::glob;
 
 #[derive(Clone, PartialEq, Serialize)]
@@ -40,7 +41,19 @@ pub struct AddedFile {
     size: Option<u64>,
 }
 
-pub fn dvs_add(files: &Vec<String>, git_dir: &PathBuf, conf: &config::Config, message: &String) -> Result<Vec<AddedFile>> {
+pub fn dvs_add(files: &Vec<String>, message: &String) -> Result<Vec<AddedFile>> {
+    // Get git root
+    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
+        Ok(git_dir) => git_dir,
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))),
+    };
+
+    // load the config
+    let conf = match config::read(&git_dir) {
+        Ok(conf) => conf,
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))),
+    };
+
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in files {
@@ -230,8 +243,13 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     
     if error.is_some() {outcome = Outcome::Error}
 
+    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(_) => local_path.display().to_string(),
+    };
+
     return AddedFile {
-        path: local_path.display().to_string(),
+        path: local_path_display,
         hash: file_hash.clone(),
         outcome: outcome.outcome_to_string(),
         error,

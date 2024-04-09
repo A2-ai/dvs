@@ -1,6 +1,7 @@
 # rextendr::document()
 # devtools::load_all()
 library(rlang)
+library(purrr)
 
 #' initialize devious
 #'
@@ -29,6 +30,7 @@ dvs_init <- function(storage_directory, permissions = 777, group = "") {
 #'
 #' @export
 dvs_add <- function(files, message = "") {
+  files <- files |> map_chr(normalizePath, mustWork = FALSE)
   dvs_add_impl(files, message)
 }
 
@@ -40,6 +42,7 @@ dvs_add <- function(files, message = "") {
 #'
 #' @export
 dvs_get <- function(files) {
+  files <- files |> map_chr(normalizePath, mustWork = FALSE)
   dvs_get_impl(files)
 }
 

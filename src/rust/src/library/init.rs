@@ -40,17 +40,14 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         }
     } // else
 
-    let mut group_name_for_config = String::from(group_name);
-
+    // check group exists
     if group_name != "" {
         Group::from_name(group_name).with_context(|| format!("group not found: {group_name}"))?;
     }
-    else {
-        group_name_for_config = String::from("");
-    }
 
-    let mode = match u32::from_str_radix(&octal_permissions.to_string(), 8) {
-        Ok(mode) => mode,
+    // check permissions are convertible to u32
+    match u32::from_str_radix(&octal_permissions.to_string(), 8) {
+        Ok(_) => {}
         Err(e) => return Err(anyhow!("could not convert permissions to unsigned integer \n{e}"))
     };
 
@@ -59,12 +56,11 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         &config::Config{
             storage_dir: storage_dir_abs.clone(), 
             permissions: octal_permissions.clone(),
-            group: group_name_for_config
+            group: group_name.to_string()
         }, 
         &git_dir)
         .with_context(|| "unable to write configuration file")?;
     
     println!("initialized storage directory: {}", storage_dir.display());
     Ok(())
-    // json: success
 }

@@ -8,11 +8,11 @@ In R, this command may look like:
 dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data sets for project X")
 ```
 
--   `files` is a vector of characters containing file globs representing the set of files to be copied to the initialized storage_directory
+-   `files` is a vector of file glob characters representing the set of files to be copied to the initialized storage_directory
 
 -   `message` is a character that gives a contextualizing message for future file retrievers
 
--   the output is a dataframe whose rows are each added file and columns are 
+-   the output is a data frame whose rows are the added files and columns are the paths to the 
 
 
 In Shell, this command may look like: (TODO: implement) (TODO: check if quotes are needed for message)
