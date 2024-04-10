@@ -1,0 +1,15 @@
+```{r}
+library(purrr)
+library(tidyverse)
+library(stringr)
+
+# modify testing.txt
+# delete testing2.txt
+(dvs_status() %>% filter(status == "not-present" | status == "out-of-date"))$path  %>% dvs_get()
+# dvs_status() %>% filter(status == "not-present" | status == "out-of-date")
+```
+```{r}
+# (dvs_status() %>% filter((status == "not-present" | status == "out-of-date"), str_detect(path, 'R/dir')))$path  %>% dvs_get()
+(dvs_status() %>% filter((status == "not-present" | status == "out-of-date"), str_detect(path, 'dir')))$path  %>% dvs_get()
+```
+

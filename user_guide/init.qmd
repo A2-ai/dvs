@@ -1,18 +1,18 @@
 ### Initializing Devious
 
-Executing this command is the essential prerequisite to all subsequent commands. Initializing sets up files to be copied to a storage directory from which they can be retrieved later.
+Executing this command is the essential prerequisite to all subsequent commands. Initializing sets up files to be copied to a storage directory from which they can be retrieved later. Optionally, it also sets the permissions and linux group of all retrieved files.
 
 This command prints statements about the status of initialization, but nothing is returned unless an error occurs.
 
 In R, this command may look like:
 
 ```{r}
-dvs_init(storage_directory = "path/to/storage/directory", permissions = 777, group = "datascience")
+dvs_init(storage_directory = "path/to/storage/directory", permissions = 664, group = "datascience")
 ```
 
 -   `storage_directory` is a character representing the relative or absolute path to the desired storage directory. If this directory doesn't exist, it creates it.
 
--   `permissions` is an i32 representing the octal value of the desired linux file permissions to set for retrieved files. This argument is optional and 777 by default.
+-   `permissions` is an i32 representing the octal value of the desired linux file permissions to set for retrieved files. This argument is optional and 664 by default.
 
 -   `group` is the name of the linux group to set for retrieved files. This argument is optional and left unchanged for added files by default.
 
@@ -44,4 +44,4 @@ dvs init path/to/storage_directory --permissions=777 --group="datascience"
 
 -   Because the function of Devious is to prevent sensitive or large files from being tracked by Git, Devious automatically generates a `.gitignore` with entries for each file added to it. The `.gitignore` is located in the immediate directory of a given file added to Devious. If a `.gitignore` already exists in this directory, it keeps it and appends the entries of added files. (TODO: insert picture here)
 
--   To keep track of initialization information (`storage_directory`, `permissions`, etc), Devious generates a `dvs.yaml` file in the project directory. When performing subsequent commands, Devious refers to the information in this file. (TODO: insert picture here)
+-   To keep track of initialization information (`storage_directory`, `permissions`, etc), Devious generates a `dvs.yaml` file in the project directory. When performing subsequent commands, Devious refers to the information in this file. To change this information, users can run the initialization command again or edit the file directly. (TODO: insert picture here)

@@ -1,8 +1,15 @@
 ## Adding to Devious
 
-Executing this command for a given file is necessary to retrieve it later. This command copies files to a storage directory from which they can be retrieved later. It also generates a metadata file `<filename>.dvsmeta` for each added file. This is essential to ensure that the current version of the file in a user's working directory is the most up-to-date one stored in Devious.
+Executing this command for a given file allows it be to retrieved later.
+
+This command copies files to the initialized storage directory, along with the permissions and primary group specified during initialization. 
+If no group was specified, it inherits the group of the file it was copied from. If no permissions were specified, the copied file's default file permissions are user and primary group read-write and global read. 
+
+For each added file, This command generates a metadata file `<filename>.dvsmeta` for future versioning.
 
 #### R Command
+
+In R, this command may look like:
 
 ```{r}
 dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data sets for project X")
@@ -19,18 +26,18 @@ dvs_add(files = c("path/to/file1", "path/to/file2"), message = "assembled data s
     -   `outcome` of adding (`Success`, `Error`, or `Already Present`)
     -   `error` summary if the `outcome` was `Error`
     -   `size` in bytes
-    
+
 (TODO: add picture)
 
 #### Shell Command
+
+In Shell, this command may look like: (TODO: implement) (TODO: check if quotes are needed for message)
 
 ```         
 dvs init path/to/file1 path/to/file2 --message="assembled data sets for project X"
 ```
 
-(TODO: implement) (TODO: check if quotes are needed for message)
-
--   the first argument is a space separated list in the CLI containing file globs representing the set of files to be copied to the initialized storage_directory
+-   the first argument is a space-separated list of file globs representing the set of files to be copied to the initialized storage_directory
 
 -   `message` is a contextualizing message for future file retrievers
 
@@ -38,7 +45,7 @@ dvs init path/to/file1 path/to/file2 --message="assembled data sets for project 
 
 -   you may only add files to Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents unexpected behavior.
 
--   deleting/moving configuration file (`dvs.yaml`) will cause this command to error. To prevent unexpected behavior, it is recommended to not modify the configuration file, and instead update its contents by re-initializing if necessary.
+-   deleting/moving/incorrectly modifying the configuration file (`dvs.yaml`) will cause this command to error.
 
 -   `.gitignore` files, `.dvsmeta` files, and repeated files are skipped in the first argument to prevent unexpected behavior, especially from file globs that use wildcard `*`.
 
