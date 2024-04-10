@@ -12,7 +12,7 @@ use crate::helpers::repo;
 use extendr_api::IntoDataFrameRow;
 use extendr_api::Dataframe;
 use extendr_api::prelude::*;
-use file_owner::PathExt;
+// use file_owner::PathExt;
 use glob::glob;
 
 #[derive(PartialEq)]
@@ -306,20 +306,20 @@ pub fn get(local_path: &PathBuf, conf: &Config, git_dir: &PathBuf) -> RetrievedF
     }
 } // get
 
-pub fn get_current_group(path: &PathBuf) -> Option<String> {
-    match path.group() {
-        Ok(group) => {
-            match group.name() {
-                Ok(name) => return name,
-                Err(e) => {
-                    println!("unable to get name of current group for {}\n{e}", path.display());
-                    return None;
-                }
-            }
-        }
-        Err(e) => {
-            println!("unable to get current group for {}\n{e}", path.display());
-            return None;
-        }
-    }
-}
+// pub fn get_current_group(path: &PathBuf) -> Option<String> {
+//     match path.group() {
+//         Ok(group) => {
+//             match group.name() {
+//                 Ok(name) => return name,
+//                 Err(e) => {
+//                     println!("unable to get name of current group for {}\n{e}", path.display());
+//                     return None;
+//                 }
+//             }
+//         }
+//         Err(e) => {
+//             println!("unable to get current group for {}\n{e}", path.display());
+//             return None;
+//         }
+//     }
+// }

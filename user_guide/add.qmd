@@ -2,8 +2,7 @@
 
 Executing this command for a given file allows it be to retrieved later.
 
-This command copies files to the initialized storage directory, along with the permissions and primary group specified during initialization. 
-If no group was specified, it inherits the group of the file it was copied from. If no permissions were specified, the copied file's default file permissions are user and primary group read-write and global read. 
+This command copies files to the initialized storage directory, along with the permissions and primary group specified during initialization. If no group was specified, it inherits the group of the file it was copied from. If no permissions were specified, the copied file's default file permissions are read-write for the user and primary group, and read for global.
 
 For each added file, This command generates a metadata file `<filename>.dvsmeta` for future versioning.
 
@@ -39,21 +38,19 @@ dvs init path/to/file1 path/to/file2 --message="assembled data sets for project 
 
 -   the first argument is a space-separated list of file globs representing the set of files to be copied to the initialized storage_directory
 
--   `message` is a contextualizing message for future file retrievers
+-   `message` is a contextualizing message for collaborators.
 
 #### Implementation Details:
-
--   you may only add files to Devious if your working directory is in a current git repository. The assumption is that versioning files with this tool is only useful in the context of Git, so this requirement prevents unexpected behavior.
-
--   deleting/moving/incorrectly modifying the configuration file (`dvs.yaml`) will cause this command to error.
 
 -   `.gitignore` files, `.dvsmeta` files, and repeated files are skipped in the first argument to prevent unexpected behavior, especially from file globs that use wildcard `*`.
 
 #### Errors
 
-In R, if any errors occur, the first one is given in the `error` column of the returned data frame.
+If the project directory is not a git repository, or the configuration file cannot be found, the function returns an error. 
 
-In both R and the CLI, an error message with more context is printed for each present error.
+If any errors pertaining to specific files occur, a contextualizing message with the error is printed, but the error isn't returned.
+
+In R's interface, the first occuring error is given in the `error` column of the returned data frame.
 
 #### List of Potential Errors
 

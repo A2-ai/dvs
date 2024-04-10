@@ -34,5 +34,24 @@ In Shell, this command may look like: (TODO: implement)
 dvs get path/to/file1 path/to/file2
 ```
 
-- the input is a space-separated of file globs representing the set of files to be copied back from the initialized storage_directory
+-   the input is a space-separated of file globs representing the set of files to be copied back from the initialized storage_directory
 
+#### Implementation Details:
+
+-   `.gitignore` files and repeated files are skipped in the first argument to prevent unexpected behavior.
+
+-   files ending in `.dvsmeta` are stripped of this extension to aid in parsing file globs and tab-completed fields.
+
+#### Errors
+
+If the project directory is not a git repository, or the configuration file cannot be found, the function returns an error.
+
+If any errors pertaining to a specific file occur, a contextualizing message with each error is printed, but an error isn't returned.
+
+In R's interface, the first occurring error is given in the `error` column of the returned data frame.
+
+#### List of Potential Errors
+
+-   path is a directory
+-   metadata file not found
+-   file not copied

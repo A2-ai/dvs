@@ -1,9 +1,8 @@
 Devious is a file linker that allows you to version files under Git without directly tracking them.
 
-For a given file versioned through Devious, Git tracks a metadata file containing a reference to the versioned file stored in an accessible location outside of the Git repository. In other words, instead of storing the file itself on Git, directions to the file's location is stored on Git.
-This tool is a solution for teams who wish to collaborate without uploading large or sensitive files to Git.
+For a given file versioned with Devious, Git tracks a metadata file containing a reference to the versioned file stored in an accessible location outside of the Git repository. In other words, instead of storing the file itself on Git, directions to the file's location are stored on Git. This tool is a solution for teams who wish to collaborate without uploading large or sensitive files to Git.
 
-Each metadata file for a versioned file contains a hash of its contents via the blake3 algorithm. This hash represents the path for the copied file in the storage directory.
+Each metadata file for a versioned file contains a hash of its contents via the blake3 algorithm. The path for the copied file in the storage directory uses this hash.
 
 ### High-level Workflows
 
