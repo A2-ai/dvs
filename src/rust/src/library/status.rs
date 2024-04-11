@@ -96,7 +96,7 @@ pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
         let metadata = file::load(&path).expect("couldn't get metadata");
         
         // assign status: not-present by default
-        let mut status = String::from("out-of-date");
+        let mut status = String::from("out-of-sync");
         // if the file path doesn't exist assign status to "not-present"
         if !path.exists() {status = String::from("not-present")}
         else {

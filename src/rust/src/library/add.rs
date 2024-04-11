@@ -203,23 +203,10 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let file_hash_value = file_hash.clone().unwrap();
 
     let conf_mode = conf_mode_option.unwrap();
-    
-    // get storage path
-    let dest_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
-
-    // Copy the file to the storage directory if it's not already there
-    let mut outcome: Outcome = Outcome::Success;
-    if !dest_path.exists() {
-        // copy 
-        copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name);
-    }
-    else {
-        outcome = Outcome::AlreadyPresent;
-    }
 
     // create metadata
     let metadata = file::Metadata{
-        file_hash: file_hash_value,
+        file_hash: file_hash_value.clone(),
         file_size: file_size.unwrap(),
         time_stamp: chrono::Local::now().to_string(),
         //time_stamp: chrono::offset::Utc::now().to_string(),
@@ -247,9 +234,21 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
     
-    if error.is_some() {outcome = Outcome::Error}
+    // get storage path
+    let dest_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
 
-    
+    // Copy the file to the storage directory if it's not already there
+    let mut outcome: Outcome = Outcome::Success;
+    if error.is_some() {
+        outcome = Outcome::Error
+    }
+    else if !dest_path.exists() {
+        // copy 
+        copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name);
+    }
+    else {
+        outcome = Outcome::AlreadyPresent;
+    }
 
     return AddedFile {
         path: local_path_display,
