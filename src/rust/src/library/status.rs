@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use extendr_api::prelude::*;
@@ -10,6 +11,7 @@ use crate::helpers::hash;
 use crate::helpers::repo;
 use crate::helpers::file;
 use crate::helpers::parse;
+use glob::glob;
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, IntoDataFrameRow)]
@@ -49,7 +51,37 @@ pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
     } // if doing all files
 
     else {
-        meta_paths = [meta_paths, parse::parse_globs(files)].concat();
+        //meta_paths = [meta_paths, parse::parse_globs(files)].concat();
+
+        for entry in files {
+            let glob = match glob(&entry) {
+                Ok(paths) => {paths},
+                Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+            };
+            
+            for file in glob {
+                match file {
+                    Ok(path) => {
+                        let path_clean = PathBuf::from(path.display().to_string().replace(".dvsmeta", ""));
+    
+                        if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
+                            println!("skipping .gitignore file {}", path.display());
+                            continue
+                        }
+                        
+                        if meta_paths.contains(&path_clean) {
+                            println!("skipping repeated path: {}", path_clean.display());
+                            continue
+                        }
+                        
+                        meta_paths.push(path_clean);
+                    }
+                    Err(e) => {
+                        return Err(extendr_api::error::Error::Other(e.to_string()));
+                    }
+                } // match file
+            } // for file in glob
+    } // for entry in files
     } // else specific files
 
     if meta_paths.is_empty() {return Ok(json_logger)}

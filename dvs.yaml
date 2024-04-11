@@ -1,5 +1,3 @@
-storage_dir: /cluster-data/user-homes/jenna/Rdevious/R/storage_dir
-permissions: 777
-group: datascience
-
-
+storage_dir: /cluster-data/user-homes/jenna/Projects/Rdevious/R/storage_dir
+permissions: 664
+group: ''

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::Result;
 use std::io::{self, Read};
+use crate::helpers::cache;
 
 pub fn hash_file_with_blake3(file_path: &PathBuf) -> io::Result<Option<String>> {
     let file = File::open(file_path)?;
@@ -71,15 +72,22 @@ fn maybe_memmap_file(file: &File) -> Result<Option<memmap2::Mmap>> {
 }
 
 pub fn get_file_hash(path: &PathBuf) -> Option<String> {
-    // TODO: get cache if possible
+    // get cache if possible
+    match cache::get_cached_hash(&path) {
+        Ok(cached_hash) => return Some(cached_hash),
+        Err(_) => {}
+    }
     
     let hash =match  hash_file_with_blake3(&path) {
         Ok(hash) => hash,
         Err(_) => None, 
     };
     
-    // TODO: cache bytes
-
+    // cache bytes
+    if hash.is_some() {
+       let _ = cache::write_hash_to_cache(&path, &hash.clone().unwrap());
+    }
+    
     return hash;
 }
 

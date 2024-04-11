@@ -67,22 +67,6 @@ pub fn dvs_get(files: &Vec<String>) -> Result<Vec<RetrievedFile>> {
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in files {
-        if PathBuf::from(entry).extension().and_then(OsStr::to_str).is_some() {
-            let path_clean = PathBuf::from(entry.replace(".dvsmeta", ""));
-
-            if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
-                println!("skipping .gitignore file {}", path_clean.display());
-                continue
-            }
-            
-            if queued_paths.contains(&path_clean) {
-                println!("skipping repeated path: {}", path_clean.display());
-                continue
-            }
-            
-            queued_paths.push(path_clean);
-        }
-        else {
             let glob = match glob(&entry) {
                 Ok(paths) => {paths},
                 Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
@@ -110,7 +94,6 @@ pub fn dvs_get(files: &Vec<String>) -> Result<Vec<RetrievedFile>> {
                     }
                 } // match file
             } // for file in glob
-        } // else, is a glob
     } // for entry in files
 
     if queued_paths.is_empty() {
