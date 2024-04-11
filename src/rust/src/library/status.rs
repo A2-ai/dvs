@@ -26,6 +26,7 @@ pub struct JsonFileResult {
 }
 
 pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
+    let start_time = std::time::Instant::now();
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
@@ -122,5 +123,6 @@ pub fn dvs_status(files: &Vec<String>) -> Result<Vec<JsonFileResult>> {
         }
     }).collect::<Vec<JsonFileResult>>();
 
-Ok(json_logger)
+    println!("Time elapsed: {:?}", start_time.elapsed());
+    Ok(json_logger)
 } // run_status_cmd

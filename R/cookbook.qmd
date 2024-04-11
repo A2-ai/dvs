@@ -11,10 +11,13 @@ library(stringr)
 
 ```{r}
 # (dvs_status() %>% filter((status == "not-present" | status == "out-of-date"), str_detect(path, 'R/dir')))$path  %>% dvs_get()
-(dvs_status() %>% filter((status == "not-present" | status == "out-of-date"), str_detect(path, 'dir')))$path  %>% dvs_get()
+dvs_status() %>% filter((status == "not-present" | status == "out-of-date"), str_detect(path, 'dir')) %>%  pull(path)  %>% dvs_get()
 ```
 
 ```{r}
-dvs_status("dir/*") %>% filter(status == "not-present" | status == "out-of-date"))$path  %>% dvs_get()
+dvs_status("dir/*") %>% filter(status == "not-present" | status == "out-of-date")
+
+
+(dvs_status("dir/*") %>% filter(status == "not-present" | status == "out-of-date"))$path  %>% dvs_get()
 ```
 
