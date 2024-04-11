@@ -19,7 +19,7 @@ pub fn get_cached_hash(path: &PathBuf) -> Result<String> {
     let xdg_dirs = xdg::BaseDirectories::with_prefix("dvs").with_context(|| "could not get xdg directories")?;
 
     // open the cache
-    let cache_path = match xdg_dirs.find_cache_file(abs_path) {
+    let cache_path = match xdg_dirs.find_cache_file(&abs_path) {
         Some(path) => path,
         None => return Err(anyhow!("could not get cache path")),
     };
@@ -30,6 +30,22 @@ pub fn get_cached_hash(path: &PathBuf) -> Result<String> {
         Ok(data) => data,
         Err(e) => return Err(anyhow!(format!("could not get metadata for {}: \n{e}", path.display())))
     };
+
+    // get modification_time - using option for serde serialization
+    let current_modification_time: Option<SystemTime> = match abs_path.metadata() {
+        Ok(data) => {
+            let mod_time: Option<SystemTime> = match data.modified() {
+                Ok(time) => Some(time),
+                Err(_) => None,
+            };
+            mod_time
+        }
+        Err(e) =>  return Err(anyhow!(e)),
+    };
+    if current_modification_time != cache_data.modification_time {
+        let _ = fs::remove_file(cache_path);
+        return Err(anyhow!("file modification time does not match cache (invalidating)"));
+    }
 
     return Ok(cache_data.hash);
 
