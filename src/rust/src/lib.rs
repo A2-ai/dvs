@@ -79,3 +79,14 @@ extendr_module! {
     fn dvs_get_impl;
     fn dvs_status_impl;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(1+1, 2);
+    }
+
+}

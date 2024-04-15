@@ -1,6 +1,6 @@
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::fs::{create_dir_all, File};
+use std::fs::File;
 use std::fs;
 use anyhow::{anyhow, Context, Result};
 use file_owner::{Group, PathExt};
@@ -31,7 +31,7 @@ pub fn copy(src_path: &PathBuf, dest_path: &PathBuf) -> Result<()> {
     let _src_file_size = src_file_data.len();
 
     // ensure destination exists
-    match create_dir_all(dest_path.parent().unwrap()) {
+    match fs::create_dir_all(dest_path.parent().unwrap()) {
         Ok(_) => {}
         Err(e) => return Err(anyhow!("could not access copy destination: {} \n{e}", dest_path.display())),
     }
