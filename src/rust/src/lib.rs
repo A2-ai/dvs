@@ -20,9 +20,9 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 
 
 #[extendr]
-fn dvs_add_impl(files: Vec<String>, message: &str) -> Robj {
+fn dvs_add_impl(files: Vec<String>, message: &str, strict: bool) -> Robj {
     // dvs add
-    let added_files = match add::dvs_add(&files, &String::from(message)) {
+    let added_files = match add::dvs_add(&files, &String::from(message), strict) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };

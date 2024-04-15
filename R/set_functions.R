@@ -29,9 +29,9 @@ dvs_init <- function(storage_directory, permissions = 664, group = "") {
 #' @return a data frame with the states of success of added files
 #'
 #' @export
-dvs_add <- function(files, message = "") {
+dvs_add <- function(files, message = "", strict = TRUE) {
   files <- files |> map_chr(normalizePath, mustWork = FALSE)
-  dvs_add_impl(files, message)
+  dvs_add_impl(files, message, strict)
 }
 
 #' get files previously added to the storage directory

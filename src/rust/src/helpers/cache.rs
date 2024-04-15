@@ -93,7 +93,7 @@ pub fn write_hash_to_cache(path: &PathBuf, hash: &String) -> Result<()> {
 fn get_cache_path(abs_path: &PathBuf) -> Result<PathBuf> {
     let git_dir = repo::get_nearest_repo_dir(&abs_path)?;
     let rel_path = repo::get_relative_path(&git_dir, &abs_path)?;
-    let project_name = PathBuf::from(git_dir.file_name().unwrap().to_str().unwrap().to_string());
+    let project_name = PathBuf::from(git_dir.file_name().unwrap().to_str().unwrap());
     // partial_cache_path = project_name/<relative path between file and git directory>
     let partial_cache_path = project_name.join(&rel_path);
 

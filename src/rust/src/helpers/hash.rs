@@ -71,34 +71,27 @@ fn maybe_memmap_file(file: &File) -> Result<Option<memmap2::Mmap>> {
     })
 }
 
-// SEE BELOW FUNCTION FOR NO CACHING
 pub fn get_file_hash(path: &PathBuf) -> Option<String> {
     // get cache if possible
     match cache::get_cached_hash(&path) {
         // return cached hash if possible
-        Ok(cached_hash) => return Some(cached_hash),
+        Ok(cached_hash) => {
+            return Some(cached_hash)},
         // else, get hash from blake3, then cache if some
         Err(_) => {
             match hash_file_with_blake3(&path) {
                 Ok(hash) => {
                     // cache bytes
-                    let _ = cache::write_hash_to_cache(&path, &hash.clone().unwrap());
+                    if hash.is_some() {
+                        let _ = cache::write_hash_to_cache(&path, &hash.clone().unwrap());
+                    }
                     return hash
                 }
                 Err(_) => return None, 
             };
         }
     }
-}
-
-// pub fn get_file_hash(path: &PathBuf) -> Option<String> {
-//     match hash_file_with_blake3(&path) {
-//         Ok(hash) => {
-//             return hash
-//         }
-//         Err(_) => return None, 
-//     };
-// }
+} // get_file_hash
 
 pub fn get_storage_path(storage_dir: &PathBuf, file_hash: &String) -> PathBuf {
     let first_hash_segment: &str = &file_hash[..2];

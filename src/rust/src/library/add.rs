@@ -31,7 +31,6 @@ impl Outcome {
 }
 
 
-
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct AddedFile {
     path: String,
@@ -41,7 +40,7 @@ pub struct AddedFile {
     size: Option<u64>,
 }
 
-pub fn dvs_add(files: &Vec<String>, message: &String) -> Result<Vec<AddedFile>> {
+pub fn dvs_add(files: &Vec<String>, message: &String, strict: bool) -> Result<Vec<AddedFile>> {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
@@ -94,19 +93,23 @@ pub fn dvs_add(files: &Vec<String>, message: &String) -> Result<Vec<AddedFile>> 
     if queued_paths.is_empty() {
         println!("warning: no paths queued to add to devious")
     }
-    
-    // add each file in queued_paths to storage
-    let added_files = queued_paths.into_iter().map(|file| {
-        add(&file, &git_dir, &conf, &message)
-    }).collect::<Vec<AddedFile>>();
+
+    let mut added_files: Vec<AddedFile> = Vec::new();
+    for file in queued_paths { // had to use for loop because add returns a result
+        match add(&file, &git_dir, &conf, &message, strict) {
+            Ok(file) => {
+                added_files.push(file);
+            }
+            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+        };
+    }
 
     return Ok(added_files)
 } // run_add_cmd
 
-fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String) -> AddedFile {
+fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String, strict: bool) -> Result<AddedFile> {
     // set error to None by default
     let mut error: Option<String> = None;
-
     if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
 
     // get file hash
@@ -189,13 +192,13 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     };
 
     if error.is_some() {
-        return AddedFile{
+        return Ok(AddedFile{
             path: local_path_display, 
             hash: file_hash,
             outcome: Outcome::Error.outcome_to_string(),
             error: error,
             size: file_size
-        };
+        });
     }
 
     // can safely unwrap storage_dir_abs and file_hash 
@@ -218,8 +221,13 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     match file::save(&metadata, &local_path) {
         Ok(_) => {},
         Err(e) => if error.is_none() {
-            error = Some(String::from("could not save metadata file"));
-            println!("could not save metadata file for {}\n{e}", local_path.display());
+            if strict { // return error
+                return Err(extendr_api::error::Error::Other(format!("could not save metadata file for {}\n{e}", local_path.display())));
+            }
+            else { // print warning and put in data frame
+                error = Some(String::from("could not save metadata file"));
+                println!("could not save metadata file for {}\n{e}", local_path.display());
+            }
         }
     };
 
@@ -228,8 +236,13 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         Ok(_) => {},
         Err(e) => {
             if error.is_none() {
-                error = Some(String::from("could not add .gitignore entry"));
-                println!("could not save metadata file for {}\n{e}", local_path.display());
+                if strict { // return error
+                    return Err(extendr_api::error::Error::Other(format!("could not add .gitignore entry for {}\n{e}", local_path.display())));
+                }
+                else { // print warning and put in data frame
+                    error = Some(String::from("could not add .gitignore entry"));
+                    println!("could not add .gitignore entry for {}\n{e}", local_path.display());
+                }
             }
         }
     };
@@ -242,21 +255,24 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     if error.is_some() {
         outcome = Outcome::Error
     }
-    else if !dest_path.exists() {
-        // copy 
-        copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name);
+    else if !dest_path.exists() { // if not already copied
+        // copy and get error
+        error = match copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name, strict) {
+            Ok(error) => error,
+            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+        };
     }
     else {
         outcome = Outcome::AlreadyPresent;
     }
 
-    return AddedFile {
+    return Ok(AddedFile {
         path: local_path_display,
         hash: file_hash.clone(),
         outcome: outcome.outcome_to_string(),
         error,
         size: file_size
-    }
+    })
 }
 
 
@@ -285,7 +301,7 @@ fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<Str
 }
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String) -> Option<String> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String, strict: bool) -> Result<Option<String>> {
     let mut error = None;
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
@@ -293,12 +309,19 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
             match copy::set_file_permissions(&mode, &dest_path) {
                 Ok(_) => {},
                 Err(e) => {
-                    // set error
-                    if error.is_none() {error = Some(String::from("could not set permissions"))}
-                    println!("error: could not set permissions for {} in storage directory\n{e}", local_path.display());
-                    // delete copied file
-                    fs::remove_file(&dest_path)
-                    .expect(format!("could not set permissions after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
+                    if strict {
+                        // remove copied file
+                        fs::remove_file(&dest_path)
+                        .expect(format!("could not set permissions after copying {} to {}: error deleting copied file. Delete {} manually.", 
+                        local_path.display(), dest_path.display(), dest_path.display()).as_str());
+                        return Err(extendr_api::error::Error::Other(format!("could not set permissions after copying {}\n{e}", local_path.display())));
+                        // TODO: delete metadata file
+                    }
+                    else {
+                        // set error
+                        if error.is_none() {error = Some(String::from("could not set permissions"))}
+                        println!("warning: could not set permissions for {} in storage directory\n{e}", local_path.display());
+                    }
                 }
             };
 
@@ -308,22 +331,27 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
                 match dest_path.set_group(group.clone()) {
                     Ok(_) => {},
                     Err(e) => {
-                        // set error
-                        if error.is_none() {error = Some(String::from("could not set group"))}
-                        println!("error: could not set group for {} in storage directory\n{e}", local_path.display());
-                        // delete copied file
-                        fs::remove_file(&dest_path)
-                        .expect(format!("could not set group after copying {} to {}: error deleting copied file. Delete {} manually.", local_path.display(), dest_path.display(), dest_path.display()).as_str());
-
+                        if strict {
+                            // delete copied file
+                            fs::remove_file(&dest_path)
+                            .expect(format!("could not set group after copying {} to {}: error deleting copied file. Delete {} manually.", 
+                            local_path.display(), dest_path.display(), dest_path.display()).as_str());
+                            return Err(extendr_api::error::Error::Other(format!("could not set group after copying {}\n{e}", local_path.display())));
+                        }
+                        else {
+                            // set error
+                            if error.is_none() {error = Some(String::from("could not set group"))}
+                            println!("warning: could not set group for {} in storage directory\n{e}", local_path.display());
+                        }
                     }
                 };
             }
           
         } // Ok, could copy
         Err(e) => {
-            println!("error: could copy {} to storage directory\n{e}", local_path.display());
+            println!("error: could not copy {} to storage directory\n{e}", local_path.display());
             if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
         }
     };
-    return error
+    return Ok(error)
 }
