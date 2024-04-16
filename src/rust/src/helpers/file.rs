@@ -43,3 +43,16 @@ pub fn load(path: &PathBuf) -> Result<Metadata> {
 
     return Ok(metadata);
 }
+
+pub fn delete(path: &PathBuf) -> Result<()> {
+    let metadata_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
+    let metafile_path_abs = match metadata_path.canonicalize() {
+        Ok(path) => path,
+        Err(e) => return Err(anyhow!(format!("{} not found\n{e} ", metadata_path.display())))
+    };
+    match fs::remove_file(&metafile_path_abs) {
+        Ok(_) => {}
+        Err(e) => return Err(anyhow!(format!("could not remove metadata file: {}\n{e} ", metadata_path.display())))
+    };
+    Ok(())
+}

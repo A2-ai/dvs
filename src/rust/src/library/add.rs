@@ -5,6 +5,7 @@ use serde::Serialize;
 use file_owner::{Group, PathExt};
 use std::{fs, u32};
 use anyhow::Context;
+use crate::helpers::file::delete;
 use crate::helpers::hash;
 use crate::helpers::copy;
 use crate::helpers::file;
@@ -348,9 +349,23 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
             }
           
         } // Ok, could copy
-        Err(e) => {
-            println!("error: could not copy {} to storage directory\n{e}", local_path.display());
-            if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
+        Err(copy_e) => { // could not copy
+            if strict {
+                // delete metadata
+                match file::delete(&local_path) {
+                    Ok(_) => {
+                        println!("deleting metadata file for {}", local_path.display());
+                        return Err(extendr_api::error::Error::Other(format!("could not copy {} to storage directory\n{copy_e}", local_path.display())));
+                    }
+                    Err(delete_e) => {
+                        return Err(extendr_api::error::Error::Other(format!("could not copy {} to storage directory\n{copy_e}\n could not delete metadatafile\n{delete_e}", local_path.display())));
+                    }
+                };
+            } // strict
+            else { // non-strict
+                println!("error: could not copy {} to storage directory\n{copy_e}", local_path.display());
+                if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
+            }
         }
     };
     return Ok(error)
