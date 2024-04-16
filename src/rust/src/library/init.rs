@@ -26,6 +26,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         // create storage dir
         create_dir(&storage_dir_abs).with_context(|| format!("failed to create storage directory: {}", storage_dir.display()))?;
     } 
+
     else { // else, storage directory exists
         if !storage_dir_abs.is_dir() {
             return Err(anyhow!("{} is not a directory", storage_dir.display()))
@@ -49,20 +50,22 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     } // else
 
     // warn if storage directory is in git repo
-    match repo::get_relative_path(&git_dir, &storage_dir_abs) {
-        // if getting relative path between git_dir and storage_dir was successful, 
-        // the storage dir is in the repo => sensitive files will be uploaded to git
-        Ok(_) => {
-            if strict {
-                return Err(anyhow!(format!("the storage directory is located in the git repo directory
-                files added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")))
-            }
-            else {
-                println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")
-            }
+    if storage_dir_abs.strip_prefix(&git_dir).unwrap() != storage_dir_abs {
+        if strict {
+            return Err(anyhow!(format!("the storage directory is located in the git repo directory - files added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")))
         }
-        Err(_) => {}
+        else {
+            println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")
+        }
     }
+    // match repo::get_relative_path(&git_dir, &storage_dir_abs) {
+    //     // if getting relative path between git_dir and storage_dir was successful, 
+    //     // the storage dir is in the repo => sensitive files will be uploaded to git
+    //     Ok(_) => {
+            
+    //     }
+    //     Err(_) => {}
+    // }
 
     // check group exists
     if group_name != "" {

@@ -1,11 +1,9 @@
+use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
 use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
 use std::{fs, u32, path::PathBuf};
 use file_owner::{Group, PathExt};
 use serde::Serialize;
-
-
 use anyhow::Context;
-use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
 
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
@@ -27,6 +25,7 @@ impl Outcome {
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct AddedFile {
     path: String,
+    absolute_path: Option<String>,
     hash: Option<String>,
     outcome: String,
     error: Option<String>,
@@ -75,7 +74,32 @@ pub fn dvs_add(globs: &Vec<String>, message: &String, strict: bool) -> Result<Ve
 fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String, strict: bool) -> Result<AddedFile> {
     // set error to None initially - if an error emerges, update
     let mut error: Option<String> = None;
-    if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
+
+     // get absolute path
+     let absolute_path: Option<String> = match local_path.canonicalize() {
+        Ok(absolute) => { // file exists
+            // error if file is outside of git repository
+            if absolute.strip_prefix(&git_dir).unwrap() == absolute {
+                println!("error: file {} not in git repository", absolute.display());
+                if error.is_none() {error = Some(String::from("file not in git repository"))}
+            }
+            Some(absolute.display().to_string())
+        }
+        // error if file doesn't exist
+        Err(e) => { 
+            println!("error: file {} not found\n{e}",local_path.display());
+            if error.is_none() {error = Some(String::from("file not found"))};
+            None
+        }
+    };
+
+    // error if file is a directory
+    if local_path.is_dir() {
+        println!("error: path {} is a directory", local_path.display());
+        if error.is_none() {error = Some(String::from("path is a directory"))}
+    }
+
+    // if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
 
     // get file hash
     let file_hash = hash::get_file_hash(&local_path);
@@ -161,6 +185,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     if error.is_some() {
         return Ok(AddedFile{
             path: local_path_display, 
+            absolute_path,
             hash: file_hash,
             outcome: Outcome::Error.outcome_to_string(),
             error: error,
@@ -178,8 +203,8 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let metadata = file::Metadata{
         file_hash: file_hash_value.clone(),
         file_size: file_size.unwrap(),
-        time_stamp: chrono::Local::now().to_string(),
-        //time_stamp: chrono::offset::Utc::now().to_string(),
+        //time_stamp: chrono::Local::now().to_string(),
+        time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),
         saved_by: user_name.unwrap()
     };
@@ -238,6 +263,7 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
 
     return Ok(AddedFile {
         path: local_path_display,
+        absolute_path,
         hash: file_hash.clone(),
         outcome: outcome.outcome_to_string(),
         error,
@@ -246,29 +272,29 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
 }
 
 
-fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<String> {
-    // check if file exists
-    match local_path.canonicalize() {
-        Ok(local_path) => { // file exists
-            // if file is outside of git repository
-            if local_path.strip_prefix(&git_dir).unwrap() == local_path {
-                println!("error: file {} not in git repository", local_path.display());
-                return Some(String::from("file not in git repository"));
-            }
-        }
-        Err(e) => { 
-            println!("error: file {} not found\n{e}",local_path.display());
-            return Some(String::from("file not found"));
-        }
-    };
+// fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<String> {
+//     // check if file exists
+//     match local_path.canonicalize() {
+//         Ok(local_path) => { // file exists
+//             // if file is outside of git repository
+//             if local_path.strip_prefix(&git_dir).unwrap() == local_path {
+//                 println!("error: file {} not in git repository", local_path.display());
+//                 return Some(String::from("file not in git repository"));
+//             }
+//         }
+//         Err(e) => { 
+//             println!("error: file {} not found\n{e}",local_path.display());
+//             return Some(String::from("file not found"));
+//         }
+//     };
 
-    if local_path.is_dir() {
-        println!("error: path {} is a directory", local_path.display());
-        return Some(String::from("path is a directory"))
-    }
+//     if local_path.is_dir() {
+//         println!("error: path {} is a directory", local_path.display());
+//         return Some(String::from("path is a directory"))
+//     }
 
-    None
-}
+//     None
+// }
 
 
 fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String, strict: bool) -> Result<Option<String>> {
