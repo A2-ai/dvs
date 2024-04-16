@@ -12,9 +12,9 @@ library(purrr)
 #' @return nothing, or errors initializing
 #'
 #' @export
-dvs_init <- function(storage_directory, permissions = 664, group = "") {
+dvs_init <- function(storage_directory, permissions = 664, group = "", strict = TRUE) {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
-  res <- dvs_init_impl(storage_directory, permissions, group)
+  res <- dvs_init_impl(storage_directory, permissions, group, strict)
   if (!is.null(res$error)) {
     rlang::abort(res$error)
   }

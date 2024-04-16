@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 
 #[extendr]
-fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
-    match init::dvs_init(&PathBuf::from(storage_dir), &mode, group) {
+fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str, strict: bool) -> std::result::Result<(), String> {
+    match init::dvs_init(&PathBuf::from(storage_dir), &mode, group, strict) {
         Ok(_) => {return Ok(())},
         Err(e) => return Err(anyhow!(e).to_string())
     };

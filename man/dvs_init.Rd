@@ -4,7 +4,7 @@
 \alias{dvs_init}
 \title{initialize devious}
 \usage{
-dvs_init(storage_directory, permissions = 664, group = "")
+dvs_init(storage_directory, permissions = 664, group = "", strict = TRUE)
 }
 \arguments{
 \item{permissions}{optional argument to set linux file permissions (in octal format)}

@@ -11,7 +11,7 @@
 #' @useDynLib Rdevious, .registration = TRUE
 NULL
 
-dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)
+dvs_init_impl <- function(storage_dir, mode, group, strict) .Call(wrap__dvs_init_impl, storage_dir, mode, group, strict)
 
 dvs_add_impl <- function(files, message, strict) .Call(wrap__dvs_add_impl, files, message, strict)
 
