@@ -1,5 +1,5 @@
 use crate::helpers::{repo, config};
-use std::{path::PathBuf, fs::create_dir};
+use std::{ffi::OsStr, fs::create_dir, path::PathBuf};
 use path_absolutize::Absolutize;
 use file_owner::Group;
 use anyhow::{anyhow, Context, Result};
@@ -11,15 +11,18 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     // get absolute path, but don't check if it exists yet
     let storage_dir_abs = PathBuf::from(storage_dir.absolutize().unwrap());
     
-    // check if directory exists
-    if !storage_dir_abs.exists() { // if storage directory doesn't exist
+    if storage_dir_abs.extension().and_then(OsStr::to_str).is_some() {
+        println!("warning: file name inputted as storage directory. Is this intentional?")
+    }
+    
+    // create storage directory if it doesn't exist
+    if !storage_dir_abs.exists() { 
         println!("storage directory doesn't exist\ncreating storage directory...");
         // create storage dir
         create_dir(&storage_dir_abs).with_context(|| format!("failed to create storage directory: {}", storage_dir.display()))?;
-    } // if
-
+    } 
     else { // else, storage directory exists
-        if !storage_dir.is_dir() {
+        if !storage_dir_abs.is_dir() {
             return Err(anyhow!("{} is not a directory", storage_dir.display()))
         }
 
@@ -37,6 +40,16 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
             }
         }
     } // else
+
+    
+
+    // warn if storage directory is in git repo
+    match repo::get_relative_path(&git_dir, &storage_dir_abs) {
+        // if getting relative path between git_dir and storage_dir was successful, 
+        // the storage dir is in the repo => sensitive files will be uploaded to git
+        Ok(_) => {println!("warning: the storage directory is located in the git repo directory.\nFiles added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")}
+        Err(_) => {}
+    }
 
     // check group exists
     if group_name != "" {

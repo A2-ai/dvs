@@ -7,9 +7,6 @@ enum Outcome {
     Copied,
     AlreadyPresent,
     Error,
-    // PermissionsUpdated,
-    // GroupUpdated,
-    // GroupAndPermissionsUpdated
 }
 
 impl Outcome {
@@ -18,9 +15,6 @@ impl Outcome {
             Outcome::Copied => String::from("Copied"),
             Outcome::AlreadyPresent => String::from("Already Present"),
             Outcome::Error => String::from("Error"),
-            // Outcome::PermissionsUpdated => String::from("Permissions Updated"),
-            // Outcome::GroupUpdated => String::from("Group Updated"),
-            // Outcome::GroupAndPermissionsUpdated => String::from("Group and Permissions Updated")
         }
     }
 }
@@ -37,7 +31,7 @@ pub struct RetrievedFile {
 
 
 pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
-    // Get git root
+    // get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
         Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))),
@@ -60,8 +54,9 @@ pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
         println!("warning: no files were queued")
      }
 
+     // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get(&file, &conf, &git_dir)
+        get(&file, &conf)
     }).collect::<Vec<RetrievedFile>>();
 
     Ok(retrieved_files)
@@ -69,7 +64,8 @@ pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
 
 
 // gets a file from storage
-pub fn get(local_path: &PathBuf, conf: &config::Config, git_dir: &PathBuf) -> RetrievedFile {
+pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
+    // set error to None initially - if an error emerges, update
     let mut error: Option<String> = None;
 
     if local_path.is_dir() && error.is_none() {
@@ -86,8 +82,8 @@ pub fn get(local_path: &PathBuf, conf: &config::Config, git_dir: &PathBuf) -> Re
         }
     };
 
-    // path to display in struct
-    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
+    // get local path relative to working directory
+    let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
         Ok(rel_path) => rel_path.display().to_string(),
         Err(_) => local_path.display().to_string(),
     };
@@ -109,49 +105,22 @@ pub fn get(local_path: &PathBuf, conf: &config::Config, git_dir: &PathBuf) -> Re
         None => String::from(""),
     }; 
     
-    let mut outcome = Outcome::AlreadyPresent;
-
     // get hashes to compare - can safely unwrap
     let metadata_unwrapped = metadata.unwrap();
     let metadata_hash = metadata_unwrapped.file_hash;
     let file_size = metadata_unwrapped.file_size;
 
-    // let conf_mode = conf_mode_option.unwrap();
-
-
     // get storage data
     let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata_hash);
+
+    // set outcome to already present by default
+    let mut outcome = Outcome::AlreadyPresent;
 
     // check if up-to-date file is already present locally
     if !local_path.exists() || metadata_hash == String::from("") || local_hash == String::from("") || local_hash != metadata_hash {
         match copy::copy(&storage_path, &local_path) {
             Ok(_) => {
                 outcome = Outcome::Copied;
-                // set file permissions
-                
-                // match copy::set_file_permissions(&conf_mode, &local_path) {
-                //     Ok(_) => {}
-                //     Err(e) => {
-                //         // TODO: delete file
-                //         if error.is_none() {
-                //             outcome = Outcome::Error;
-                //             error = Some(format!("permissions not set"));
-                //         }
-                //         println!("unable to set permissions for  {}\n{e}", local_path.display());
-                //     }
-                // }; // match set_file_permissions
-                // // set group permissions
-                // match copy::set_file_group(&conf.group, &local_path) {
-                //     Ok(_) => {}
-                //     Err(e) => {
-                //         // TODO: delete file
-                //         if error.is_none() {
-                //             outcome = Outcome::Error;
-                //             error = Some(format!("group not set"));
-                //         }
-                //         println!("unable to set group for {}\n{e}", local_path.display());
-                //     }
-                // } // set file group
             } // ok copy
             Err(e) => {
                 outcome = Outcome::Error;
@@ -160,74 +129,6 @@ pub fn get(local_path: &PathBuf, conf: &config::Config, git_dir: &PathBuf) -> Re
             }
         }; // match copy
     }  // if file not present or not up-to-date
-
-    // else { // else file already present and up to date
-    //     // if permissions don't match, update them
-    //     match local_path.metadata() {
-    //         Ok(metadata) => {
-    //             if metadata.permissions().mode() & 0o777 != conf_mode { // need to do bitwise & for mysterious reasons
-    //                 println!("Permissions changed:\nprevious permissions: {:o}, new permissions: {:o}", metadata.permissions().mode() & 0o777, conf_mode);
-    //                 match copy::set_file_permissions(&conf_mode, &local_path) {
-    //                     Ok(_) => {
-    //                         outcome = Outcome::PermissionsUpdated;
-    //                     }
-    //                     Err(e) => {
-    //                         // TODO: delete file
-    //                         if error.is_none() {
-    //                             outcome = Outcome::Error;
-    //                             error = Some(format!("permissions not set"));
-    //                         }
-    //                         println!("unable to set permissions for {}\n{e}", local_path.display());
-    //                     }
-    //                 }; // match set_file_permissions
-    //             }
-    //             // get current group
-    //             match get_current_group(&local_path) {
-    //                 Some(current_group) => {
-    //                     if current_group != conf.group {
-    //                         println!("group changed\nprevious group: {current_group}, new group: {}", conf.group);
-    //                         match copy::set_file_group(&conf.group, &local_path) {
-    //                             Ok(_) => {
-    //                                 if outcome == Outcome::PermissionsUpdated {
-    //                                     outcome = Outcome::GroupAndPermissionsUpdated;
-    //                                 }
-    //                                 else {
-    //                                     outcome = Outcome::GroupUpdated;
-    //                                 }
-    //                             }
-    //                             Err(e) => {
-    //                                 // TODO: delete file
-    //                                 if error.is_none() {
-    //                                     outcome = Outcome::Error;
-    //                                     error = Some(format!("group not set"));
-    //                                 }
-    //                                 println!("unable to set group for {} to {}\n{e}", local_path.display(), conf.group);
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //                 None => {
-    //                     if error.is_none() {
-    //                         outcome = Outcome::Error;
-    //                         error = Some(format!("group not set"));
-    //                     }
-    //                 }
-    //             }; // match get_current_group
-    //         } // Ok(metadata)
-    //         Err(e) => {
-    //             if error.is_none() {
-    //                 outcome = Outcome::Error;
-    //                 error = Some(format!("metadata inaccessible"));
-    //             }
-    //             println!("metadata inaccessible for {}\n{e}", local_path.display());
-    //         }
-    //     };
-    // } // else file already present and up to date
-
-    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
-        Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => local_path.display().to_string(),
-    };
 
     RetrievedFile {
         path: local_path_display,
@@ -238,21 +139,4 @@ pub fn get(local_path: &PathBuf, conf: &config::Config, git_dir: &PathBuf) -> Re
     }
 } // get
 
-// pub fn get_current_group(path: &PathBuf) -> Option<String> {
-//     match path.group() {
-//         Ok(group) => {
-//             match group.name() {
-//                 Ok(name) => return name,
-//                 Err(e) => {
-//                     println!("unable to get name of current group for {}\n{e}", path.display());
-//                     return None;
-//                 }
-//             }
-//         }
-//         Err(e) => {
-//             println!("unable to get current group for {}\n{e}", path.display());
-//             return None;
-//         }
-//     }
-// }
 

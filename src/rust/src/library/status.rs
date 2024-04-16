@@ -60,8 +60,11 @@ pub fn dvs_status(globs: &Vec<String>) -> Result<Vec<FileStatus>> {
 } // dvs_status
 
 fn status(path: &PathBuf) -> FileStatus {
-    // get relative local path to display in struct
-    let rel_path = repo::get_relative_path(&PathBuf::from("."), &path).expect(format!("could not get relative file paths: {} and {}", path.display(), PathBuf::from(".").display()).as_str());
+    // get local path relative to working directory
+    let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &path) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(_) => path.display().to_string(),
+    };
     
     // get file info
     let metadata = file::load(&path).expect("couldn't get metadata");
@@ -86,8 +89,8 @@ fn status(path: &PathBuf) -> FileStatus {
 
     // assemble info intoFileStatus
     FileStatus{
-        path: rel_path.display().to_string(),
-        status: status,
+        path: local_path_display,
+        status,
         file_size: metadata.file_size,
         file_hash: metadata.file_hash,
         time_stamp: metadata.time_stamp,

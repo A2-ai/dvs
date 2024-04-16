@@ -73,7 +73,7 @@ pub fn dvs_add(globs: &Vec<String>, message: &String, strict: bool) -> Result<Ve
 } // run_add_cmd
 
 fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String, strict: bool) -> Result<AddedFile> {
-    // set error to None by default
+    // set error to None initially - if an error emerges, update
     let mut error: Option<String> = None;
     if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
 
@@ -152,8 +152,8 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
 
-    // get relative local path to display in struct
-    let local_path_display = match repo::get_relative_path(&git_dir, &local_path) {
+    // get local path relative to working directory
+    let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
         Ok(rel_path) => rel_path.display().to_string(),
         Err(_) => local_path.display().to_string(),
     };
@@ -185,8 +185,9 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     };
 
     // write metadata file
+    let mut metadata_saved = false;
     match file::save(&metadata, &local_path) {
-        Ok(_) => {},
+        Ok(_) => {metadata_saved = true},
         Err(e) => if error.is_none() {
             if strict { // return error
                 return Err(extendr_api::error::Error::Other(format!("could not save metadata file for {}\n{e}", local_path.display())));
@@ -215,22 +216,24 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     };
     
     // get storage path
-    let dest_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
-
-    // Copy the file to the storage directory if it's not already there
-    let mut outcome: Outcome = Outcome::Success;
-    if error.is_some() {
-        outcome = Outcome::Error
-    }
-    else if !dest_path.exists() { // if not already copied
+    let storage_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
+    
+    let mut outcome: Outcome = Outcome::AlreadyPresent;
+   
+    // copy the file to the storage directory if it's not already there and the metadata was successfully saved
+    if !storage_path.exists() && metadata_saved { // if not already copied
         // copy and get error
-        error = match copy_file_to_storage_directory(local_path, &dest_path, &conf_mode, &group_name, strict) {
+        error = match copy_file_to_storage_directory(local_path, &storage_path, &conf_mode, &group_name, strict) {
             Ok(error) => error,
             Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
         };
+        if error.is_none() {
+            outcome = Outcome::Success;
+        }
     }
-    else {
-        outcome = Outcome::AlreadyPresent;
+
+    if error.is_some() {
+        outcome = Outcome::Error
     }
 
     return Ok(AddedFile {
