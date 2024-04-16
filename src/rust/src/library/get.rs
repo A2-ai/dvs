@@ -21,13 +21,13 @@ impl Outcome {
 
 #[derive(IntoDataFrameRow)]
 pub struct RetrievedFile {
-    pub path: String,
-    pub hash: Option<String>,
-    pub outcome: String,
-    pub error: Option<String>,
-    pub size: Option<u64>
+    path: String,
+    absolute_path: Option<String>,
+    hash: Option<String>,
+    outcome: String,
+    error: Option<String>,
+    size: Option<u64>
 }
-
 
 
 pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
@@ -88,9 +88,15 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
         Err(_) => local_path.display().to_string(),
     };
 
+    let mut absolute_path: Option<String> = match local_path.canonicalize() {
+        Ok(path) => Some(path.display().to_string()),
+        Err(_) => None,
+    };
+
     if error.is_some() {
         return RetrievedFile{
             path: local_path_display,
+            absolute_path,
             hash: None,
             outcome: Outcome::Error.outcome_to_string(),
             error,
@@ -121,6 +127,16 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
         match copy::copy(&storage_path, &local_path) {
             Ok(_) => {
                 outcome = Outcome::Copied;
+                // get absolute path again now that local_path should exist
+                absolute_path = match local_path.canonicalize() {
+                    Ok(path) => Some(path.display().to_string()),
+                    Err(e) => {
+                        outcome = Outcome::Error;
+                        error = Some(format!("TODO"));
+                        println!("TODO {}\n{e}", local_path.display());
+                        None
+                    }
+                };
             } // ok copy
             Err(e) => {
                 outcome = Outcome::Error;
@@ -130,13 +146,14 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
         }; // match copy
     }  // if file not present or not up-to-date
 
+    
+
     RetrievedFile {
         path: local_path_display,
+        absolute_path,
         hash: Some(metadata_hash),
         outcome: outcome.outcome_to_string(),
         error,
         size: Some(file_size)
     }
 } // get
-
-
