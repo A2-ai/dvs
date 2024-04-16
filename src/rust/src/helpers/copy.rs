@@ -1,7 +1,4 @@
-use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
-use std::fs::File;
-use std::fs;
+use std::{fs::{self, File}, path::PathBuf, os::unix::fs::PermissionsExt};
 use anyhow::{anyhow, Context, Result};
 use file_owner::{Group, PathExt};
 

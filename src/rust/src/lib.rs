@@ -1,12 +1,8 @@
-use extendr_api::prelude::*;
-use library::get;
-use library::status;
 pub mod helpers;
 pub mod library;
+use library::{init, add, get, status};
+use extendr_api::{prelude::*, robj::Robj};
 use std::path::PathBuf;
-use crate::library::init;
-use crate::library::add;
-use extendr_api::robj::Robj;
 use anyhow::anyhow;
 
 #[extendr]

@@ -4,7 +4,7 @@
 \alias{dvs_add}
 \title{add files to the storage directory}
 \usage{
-dvs_add(files, message = "")
+dvs_add(files, message = "", strict = TRUE)
 }
 \arguments{
 \item{files}{files to add to the storage directory}

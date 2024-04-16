@@ -1,8 +1,8 @@
-use xdg;
 use std::{fs::{self, File}, path::PathBuf, time::SystemTime};
 use serde::{Deserialize, Serialize};
 use anyhow::{anyhow, Context, Result};
 use crate::helpers::repo;
+use xdg;
 
 #[derive(Serialize, Deserialize)]
 pub struct CacheData {

@@ -1,8 +1,5 @@
-use std::path::PathBuf;
-use std::fs::File;
+use std::{fs::{self, File}, path::PathBuf};
 use serde::{Deserialize, Serialize};
-// use serde_json::Result;
-use std::fs;
 use anyhow::{anyhow, Result};
 
 #[derive(Serialize, Deserialize)]

@@ -1,9 +1,6 @@
-use blake3::Hasher;
-use std::path::PathBuf;
-use std::fs::File;
-use std::io::Result;
-use std::io::{self, Read};
+use std::{fs::File, path::PathBuf, io::{self, Read, Result}};
 use crate::helpers::cache;
+use blake3::Hasher;
 
 pub fn hash_file_with_blake3(file_path: &PathBuf) -> io::Result<Option<String>> {
     let file = File::open(file_path)?;

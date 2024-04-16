@@ -1,18 +1,11 @@
-use std::ffi::OsStr;
-use std::path::PathBuf;
 use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
-use serde::Serialize;
+use std::{fs, u32, path::PathBuf};
 use file_owner::{Group, PathExt};
-use std::{fs, u32};
+use serde::Serialize;
+
+
 use anyhow::Context;
-use crate::helpers::file::delete;
-use crate::helpers::hash;
-use crate::helpers::copy;
-use crate::helpers::file;
-use crate::helpers::ignore;
-use crate::helpers::config;
-use crate::helpers::repo;
-use glob::glob;
+use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
 
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
@@ -31,7 +24,6 @@ impl Outcome {
     }
 }
 
-
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct AddedFile {
     path: String,
@@ -41,7 +33,8 @@ pub struct AddedFile {
     size: Option<u64>,
 }
 
-pub fn dvs_add(files: &Vec<String>, message: &String, strict: bool) -> Result<Vec<AddedFile>> {
+
+pub fn dvs_add(globs: &Vec<String>, message: &String, strict: bool) -> Result<Vec<AddedFile>> {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
@@ -54,49 +47,20 @@ pub fn dvs_add(files: &Vec<String>, message: &String, strict: bool) -> Result<Ve
         Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))),
     };
 
-    let mut queued_paths: Vec<PathBuf> = Vec::new();
+    // collect paths out of input - sort through globs/explicitly-named files
+    let queued_paths = match parse::parse_files_from_globs(&globs) {
+        Ok(paths) => paths,
+        Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+    };
 
-    for entry in files {
-        let glob = match glob(&entry) {
-            Ok(paths) => paths,
-            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
-        };
-
-        for file in glob {
-            match file {
-                Ok(path) => {
-                    match path.extension().and_then(OsStr::to_str) {
-                        Some(ext) => {
-                            if ext == "dvsmeta" { // avoid dvs files and .gitignore
-                                println!("skipping .dvsmeta file {}", path.display());
-                                continue
-                            }
-                        }
-                        None => {} 
-                    }
-
-                    if path.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
-                        println!("skipping .gitignore file {}", path.display());
-                        continue
-                    }
-                    
-                    if queued_paths.contains(&path) {
-                        println!("skipping repeated path: {}", path.display());
-                        continue
-                    }
-                    queued_paths.push(path);
-                },
-                Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
-            }
-        } // for files in glob
-    } // for entry in files
-
+    // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
         println!("warning: no paths queued to add to devious")
     }
 
+    // add each file to the storage directory
     let mut added_files: Vec<AddedFile> = Vec::new();
-    for file in queued_paths { // had to use for loop because add returns a result
+    for file in queued_paths { // had to use for loop instead of map because add returns a result
         match add(&file, &git_dir, &conf, &message, strict) {
             Ok(file) => {
                 added_files.push(file);
@@ -154,8 +118,10 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         }
     };
 
-    // check group if group was specified
+    // get group name
     let group_name = &conf.group;
+
+    // check group if group was specified
     if group_name != "" {
         match Group::from_name(group_name) {
             Ok(_) => {}
@@ -166,12 +132,12 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
         };
     }
 
-    // now see if file can be added
+    // check storage directory exists
     let storage_dir_abs: Option<PathBuf> = match conf.storage_dir.canonicalize() {
         Ok(path) => Some(path),
         Err(e) => {
             if error.is_none() {error = Some(String::from("storage directory not found"))}
-            println!("storage directory {} not found\n{e}", conf.storage_dir.display());
+            println!("storage directory {} not found: be sure to initialize devious\n{e}", conf.storage_dir.display());
             None
         }
     };

@@ -1,7 +1,5 @@
-use crate::helpers::repo;
-use std::path::PathBuf;
-use crate::helpers::config;
-use std::fs::create_dir;
+use crate::helpers::{repo, config};
+use std::{path::PathBuf, fs::create_dir};
 use path_absolutize::Absolutize;
 use file_owner::Group;
 use anyhow::{anyhow, Context, Result};

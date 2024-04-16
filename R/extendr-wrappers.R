@@ -13,7 +13,7 @@ NULL
 
 dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)
 
-dvs_add_impl <- function(files, message) .Call(wrap__dvs_add_impl, files, message)
+dvs_add_impl <- function(files, message, strict) .Call(wrap__dvs_add_impl, files, message, strict)
 
 dvs_get_impl <- function(globs) .Call(wrap__dvs_get_impl, globs)
 
