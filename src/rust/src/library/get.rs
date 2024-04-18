@@ -44,10 +44,7 @@ pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
     };
 
     // collect queued paths
-    let queued_paths = match parse::parse_files_from_globs(&globs) {
-        Ok(paths) => paths,
-        Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
-    };
+    let queued_paths = parse::parse_files_from_globs(&globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {

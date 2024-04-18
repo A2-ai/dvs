@@ -41,10 +41,7 @@ pub fn dvs_status(globs: &Vec<String>) -> Result<Vec<FileStatus>> {
     } // if doing all files
 
     else { // else, parse specifically inputted globs
-        meta_paths = match parse::parse_files_from_globs(&globs) {
-            Ok(paths) => paths,
-            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
-        };
+        meta_paths = parse::parse_files_from_globs(&globs);
     } // else specific globs
 
     // warn if no paths queued - likely not intentional by user

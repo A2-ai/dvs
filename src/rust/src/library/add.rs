@@ -68,7 +68,7 @@ pub struct AddFileError {
 
 impl fmt::Display for AddFileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.error_message {
+        match self.error_message.clone() {
             Some(message) => {
                 write!(f, "{}", message)
             }
@@ -104,15 +104,15 @@ impl AddErrorType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct AddError {
-    error_type: String,
-    error_message: Option<String>,
+    pub error_type: String,
+    pub error_message: Option<String>,
 }
 
 impl fmt::Display for AddError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.error_message {
+        match self.error_message.clone() {
             Some(message) => {
                 write!(f, "{}", message)
             }
@@ -377,9 +377,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     };
 
     // write metadata file
-    let mut metadata_saved = false;
     match file::save(&metadata, &local_path) {
-        Ok(_) => {metadata_saved = true},
+        Ok(_) => {},
         Err(e) => {
             return Err(
                 AddFileError{
@@ -411,9 +410,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     let mut outcome: Outcome = Outcome::AlreadyPresent;
    
     // copy the file to the storage directory if it's not already there and the metadata was successfully saved
-    if !storage_path.exists() && metadata_saved { // if not already copied
+    if !storage_path.exists() { // if not already copied
         // copy and get error
-        match copy_file_to_storage_directory(local_path, &storage_path, relative_path, &permissions, &group_name, strict) {
+        match copy_file_to_storage_directory(local_path, &storage_path, &relative_path, &permissions, &group_name, strict) {
             Ok(_) => outcome = Outcome::Success,
             Err(e) => return Err(e)
         };
@@ -427,7 +426,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
 
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: String, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: &String, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
             // set permissions
@@ -440,7 +439,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
                     }
                     else {
                         return Err(AddFileError{
-                            relative_path: Some(relative_path),
+                            relative_path: Some(relative_path.clone()),
                             error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
                             error_message: Some(e.to_string())
                         })
@@ -460,7 +459,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
                         }
                         else {
                             return Err(AddFileError{
-                                relative_path: Some(relative_path),
+                                relative_path: Some(relative_path.clone()),
                                 error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
                                 error_message: Some(e.to_string())
                             })
@@ -478,7 +477,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
             else { // non-strict
                 return Err(
                     AddFileError{
-                        relative_path: Some(relative_path),
+                        relative_path: Some(relative_path.clone()),
                         error_type: AddFileErrorType::FileNotCopied.add_file_error_type_to_string(),
                         error_message: Some(copy_e.to_string())
                     }

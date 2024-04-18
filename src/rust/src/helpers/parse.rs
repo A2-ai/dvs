@@ -62,7 +62,7 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
                             None => continue
                         }
                     }
-                    Err(e) => {
+                    Err(_) => {
                         queued_paths.push(PathBuf::from(entry));
                         continue;
                     }
