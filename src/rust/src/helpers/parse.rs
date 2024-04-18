@@ -1,7 +1,20 @@
 use std::{ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 use glob::glob;
-use extendr_api::prelude::*;
+
+// #[derive(Debug)]
+// pub struct ParseError {
+//     pub file: String,
+//     pub error_message: String
+// }
+
+// impl fmt::Display for ParseError {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//             write!(f, "{}", self.error_message)
+//     }
+// }
+
+// impl std::error::Error for ParseError {}
 
 pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
     //let mut meta_files: Vec<String> = Vec::new();
@@ -16,7 +29,7 @@ pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
         .collect()
 }
 
-pub fn parse_files_from_globs(globs: &Vec<String>) -> Result<Vec<PathBuf>> {
+pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in globs {
@@ -35,7 +48,10 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Result<Vec<PathBuf>> {
         else { 
             let glob = match glob(&entry) {
                 Ok(paths) => {paths},
-                Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+                Err(_) => {
+                    queued_paths.push(PathBuf::from(entry));
+                    continue;
+                }
             };
             
             for file in glob {
@@ -47,14 +63,15 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Result<Vec<PathBuf>> {
                         }
                     }
                     Err(e) => {
-                        return Err(extendr_api::error::Error::Other(e.to_string()));
+                        queued_paths.push(PathBuf::from(entry));
+                        continue;
                     }
                 } // match file in glob
             } // for file in glob
         } // else, is a glob
     } // for entry in files
 
-    Ok(queued_paths)
+    queued_paths
 }
 
 fn filter_path(path: &PathBuf, queued_paths: &Vec<PathBuf>) -> Option<PathBuf> {
