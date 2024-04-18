@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 use std::num::ParseIntError;
 use std::path::PathBuf;
+use anyhow::Result;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Config {
@@ -10,16 +11,16 @@ pub struct Config {
     pub group: String
 }
 
-pub fn read(root_dir: &PathBuf) -> Result<Config, serde_yaml::Error> {
+pub fn read(root_dir: &PathBuf) -> Result<Config> {
     // check if yaml is readable
-    let yaml_contents = fs::read_to_string(root_dir.join(PathBuf::from(r"dvs.yaml"))).unwrap();
+    let yaml_contents = fs::read_to_string(root_dir.join(PathBuf::from(r"dvs.yaml")))?;
     // check if yaml is deserializable
     let conf: Config = serde_yaml::from_str(&yaml_contents)?;
     Ok(conf)
 } // read
 
-pub fn write(config: &Config, dir: &PathBuf) -> std::io::Result<()> {
-    let yaml: String = serde_yaml::to_string(&config).unwrap();
+pub fn write(config: &Config, dir: &PathBuf) -> Result<()> {
+    let yaml: String = serde_yaml::to_string(&config)?;
     fs::write(dir.join(PathBuf::from(r"dvs.yaml")), yaml)?;
     Ok(())
 } // write

@@ -268,7 +268,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
             if absolute.strip_prefix(&git_dir).unwrap() == absolute {
                 return Err(
                     AddFileError{
-                        relative_path: Some(relative_path),
+                        relative_path: None,
                         error_type: AddFileErrorType::FileNotInGitRepo.add_file_error_type_to_string(),
                         error_message: None
                     }

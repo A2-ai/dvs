@@ -10,7 +10,11 @@ dvs_status("dir/*") %>% filter(status == "not-present" | status == "out-of-sync"
 
 
 ```{r}
-output <- list(errors = df(), successes = df())
+status <- list(errors = data.frame(), successes = data.frame())
+if (!nrow(status$errors)) {
+  print(status$errors)
+}
+status$successes %>% filter(status != "up-to-date") %>% pull(path) %>% dvs_get()
 ```
 
 
