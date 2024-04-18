@@ -17,29 +17,27 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str, strict: bool) -> std
 
 #[extendr]
 fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> Robj {
-    // dvs add
-    let added_files = match add::add(&globs, &String::from(message), strict) {
+    let added_files_result = add::add(&globs, &String::from(message), strict).map_err(|e| {
+        Error::Other(e.to_string())
+    });
+
+    let added_files = match added_files_result {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
+    // };
     };
 
-    // let added_files = add::dvs_add(&files, &String::from(message), strict).map_err(|e| {
-    //         Error::Other(e.to_string())
-    //     })?.iter().map(|el| {
-    //         el.map_err(|e| {
-    //             Error::Other(e.to_string())
-    //         })
-    //     }).map(|el| AddedFileFlattened {
-    //         error: el.err().map(|f| f.to_string()),
-    //         path: el.ok().map(|f| f.absolute_path),
-    //     })
-    //     .collect::<Vec<AddedFileFlattened>>();
-
-    // convert to data frame
-    match added_files.into_dataframe() {
+    let success_files = match added_files.0.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
-        Err(e) => Robj::from(format!("Error converting to DataFrame: {}", e)),
-    }
+        Err(e) => Robj::from(format!("Error converting sucessfully added files to data frame: {}", e)),
+    };
+
+    let error_files = match added_files.1.into_dataframe() {
+        Ok(dataframe) => dataframe.as_robj().clone(),
+        Err(e) => Robj::from(format!("Error converting errored added files to data frame: {}", e)),
+    };
+
+    return Robj::from(list!(success_files, error_files))
 } // dvs_add_impl
 
 
