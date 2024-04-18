@@ -3,10 +3,15 @@ library(purrr)
 library(tidyverse)
 library(stringr)
 
-dvs_status("dir/*") %>% filter(status != "up-to-date") %>% pull(path) %>% dvs_get()
+# dvs_status("dir/*") %>% filter(status != "up-to-date") %>% pull(path) %>% dvs_get()
+
+dvs_status("dir/*") %>% filter(status == "not-present" | status == "out-of-sync") %>% pull(path) %>% dvs_get()
 ```
 
 
+```{r}
+output <- list(errors = df(), successes = df())
+```
 
 
 

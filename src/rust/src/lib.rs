@@ -16,12 +16,24 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str, strict: bool) -> std
 
 
 #[extendr]
-fn dvs_add_impl(files: Vec<String>, message: &str, strict: bool) -> Robj {
+fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> Robj {
     // dvs add
-    let added_files = match add::dvs_add(&files, &String::from(message), strict) {
+    let added_files = match add::add(&globs, &String::from(message), strict) {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
     };
+
+    // let added_files = add::dvs_add(&files, &String::from(message), strict).map_err(|e| {
+    //         Error::Other(e.to_string())
+    //     })?.iter().map(|el| {
+    //         el.map_err(|e| {
+    //             Error::Other(e.to_string())
+    //         })
+    //     }).map(|el| AddedFileFlattened {
+    //         error: el.err().map(|f| f.to_string()),
+    //         path: el.ok().map(|f| f.absolute_path),
+    //     })
+    //     .collect::<Vec<AddedFileFlattened>>();
 
     // convert to data frame
     match added_files.into_dataframe() {

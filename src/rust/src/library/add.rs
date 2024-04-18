@@ -1,49 +1,190 @@
 use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
 use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
-use std::{fs, u32, path::PathBuf};
+use std::{u32, fmt, path::PathBuf};
 use file_owner::{Group, PathExt};
 use serde::Serialize;
 use anyhow::Context;
 
+// Outcome enum
 #[derive(Clone, PartialEq, Serialize)]
 enum Outcome {
     Success,
     AlreadyPresent,
-    Error
 }
 
 impl Outcome {
     fn outcome_to_string(&self) -> String {
         match self {
             Outcome::Success => String::from("Success"),
-            Outcome::Error => String::from("Error"),
             Outcome::AlreadyPresent => String::from("Already Present")
         }
     }
 }
 
+// Custom error individual files
+#[derive(Clone, PartialEq, Serialize)]
+enum AddFileErrorType {
+    RelativePathNotFound,
+    FileNotInGitRepo,
+    FileNotFound,
+    PathIsDirectory,
+    HashNotFound,
+    SizeNotFound,
+    OwnerNotFound,
+    OwnerNameNotFound,
+    GroupNotSet,
+}
+
+impl AddFileErrorType {
+    fn add_file_error_type_to_string(&self) -> String {
+        match self {
+            AddFileErrorType::RelativePathNotFound => String::from("relative path not found"),
+            AddFileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
+            AddFileErrorType::FileNotFound => String::from("file not found"),
+            AddFileErrorType::PathIsDirectory => String::from("path is a directory"),
+            AddFileErrorType::HashNotFound => String::from("hash not found"),
+            AddFileErrorType::SizeNotFound => String::from("size not found"),
+            AddFileErrorType::OwnerNotFound => String::from("owner not found"),
+            AddFileErrorType::OwnerNameNotFound => String::from("owner name not found"),
+            AddFileErrorType::GroupNotSet => String::from("group not set"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct AddFileError {
+    relative_path: Option<String>,
+    error_type: String,
+    error_message: Option<String>,
+}
+
+impl fmt::Display for AddFileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.error_message {
+            Some(message) => {
+                write!(f, "{}", message)
+            }
+            None => {
+                write!(f, "NA")
+            }
+        }
+    }
+}
+
+impl std::error::Error for AddFileError {}
+
+
+// custom error for add function (not file-specific errors)
+#[derive(Clone, PartialEq, Serialize)]
+enum AddErrorType {
+    GitRepoNotFound,
+    ConfigNotFound,
+    GroupNotFound,
+    StorageDirNotFound,
+    PermissionsInvalid,
+}
+
+impl AddErrorType {
+    fn add_error_type_to_string(&self) -> String {
+        match self {
+            AddErrorType::GitRepoNotFound => String::from("git repo not found"),
+            AddErrorType::ConfigNotFound => String::from("configuration file not found"),
+            AddErrorType::GroupNotFound => String::from("linux primary group not found"),
+            AddErrorType::StorageDirNotFound => String::from("storage directory not found"),
+            AddErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct AddError {
+    error_type: String,
+    error_message: Option<String>,
+}
+
+impl fmt::Display for AddError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.error_message {
+            Some(message) => {
+                write!(f, "{}", message)
+            }
+            None => {
+                write!(f, "NA")
+            }
+        }
+    }
+}
+
+impl std::error::Error for AddError {}
+
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
-pub struct AddedFile {
-    path: String,
-    absolute_path: Option<String>,
-    hash: Option<String>,
+pub struct SuccessFile {
+    relative_path: String,
+    absolute_path: String,
+    hash: String,
     outcome: String,
-    error: Option<String>,
-    size: Option<u64>,
+    size: u64,
+}
+
+#[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
+pub struct ErrorFile {
+    input: String,
+    relative_path: Option<String>,
+    error_type: String,
+    error_message: Option<String>,
 }
 
 
-pub fn dvs_add(globs: &Vec<String>, message: &String, strict: bool) -> Result<Vec<AddedFile>> {
+
+
+
+
+
+pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<(Vec<SuccessFile>, Vec<ErrorFile>), AddError> {
     // Get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
-        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))),
+        Err(e) => {
+            return Err(
+                AddError{ 
+                    error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
+                    error_message: Some(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))
+                }
+            )
+        }
     };
 
     // load the config
     let conf = match config::read(&git_dir) {
         Ok(conf) => conf,
         Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))),
+    };
+
+    // check group if group was specified
+    let group_name = conf.group;
+    if group_name != "" {
+        match Group::from_name(group_name.as_str()) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(extendr_api::error::Error::Other(e.to_string()))
+            }
+        };
+    }
+
+    // check storage directory exists
+    let storage_dir: PathBuf = match conf.storage_dir.canonicalize() {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(extendr_api::error::Error::Other(e.to_string()))
+        }
+    };
+
+    // get file permissions
+    let permissions: u32 = match config::get_mode_u32(&conf.permissions) {
+        Ok(mode) => Some(mode),
+        Err(e) => {
+            return Err(extendr_api::error::Error::Other(e.to_string()))
+        }
     };
 
     // collect paths out of input - sort through globs/explicitly-named files
@@ -58,65 +199,74 @@ pub fn dvs_add(globs: &Vec<String>, message: &String, strict: bool) -> Result<Ve
     }
 
     // add each file to the storage directory
-    let mut added_files: Vec<AddedFile> = Vec::new();
+    let mut success_files: Vec<SuccessFile> = Vec::new();
+    let mut error_files: Vec<ErrorFile> = Vec::new();
     for file in queued_paths { // had to use for loop instead of map because add returns a result
-        match add(&file, &git_dir, &conf, &message, strict) {
+        match add_file(&file, &git_dir, &group_name, &storage_dir, &permissions, &message, strict) {
             Ok(file) => {
-                added_files.push(file);
+                success_files.push(file);
             }
-            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+            Err(e) => {
+                let error_file = ErrorFile {
+                    input: file.display().to_string(),
+                    error_type: e.error_type,
+                    relative_path: e.relative_path,
+                    error_message: e.error_message
+                };
+                error_files.push(error_file)
+            }
         };
     }
 
-    return Ok(added_files)
+    return Ok((success_files, error_files))
 } // run_add_cmd
 
-fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: &String, strict: bool) -> Result<AddedFile> {
-    // set error to None initially - if an error emerges, update
-    let mut error: Option<String> = None;
+fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
+    // get local path relative to working directory
+    let relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
+        Ok(rel_path) => rel_path.display().to_string(),
+        Err(e) => return Err(AddFileError{
+            relative_path: None,
+            error_type: ErrorType::
+        })
+    };
 
      // get absolute path
      let absolute_path: Option<String> = match local_path.canonicalize() {
         Ok(absolute) => { // file exists
             // error if file is outside of git repository
             if absolute.strip_prefix(&git_dir).unwrap() == absolute {
-                println!("error: file {} not in git repository", absolute.display());
-                if error.is_none() {error = Some(String::from("file not in git repository"))}
+                return Err(AddFileError{})
+                
             }
             Some(absolute.display().to_string())
         }
         // error if file doesn't exist
         Err(e) => { 
-            println!("error: file {} not found\n{e}",local_path.display());
-            if error.is_none() {error = Some(String::from("file not found"))};
-            None
+            return Err(AddFileError{})
         }
     };
 
+    
+
     // error if file is a directory
     if local_path.is_dir() {
-        println!("error: path {} is a directory", local_path.display());
-        if error.is_none() {error = Some(String::from("path is a directory"))}
+        return Err(AddFileError{})
     }
 
     // if error.is_none() {error = get_preliminary_errors(&local_path, &git_dir)}
 
     // get file hash
-    let file_hash = hash::get_file_hash(&local_path);
-    if file_hash.is_none() && error.is_none() {
-        error = Some(String::from("hash not found"));
-        println!("error: hash not found for {}", local_path.display());
-    }
-
+    let hash = match hash::get_file_hash(&local_path) {
+        Some(hash) => hash,
+        None => return Err(AddFileError{})
+    };
+    
     // get file size
-    let file_size: Option<u64> = match local_path.metadata() {
+    let size: Option<u64> = match local_path.metadata() {
         Ok(data) => Some(data.len()),
         Err(e) => {
-            if error.is_none() {
-                error = Some(String::from("size not found"));
-                println!("error: file size not found for {}\n{e}", local_path.display());
-            }
-            None
+            return Err(AddFileError{})
         }
     };
 
@@ -126,83 +276,20 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
             let owner_name = match owner.name() {
                 Ok(name) => Some(name.unwrap()),
                 Err(e) => {
-                    error = Some(String::from("owner name not found"));
-                    println!("error: owner name not found for {}\n{e}", local_path.display());
-                    None
+                    return Err(AddFileError{})
                 }
             };
             owner_name
         }
         Err(e) => {
-            if error.is_none() {
-                error = Some(String::from("owner not found"));
-                println!("error: owner not found for {}\n{e}", local_path.display());
-            }
-            None
+            return Err(AddFileError{})
         }
     };
-
-    // get group name
-    let group_name = &conf.group;
-
-    // check group if group was specified
-    if group_name != "" {
-        match Group::from_name(group_name) {
-            Ok(_) => {}
-            Err(e) => {
-                if error.is_none() {error = Some(String::from("group not found"))}
-                println!("group {group_name} not found for {}\n{e}", local_path.display());
-            }
-        };
-    }
-
-    // check storage directory exists
-    let storage_dir_abs: Option<PathBuf> = match conf.storage_dir.canonicalize() {
-        Ok(path) => Some(path),
-        Err(e) => {
-            if error.is_none() {error = Some(String::from("storage directory not found"))}
-            println!("storage directory {} not found: be sure to initialize devious\n{e}", conf.storage_dir.display());
-            None
-        }
-    };
-
-    // get file permissions
-    let conf_mode_option: Option<u32> = match config::get_mode_u32(&conf.permissions) {
-        Ok(mode) => Some(mode),
-        Err(e) => {
-            if error.is_none() {error = Some(format!("permissions not parsed"))}
-            println!("unable to parse file permissions {} for {}\n{e}", &conf.permissions, local_path.display());
-            None
-        }
-    };
-
-    // get local path relative to working directory
-    let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-        Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => local_path.display().to_string(),
-    };
-
-    if error.is_some() {
-        return Ok(AddedFile{
-            path: local_path_display, 
-            absolute_path,
-            hash: file_hash,
-            outcome: Outcome::Error.outcome_to_string(),
-            error: error,
-            size: file_size
-        });
-    }
-
-    // can safely unwrap storage_dir_abs and file_hash 
-    let storage_dir_abs_value = storage_dir_abs.unwrap();
-    let file_hash_value = file_hash.clone().unwrap();
-
-    let conf_mode = conf_mode_option.unwrap();
 
     // create metadata
     let metadata = file::Metadata{
-        file_hash: file_hash_value.clone(),
-        file_size: file_size.unwrap(),
+        file_hash: hash.clone(),
+        file_size: size.unwrap(),
         //time_stamp: chrono::Local::now().to_string(),
         time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),
@@ -213,14 +300,8 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     let mut metadata_saved = false;
     match file::save(&metadata, &local_path) {
         Ok(_) => {metadata_saved = true},
-        Err(e) => if error.is_none() {
-            if strict { // return error
-                return Err(extendr_api::error::Error::Other(format!("could not save metadata file for {}\n{e}", local_path.display())));
-            }
-            else { // print warning and put in data frame
-                error = Some(String::from("could not save metadata file"));
-                println!("could not save metadata file for {}\n{e}", local_path.display());
-            }
+        Err(e) => {
+            return Err(AddFileError{})
         }
     };
 
@@ -228,77 +309,33 @@ fn add(local_path: &PathBuf, git_dir: &PathBuf, conf: &config::Config, message: 
     match ignore::add_gitignore_entry(local_path) {
         Ok(_) => {},
         Err(e) => {
-            if error.is_none() {
-                if strict { // return error
-                    return Err(extendr_api::error::Error::Other(format!("could not add .gitignore entry for {}\n{e}", local_path.display())));
-                }
-                else { // print warning and put in data frame
-                    error = Some(String::from("could not add .gitignore entry"));
-                    println!("could not add .gitignore entry for {}\n{e}", local_path.display());
-                }
-            }
+            return Err(AddFileError{})
         }
     };
     
     // get storage path
-    let storage_path = hash::get_storage_path(&storage_dir_abs_value, &file_hash_value);
+    let storage_path = hash::get_storage_path(&storage_dir, &hash);
     
     let mut outcome: Outcome = Outcome::AlreadyPresent;
    
     // copy the file to the storage directory if it's not already there and the metadata was successfully saved
     if !storage_path.exists() && metadata_saved { // if not already copied
         // copy and get error
-        error = match copy_file_to_storage_directory(local_path, &storage_path, &conf_mode, &group_name, strict) {
-            Ok(error) => error,
-            Err(e) => return Err(extendr_api::error::Error::Other(e.to_string())),
+        match copy_file_to_storage_directory(local_path, &storage_path, &permissions, &group_name, strict) {
+            Ok(_) => outcome = Outcome::Success,
+            Err(e) => return Err(AddFileError{})
         };
-        if error.is_none() {
-            outcome = Outcome::Success;
-        }
     }
 
-    if error.is_some() {
-        outcome = Outcome::Error
-    }
-
-    return Ok(AddedFile {
-        path: local_path_display,
-        absolute_path,
-        hash: file_hash.clone(),
-        outcome: outcome.outcome_to_string(),
-        error,
-        size: file_size
-    })
+    return Ok(
+        SuccessFile {relative_path, absolute_path, hash, outcome: outcome.outcome_to_string(), size}
+    )
 }
 
 
-// fn get_preliminary_errors(local_path: &PathBuf, git_dir: &PathBuf) -> Option<String> {
-//     // check if file exists
-//     match local_path.canonicalize() {
-//         Ok(local_path) => { // file exists
-//             // if file is outside of git repository
-//             if local_path.strip_prefix(&git_dir).unwrap() == local_path {
-//                 println!("error: file {} not in git repository", local_path.display());
-//                 return Some(String::from("file not in git repository"));
-//             }
-//         }
-//         Err(e) => { 
-//             println!("error: file {} not found\n{e}",local_path.display());
-//             return Some(String::from("file not found"));
-//         }
-//     };
-
-//     if local_path.is_dir() {
-//         println!("error: path {} is a directory", local_path.display());
-//         return Some(String::from("path is a directory"))
-//     }
-
-//     None
-// }
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String, strict: bool) -> Result<Option<String>> {
-    let mut error = None;
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
             // set permissions
@@ -306,17 +343,11 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
                 Ok(_) => {},
                 Err(e) => {
                     if strict {
-                        // remove copied file
-                        fs::remove_file(&dest_path)
-                        .expect(format!("could not set permissions after copying {} to {}: error deleting copied file. Delete {} manually.", 
-                        local_path.display(), dest_path.display(), dest_path.display()).as_str());
-                        return Err(extendr_api::error::Error::Other(format!("could not set permissions after copying {}\n{e}", local_path.display())));
+                        // TODO: delete copied file
                         // TODO: delete metadata file
                     }
                     else {
-                        // set error
-                        if error.is_none() {error = Some(String::from("could not set permissions"))}
-                        println!("warning: could not set permissions for {} in storage directory\n{e}", local_path.display());
+                        return Err(AddFileError{})
                     }
                 }
             };
@@ -328,16 +359,11 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
                     Ok(_) => {},
                     Err(e) => {
                         if strict {
-                            // delete copied file
-                            fs::remove_file(&dest_path)
-                            .expect(format!("could not set group after copying {} to {}: error deleting copied file. Delete {} manually.", 
-                            local_path.display(), dest_path.display(), dest_path.display()).as_str());
-                            return Err(extendr_api::error::Error::Other(format!("could not set group after copying {}\n{e}", local_path.display())));
+                            // TODO: delete copied file
+                            // TODO: delete metadata file
                         }
                         else {
-                            // set error
-                            if error.is_none() {error = Some(String::from("could not set group"))}
-                            println!("warning: could not set group for {} in storage directory\n{e}", local_path.display());
+                            return Err(AddFileError{})
                         }
                     }
                 };
@@ -346,22 +372,13 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, mod
         } // Ok, could copy
         Err(copy_e) => { // could not copy
             if strict {
-                // delete metadata
-                match file::delete(&local_path) {
-                    Ok(_) => {
-                        println!("deleting metadata file for {}", local_path.display());
-                        return Err(extendr_api::error::Error::Other(format!("could not copy {} to storage directory\n{copy_e}", local_path.display())));
-                    }
-                    Err(delete_e) => {
-                        return Err(extendr_api::error::Error::Other(format!("could not copy {} to storage directory\n{copy_e}\n could not delete metadatafile\n{delete_e}", local_path.display())));
-                    }
-                };
+                // TODO: delete copied file
+                // TODO: delete metadata file
             } // strict
             else { // non-strict
-                println!("error: could not copy {} to storage directory\n{copy_e}", local_path.display());
-                if error.is_none() {error = Some(String::from("could not copy file to storage directory"))}
+                return Err(AddFileError{})
             }
         }
     };
-    return Ok(error)
+    return Ok(())
 }
