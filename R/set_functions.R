@@ -36,7 +36,7 @@ dvs_add <- function(files, message = "", strict = TRUE) {
 
   if (length(output) == 1) { # if returned an error, one data frame with errors
     result <- fromJSON(output)
-    data.frame(error_type = result$error_type, error_message = result$error_message)
+    as.data.frame(result)
   }
   else { # else, success, return list of two data frames, one with file successes, one with file errors
     list(successes = output[[1]], errors = output[[2]])
