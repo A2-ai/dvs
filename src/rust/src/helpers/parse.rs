@@ -43,6 +43,8 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
                 None => continue
             }
         }
+
+        // else if file is a directory
         else if PathBuf::from(entry).is_dir() {
             queued_paths.push(PathBuf::from(entry));
         }

@@ -22,6 +22,15 @@ dvs_init <- function(storage_directory, permissions = 664, group = "", strict = 
   return(invisible())
 }
 
+clean_paths <- function(files) {
+  for (i in seq_along(files)) {
+    if (str_detect(files[i], "~")) {
+      files[i] <- normalizePath(files[i], mustWork = FALSE)
+    }
+  }
+  files
+}
+
 #' add files to the storage directory
 #'
 #' @param files files to add to the storage directory
@@ -31,7 +40,9 @@ dvs_init <- function(storage_directory, permissions = 664, group = "", strict = 
 #'
 #' @export
 dvs_add <- function(files, message = "", strict = TRUE) {
-  files <- files |> map_chr(normalizePath, mustWork = FALSE)
+  files <- clean_paths(files)
+
+
   output <- dvs_add_impl(files, message, strict)
 
   if (length(output) == 1) { # if returned an error, one data frame with errors
@@ -41,7 +52,7 @@ dvs_add <- function(files, message = "", strict = TRUE) {
   else { # else, success, return list of two data frames, one with file successes, one with file errors
     list(successes = output[[1]], errors = output[[2]])
   }
-}
+} # dvs_add
 
 #' get files previously added to the storage directory
 #'

@@ -270,21 +270,21 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 } // run_add_cmd
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
-    let mut error_type: Option<AddFileErrorType> = None;
-    let mut error_message: Option<String> = None;
+    let mut error_type_temp: Option<AddFileErrorType> = None;
+    let mut error_message_temp: Option<String> = None;
     // get absolute path
     let absolute_path: Option<String> = match local_path.canonicalize() {
         Ok(absolute) => { // file exists
             // error if file is outside of git repository
             if absolute.strip_prefix(&git_dir).unwrap() == absolute {
-                error_type = Some(AddFileErrorType::FileNotInGitRepo);
+                error_type_temp = Some(AddFileErrorType::FileNotInGitRepo);
             }
             Some(absolute.display().to_string())
         }
         // error if file not canonicalizable
         Err(e) => { 
-            error_type = Some(AddFileErrorType::AbsolutePathNotFound);
-            error_message = Some(e.to_string());
+            error_type_temp = Some(AddFileErrorType::AbsolutePathNotFound);
+            error_message_temp = Some(e.to_string());
             None
         }
     };
@@ -293,19 +293,19 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     let relative_path: Option<String> = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
         Ok(rel_path) => Some(rel_path.display().to_string()),
         Err(e) => {
-            error_type = Some(AddFileErrorType::RelativePathNotFound);
-            error_message = Some(e.to_string());
+            error_type_temp = Some(AddFileErrorType::RelativePathNotFound);
+            error_message_temp = Some(e.to_string());
             None
         }
     };
 
-    if error_type.is_some() {
+    if error_type_temp.is_some() {
         return Err(
             AddFileError{
                 relative_path,
                 absolute_path,
-                error_type: error_type.unwrap().add_file_error_type_to_string(),
-                error_message
+                error_type: error_type_temp.unwrap().add_file_error_type_to_string(),
+                error_message: error_message_temp
             }
         )
     }
