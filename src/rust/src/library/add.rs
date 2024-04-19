@@ -26,7 +26,7 @@ impl Outcome {
 enum AddFileErrorType {
     RelativePathNotFound,
     FileNotInGitRepo,
-    FileNotFound,
+    AbsolutePathNotFound,
     PathIsDirectory,
     HashNotFound,
     SizeNotFound,
@@ -44,7 +44,7 @@ impl AddFileErrorType {
         match self {
             AddFileErrorType::RelativePathNotFound => String::from("relative path not found"),
             AddFileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
-            AddFileErrorType::FileNotFound => String::from("file not found"),
+            AddFileErrorType::AbsolutePathNotFound => String::from("file not found"),
             AddFileErrorType::PathIsDirectory => String::from("path is a directory"),
             AddFileErrorType::HashNotFound => String::from("hash not found"),
             AddFileErrorType::SizeNotFound => String::from("size not found"),
@@ -62,6 +62,7 @@ impl AddFileErrorType {
 #[derive(Debug)]
 pub struct AddFileError {
     relative_path: Option<String>,
+    absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
 }
@@ -85,6 +86,7 @@ impl std::error::Error for AddFileError {}
 // custom error for add function (not file-specific errors)
 #[derive(Clone, PartialEq, Serialize)]
 enum AddErrorType {
+    AnyFilesDNE,
     GitRepoNotFound,
     ConfigNotFound,
     GroupNotFound,
@@ -95,6 +97,7 @@ enum AddErrorType {
 impl AddErrorType {
     fn add_error_type_to_string(&self) -> String {
         match self {
+            AddErrorType::AnyFilesDNE => String::from("a least one inputted file not found"),
             AddErrorType::GitRepoNotFound => String::from("git repo not found"),
             AddErrorType::ConfigNotFound => String::from("configuration file not found"),
             AddErrorType::GroupNotFound => String::from("linux primary group not found"),
@@ -138,12 +141,10 @@ pub struct SuccessFile {
 pub struct ErrorFile {
     input: String,
     relative_path: Option<String>,
+    absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
 }
-
-
-
 
 
 
@@ -225,6 +226,25 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
         println!("warning: no paths queued to add to devious")
     }
 
+    // check if any files don't exist first
+    // std::result:: Result<Vec<PathBuf>, AddError>
+    // let _queued_abs_paths_result: std::result:: Result<Vec<PathBuf>, AddError> = 
+    queued_paths.iter().map(|file| {
+        match file.canonicalize() {
+            Ok(path) => Ok(path),
+            Err(e) => {
+                return Err(
+                    AddError{
+                        error_type: AddErrorType::AnyFilesDNE.add_error_type_to_string(),
+                        error_message: Some(format!("{} not found: {e}", file.display()))
+                    }
+                )
+            }
+        }
+    }).collect::<std::result:: Result<Vec<PathBuf>, AddError>>()?;
+
+    //let queued_abs_paths = queued_abs_paths_result?;
+    
     // add each file to the storage directory
     let mut success_files: Vec<SuccessFile> = Vec::new();
     let mut error_files: Vec<ErrorFile> = Vec::new();
@@ -236,8 +256,9 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
             Err(e) => {
                 let error_file = ErrorFile {
                     input: file.display().to_string(),
-                    error_type: e.error_type,
                     relative_path: e.relative_path,
+                    absolute_path: e.absolute_path,
+                    error_type: e.error_type,
                     error_message: e.error_message
                 };
                 error_files.push(error_file)
@@ -249,50 +270,53 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 } // run_add_cmd
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
-    // get local path relative to working directory
-    let relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-        Ok(rel_path) => rel_path.display().to_string(),
-        Err(e) => return Err(
-            AddFileError{
-                relative_path: None,
-                error_type: AddFileErrorType::RelativePathNotFound.add_file_error_type_to_string(),
-                error_message: Some(e.to_string())
-            }
-        )
-    };
-
-     // get absolute path
-     let absolute_path: String = match local_path.canonicalize() {
+    let mut error_type: Option<AddFileErrorType> = None;
+    let mut error_message: Option<String> = None;
+    // get absolute path
+    let absolute_path: Option<String> = match local_path.canonicalize() {
         Ok(absolute) => { // file exists
             // error if file is outside of git repository
             if absolute.strip_prefix(&git_dir).unwrap() == absolute {
-                return Err(
-                    AddFileError{
-                        relative_path: None,
-                        error_type: AddFileErrorType::FileNotInGitRepo.add_file_error_type_to_string(),
-                        error_message: None
-                    }
-                )
+                error_type = Some(AddFileErrorType::FileNotInGitRepo);
             }
-            absolute.display().to_string()
+            Some(absolute.display().to_string())
         }
-        // error if file doesn't exist
+        // error if file not canonicalizable
         Err(e) => { 
-            return Err(
-                AddFileError{
-                    relative_path: Some(relative_path),
-                    error_type: AddFileErrorType::FileNotFound.add_file_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
+            error_type = Some(AddFileErrorType::AbsolutePathNotFound);
+            error_message = Some(e.to_string());
+            None
         }
     };
+    
+    // get local path relative to working directory
+    let relative_path: Option<String> = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
+        Ok(rel_path) => Some(rel_path.display().to_string()),
+        Err(e) => {
+            error_type = Some(AddFileErrorType::RelativePathNotFound);
+            error_message = Some(e.to_string());
+            None
+        }
+    };
+
+    if error_type.is_some() {
+        return Err(
+            AddFileError{
+                relative_path,
+                absolute_path,
+                error_type: error_type.unwrap().add_file_error_type_to_string(),
+                error_message
+            }
+        )
+    }
+     
 
     // error if file is a directory
     if local_path.is_dir() {
         return Err(
             AddFileError{
-                relative_path: Some(relative_path),
+                relative_path,
+                absolute_path,
                 error_type: AddFileErrorType::PathIsDirectory.add_file_error_type_to_string(),
                 error_message: None
             }
@@ -304,7 +328,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
         Some(hash) => hash,
         None => return Err(
             AddFileError{
-                relative_path: Some(relative_path),
+                relative_path,
+                absolute_path,
                 error_type: AddFileErrorType::HashNotFound.add_file_error_type_to_string(),
                 error_message: None
             }
@@ -317,7 +342,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
         Err(e) => {
             return Err(
                 AddFileError{
-                    relative_path: Some(relative_path),
+                    relative_path,
+                    absolute_path,
                     error_type: AddFileErrorType::SizeNotFound.add_file_error_type_to_string(),
                     error_message: Some(e.to_string())
                 }
@@ -335,7 +361,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
                         None => {
                             return Err(
                                 AddFileError{
-                                    relative_path: Some(relative_path),
+                                    relative_path,
+                                    absolute_path,
                                     error_type: AddFileErrorType::OwnerNameNotFound.add_file_error_type_to_string(),
                                     error_message: None
                                 }
@@ -346,7 +373,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
                 Err(e) => {
                     return Err(
                         AddFileError{
-                            relative_path: Some(relative_path),
+                            relative_path,
+                            absolute_path,
                             error_type: AddFileErrorType::OwnerNameNotFound.add_file_error_type_to_string(),
                             error_message: Some(e.to_string())
                         }
@@ -358,7 +386,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
         Err(e) => {
             return Err(
                 AddFileError{
-                    relative_path: Some(relative_path),
+                    relative_path,
+                    absolute_path,
                     error_type: AddFileErrorType::OwnerNotFound.add_file_error_type_to_string(),
                     error_message: Some(e.to_string())
                 }
@@ -382,7 +411,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
         Err(e) => {
             return Err(
                 AddFileError{
-                    relative_path: Some(relative_path),
+                    relative_path,
+                    absolute_path,
                     error_type: AddFileErrorType::MetadataNotSaved.add_file_error_type_to_string(),
                     error_message: Some(e.to_string())
                 }
@@ -396,7 +426,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
         Err(e) => {
             return Err(
                 AddFileError{
-                    relative_path: Some(relative_path),
+                    relative_path,
+                    absolute_path,
                     error_type: AddFileErrorType::GitIgnoreNotAdded.add_file_error_type_to_string(),
                     error_message: Some(e.to_string())
                 }
@@ -412,21 +443,21 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     // copy the file to the storage directory if it's not already there and the metadata was successfully saved
     if !storage_path.exists() { // if not already copied
         // copy and get error
-        match copy_file_to_storage_directory(local_path, &storage_path, &relative_path, &permissions, &group_name, strict) {
+        match copy_file_to_storage_directory(local_path, &storage_path, relative_path.clone(), absolute_path.clone(), &permissions, &group_name, strict) {
             Ok(_) => outcome = Outcome::Success,
             Err(e) => return Err(e)
         };
     }
 
     return Ok(
-        SuccessFile {relative_path, absolute_path, hash, outcome: outcome.outcome_to_string(), size}
+        SuccessFile{relative_path: relative_path.unwrap(), absolute_path: absolute_path.unwrap(), hash, outcome: outcome.outcome_to_string(), size}
     )
 }
 
 
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: &String, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: Option<String>, absolute_path: Option<String>, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
     match copy::copy(&local_path, &dest_path) {
         Ok(_) => {
             // set permissions
@@ -439,7 +470,8 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
                     }
                     else {
                         return Err(AddFileError{
-                            relative_path: Some(relative_path.clone()),
+                            relative_path,
+                            absolute_path,
                             error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
                             error_message: Some(e.to_string())
                         })
@@ -459,7 +491,8 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
                         }
                         else {
                             return Err(AddFileError{
-                                relative_path: Some(relative_path.clone()),
+                                relative_path,
+                                absolute_path,
                                 error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
                                 error_message: Some(e.to_string())
                             })
@@ -477,7 +510,8 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
             else { // non-strict
                 return Err(
                     AddFileError{
-                        relative_path: Some(relative_path.clone()),
+                        relative_path,
+                        absolute_path,
                         error_type: AddFileErrorType::FileNotCopied.add_file_error_type_to_string(),
                         error_message: Some(copy_e.to_string())
                     }

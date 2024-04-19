@@ -43,6 +43,9 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
                 None => continue
             }
         }
+        else if PathBuf::from(entry).is_dir() {
+            queued_paths.push(PathBuf::from(entry));
+        }
 
         // else, entry is a glob
         else { 
@@ -54,7 +57,9 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
                 }
             };
             
+            let mut entered_loop: bool = false;
             for file in glob {
+                entered_loop = true;
                 match file {
                     Ok(path) => {
                         match filter_path(&path, &queued_paths) {
@@ -68,6 +73,11 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
                     }
                 } // match file in glob
             } // for file in glob
+
+            // if no files parsed from glob, add to queued_paths anyway
+            if !entered_loop {
+                queued_paths.push(PathBuf::from(entry));
+            }
         } // else, is a glob
     } // for entry in files
 
