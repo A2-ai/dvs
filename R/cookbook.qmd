@@ -1,3 +1,5 @@
+## REVIEW: this qmd + the underlying dir should be moved to the inst/ folder for demo space - R/ should only contain code functionality
+
 ```{r}
 library(purrr)
 library(tidyverse)
