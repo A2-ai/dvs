@@ -1,5 +1,7 @@
 # rextendr::document()
 # devtools::load_all()
+
+## REVIEW: we don't want any libraries explicitly loaded in the package, so please remove this
 library(rlang)
 library(purrr)
 library(rjson)
@@ -22,6 +24,7 @@ dvs_init <- function(storage_directory, permissions = 664, group = "", strict = 
   return(invisible())
 }
 
+## REVIEW: why are you not just normalizePath'ing every file, and expcictly looking for ~
 clean_paths <- function(files) {
   for (i in seq_along(files)) {
     if (str_detect(files[i], "~")) {
@@ -45,6 +48,7 @@ dvs_add <- function(files, message = "", strict = TRUE) {
 
   output <- dvs_add_impl(files, message, strict)
 
+  # REVIEW: i'm not following this, how does calling fromJSON even work - isn't output a dataframe or a list of dataframes or the like?
   if (length(output) == 1) { # if returned an error, one data frame with errors
     result <- fromJSON(output)
     as.data.frame(result)
@@ -62,6 +66,7 @@ dvs_add <- function(files, message = "", strict = TRUE) {
 #'
 #' @export
 dvs_get <- function(files) {
+   ## REVIEW: why map_chr - normalizePath should take a vector
   files <- files |> map_chr(normalizePath, mustWork = FALSE)
   dvs_get_impl(files)
 }
@@ -74,6 +79,7 @@ dvs_get <- function(files) {
 #'
 #' @export
 dvs_status <- function(files = c()) {
+   ## REVIEW: same as above why map_chr - normalizePath should take a vector
     files <- files |> map_chr(normalizePath, mustWork = FALSE)
   dvs_status_impl(files)
 }
