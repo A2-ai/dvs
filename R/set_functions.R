@@ -42,12 +42,12 @@ clean_paths <- function(files) {
 dvs_add <- function(files, message = "", strict = TRUE) {
   files <- clean_paths(files)
 
-
   output <- dvs_add_impl(files, message, strict)
 
   if (length(output) == 1) { # if returned an error, one data frame with errors
-    result <- fromJSON(output)
-    as.data.frame(result)
+    # result <- fromJSON(output)
+    # as.data.frame(result)
+    output
   }
   else { # else, success, return list of two data frames, one with file successes, one with file errors
     list(successes = output[[1]], errors = output[[2]])
@@ -74,7 +74,7 @@ dvs_get <- function(files) {
 #'
 #' @export
 dvs_status <- function(files = c()) {
-    files <- files |> map_chr(normalizePath, mustWork = FALSE)
+    files <- files |> map(normalizePath, mustWork = FALSE)
   dvs_status_impl(files)
 }
 

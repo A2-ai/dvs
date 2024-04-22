@@ -18,15 +18,12 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str, strict: bool) -> std
 #[extendr]
 fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> Robj {
     let added_files_result = add::add(&globs, &String::from(message), strict).map_err(|e| {
-        Error::Other(serde_json::to_string(&e).unwrap())
-        //Error::Other(serde_json::to_vec_pretty(&e)))
-        //Error::Other(e.to_string())
+        Error::Other(format!("{}: {}", e.error_type, e.error_message.unwrap()))
     });
 
     let added_files = match added_files_result {
         Ok(files) => files,
         Err(e) => return Robj::from(e),
-    // };
     };
 
     let success_files = match added_files.0.into_dataframe() {

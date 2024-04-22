@@ -1,9 +1,9 @@
 use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
+
 use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
 use std::{u32, fmt, path::PathBuf};
 use file_owner::{Group, PathExt};
 use serde::Serialize;
-use anyhow::Context;
 
 // Outcome enum
 #[derive(Clone, PartialEq, Serialize)]
@@ -71,7 +71,7 @@ impl fmt::Display for AddFileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.error_message.clone() {
             Some(message) => {
-                write!(f, "{}", message)
+                write!(f, "{message}")
             }
             None => {
                 write!(f, "NA")
@@ -97,7 +97,7 @@ enum AddErrorType {
 impl AddErrorType {
     fn add_error_type_to_string(&self) -> String {
         match self {
-            AddErrorType::AnyFilesDNE => String::from("a least one inputted file not found"),
+            AddErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
             AddErrorType::GitRepoNotFound => String::from("git repo not found"),
             AddErrorType::ConfigNotFound => String::from("configuration file not found"),
             AddErrorType::GroupNotFound => String::from("linux primary group not found"),
@@ -151,72 +151,50 @@ pub struct ErrorFile {
 
 pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<(Vec<SuccessFile>, Vec<ErrorFile>), AddError> {
     // Get git root
-    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
-        Ok(git_dir) => git_dir,
-        Err(e) => {
-            return Err(
-                AddError{ 
-                    error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
-                    error_message: Some(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))
-                }
-            )
+    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
+        AddError{ 
+            error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
+            error_message: Some(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))
         }
-    };
+    )?;
 
     // load the config
-    let conf = match config::read(&git_dir) {
-        Ok(conf) => conf,
-        Err(e) => {
-            return Err(
-                AddError{
-                error_type: AddErrorType::ConfigNotFound.add_error_type_to_string(),
-                error_message: Some(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))
-                }
-            )
+    let conf = config::read(&git_dir).map_err(|e| 
+        AddError{
+            error_type: AddErrorType::ConfigNotFound.add_error_type_to_string(),
+            error_message: Some(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))
         }
-    };
+    )?;
 
-    // check group if group was specified
-    let group_name = conf.group;
-    if group_name != "" {
-        match Group::from_name(group_name.as_str()) {
-            Ok(_) => {}
-            Err(e) => {
-                return Err(
-                    AddError{
-                        error_type: AddErrorType::GroupNotFound.add_error_type_to_string(),
-                        error_message: Some(e.to_string())
-                    }
-                )
-            }
-        };
-    }
-
-    // check storage directory exists
-    let storage_dir: PathBuf = match conf.storage_dir.canonicalize() {
-        Ok(path) => path,
-        Err(e) => {
-            return Err(
+    // get group, check if specified
+    let group = 
+        if conf.group == "" {
+            None
+        }
+        else {
+            Some(Group::from_name(&conf.group.as_str()).map_err(|e|
                 AddError{
-                    error_type: AddErrorType::StorageDirNotFound.add_error_type_to_string(),
+                    error_type: AddErrorType::GroupNotFound.add_error_type_to_string(),
                     error_message: Some(e.to_string())
                 }
-            )
+            )?)
+        };
+        
+    // check storage directory exists
+    let storage_dir = conf.storage_dir.canonicalize().map_err(|e|
+        AddError{
+            error_type: AddErrorType::StorageDirNotFound.add_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-    };
+    )?;
 
     // get file permissions
-    let permissions: u32 = match config::get_mode_u32(&conf.permissions) {
-        Ok(mode) => mode,
-        Err(e) => {
-            return Err(
-                AddError{
-                    error_type: AddErrorType::PermissionsInvalid.add_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
+    let permissions = config::get_mode_u32(&conf.permissions).map_err(|e|
+        AddError{
+            error_type: AddErrorType::PermissionsInvalid.add_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-    };
+    )?;
 
     // collect paths out of input - sort through globs/explicitly-named files
     let queued_paths = parse::parse_files_from_globs(&globs);
@@ -226,30 +204,20 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
         println!("warning: no paths queued to add to devious")
     }
 
-    // check if any files don't exist first
-    // std::result:: Result<Vec<PathBuf>, AddError>
-    // let _queued_abs_paths_result: std::result:: Result<Vec<PathBuf>, AddError> = 
+    // return error if any files don't exist
     queued_paths.iter().map(|file| {
-        match file.canonicalize() {
-            Ok(path) => Ok(path),
-            Err(e) => {
-                return Err(
-                    AddError{
-                        error_type: AddErrorType::AnyFilesDNE.add_error_type_to_string(),
-                        error_message: Some(format!("{} not found: {e}", file.display()))
-                    }
-                )
-            }
-        }
+       file.canonicalize().map_err(|e|
+            AddError{
+                error_type: AddErrorType::AnyFilesDNE.add_error_type_to_string(),
+                error_message: Some(format!("{} not found: {e}", file.display()))
+            })
     }).collect::<std::result:: Result<Vec<PathBuf>, AddError>>()?;
 
-    //let queued_abs_paths = queued_abs_paths_result?;
-    
     // add each file to the storage directory
     let mut success_files: Vec<SuccessFile> = Vec::new();
     let mut error_files: Vec<ErrorFile> = Vec::new();
     for file in queued_paths { // had to use for loop instead of map because add returns a result
-        match add_file(&file, &git_dir, &group_name, &storage_dir, &permissions, &message, strict) {
+        match add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict) {
             Ok(file) => {
                 success_files.push(file);
             }
@@ -269,7 +237,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     return Ok((success_files, error_files))
 } // run_add_cmd
 
-fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
+fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
     let mut error_type_temp: Option<AddFileErrorType> = None;
     let mut error_message_temp: Option<String> = None;
     // get absolute path
@@ -324,76 +292,43 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     }
 
     // get file hash
-    let hash = match hash::get_file_hash(&local_path) {
-        Some(hash) => hash,
-        None => return Err(
-            AddFileError{
-                relative_path,
-                absolute_path,
-                error_type: AddFileErrorType::HashNotFound.add_file_error_type_to_string(),
-                error_message: None
-            }
-        )
-    };
-    
-    // get file size
-    let size: u64 = match local_path.metadata() {
-        Ok(data) => data.len(),
-        Err(e) => {
-            return Err(
-                AddFileError{
-                    relative_path,
-                    absolute_path,
-                    error_type: AddFileErrorType::SizeNotFound.add_file_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
+    let hash = hash::get_file_hash(&local_path).ok_or(
+        AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::HashNotFound.add_file_error_type_to_string(),
+            error_message: None
         }
-    };
+    )?;
 
-    // get user name
-    let user_name: String = match local_path.owner().with_context(|| format!("owner not found")) {
-        Ok(owner) => {
-            let owner_name = match owner.name() {
-                Ok(name) => {
-                    match name {
-                        Some(name) => name,
-                        None => {
-                            return Err(
-                                AddFileError{
-                                    relative_path,
-                                    absolute_path,
-                                    error_type: AddFileErrorType::OwnerNameNotFound.add_file_error_type_to_string(),
-                                    error_message: None
-                                }
-                            )
-                        }
-                    }
-                }
-                Err(e) => {
-                    return Err(
-                        AddFileError{
-                            relative_path,
-                            absolute_path,
-                            error_type: AddFileErrorType::OwnerNameNotFound.add_file_error_type_to_string(),
-                            error_message: Some(e.to_string())
-                        }
-                    )
-                }
-            };
-            owner_name
+    // get file size
+    let size = local_path.metadata().map_err(|e|
+        AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::SizeNotFound.add_file_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-        Err(e) => {
-            return Err(
-                AddFileError{
-                    relative_path,
-                    absolute_path,
-                    error_type: AddFileErrorType::OwnerNotFound.add_file_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
-        }
-    };
+    )?.len();
+
+    let user_name: String = local_path.owner()
+        .map_err(|e|
+            AddFileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: AddFileErrorType::OwnerNotFound.add_file_error_type_to_string(),
+                error_message: Some(e.to_string())
+            }
+        )?
+        .name()
+        .map_err(|e|
+            AddFileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: AddFileErrorType::OwnerNameNotFound.add_file_error_type_to_string(),
+                error_message: Some(e.to_string())
+            }
+        )?.unwrap_or_default();
 
     // create metadata
     let metadata = file::Metadata{
@@ -406,34 +341,24 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     };
 
     // write metadata file
-    match file::save(&metadata, &local_path) {
-        Ok(_) => {},
-        Err(e) => {
-            return Err(
-                AddFileError{
-                    relative_path,
-                    absolute_path,
-                    error_type: AddFileErrorType::MetadataNotSaved.add_file_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
+    file::save(&metadata, &local_path).map_err(|e|
+        AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::MetadataNotSaved.add_file_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-    };
+    )?;
 
     // Add file to gitignore
-    match ignore::add_gitignore_entry(local_path) {
-        Ok(_) => {},
-        Err(e) => {
-            return Err(
-                AddFileError{
-                    relative_path,
-                    absolute_path,
-                    error_type: AddFileErrorType::GitIgnoreNotAdded.add_file_error_type_to_string(),
-                    error_message: Some(e.to_string())
-                }
-            )
+    ignore::add_gitignore_entry(local_path).map_err(|e|
+        AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::GitIgnoreNotAdded.add_file_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-    };
+    )?;
     
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &hash);
@@ -443,9 +368,15 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
     // copy the file to the storage directory if it's not already there and the metadata was successfully saved
     if !storage_path.exists() { // if not already copied
         // copy and get error
-        match copy_file_to_storage_directory(local_path, &storage_path, relative_path.clone(), absolute_path.clone(), &permissions, &group_name, strict) {
+        match copy_file_to_storage_directory(local_path, &storage_path, relative_path.clone(), absolute_path.clone(), &permissions, &group) {
             Ok(_) => outcome = Outcome::Success,
-            Err(e) => return Err(e)
+            Err(e) => {
+                if strict {
+                    // TODO: delete metadata
+                    // TODO: delete copied file
+                }
+                return Err(e)
+            }
         };
     }
 
@@ -457,67 +388,34 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group_name: &String, storag
 
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: Option<String>, absolute_path: Option<String>, mode: &u32, group_name: &String, strict: bool) -> std::result::Result<(), AddFileError> {
-    match copy::copy(&local_path, &dest_path) {
-        Ok(_) => {
-            // set permissions
-            match copy::set_file_permissions(&mode, &dest_path) {
-                Ok(_) => {},
-                Err(e) => {
-                    if strict {
-                        // TODO: delete copied file
-                        // TODO: delete metadata file
-                    }
-                    else {
-                        return Err(AddFileError{
-                            relative_path,
-                            absolute_path,
-                            error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
-                            error_message: Some(e.to_string())
-                        })
-                    }
-                }
-            };
-
-            if group_name != "" {
-                // set group ownership
-                let group = Group::from_name(group_name).with_context(|| format!("group not found: {group_name}")).unwrap();
-                match dest_path.set_group(group.clone()) {
-                    Ok(_) => {},
-                    Err(e) => {
-                        if strict {
-                            // TODO: delete copied file
-                            // TODO: delete metadata file
-                        }
-                        else {
-                            return Err(AddFileError{
-                                relative_path,
-                                absolute_path,
-                                error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
-                                error_message: Some(e.to_string())
-                            })
-                        }
-                    }
-                };
-            }
-          
-        } // Ok, could copy
-        Err(copy_e) => { // could not copy
-            if strict {
-                // TODO: delete copied file
-                // TODO: delete metadata file
-            } // strict
-            else { // non-strict
-                return Err(
-                    AddFileError{
-                        relative_path,
-                        absolute_path,
-                        error_type: AddFileErrorType::FileNotCopied.add_file_error_type_to_string(),
-                        error_message: Some(copy_e.to_string())
-                    }
-                )
-            }
+fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: Option<String>, absolute_path: Option<String>, mode: &u32, group: &Option<Group>) -> std::result::Result<(), AddFileError> {
+    copy::copy(&local_path, &dest_path).map_err(|e|
+        AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::FileNotCopied.add_file_error_type_to_string(),
+            error_message: Some(e.to_string())
         }
-    };
+    )?;
+
+    copy::set_file_permissions(&mode, &dest_path).map_err(|e|
+        AddFileError {
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
+            error_message: Some(e.to_string()),
+        }
+    )?;
+
+    if group.is_some() {
+        dest_path.set_group(group.unwrap()).map_err(|e|
+            AddFileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
+                error_message: Some(e.to_string())
+            }
+        )?;
+    }
     return Ok(())
 }
