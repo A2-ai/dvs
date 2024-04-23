@@ -139,10 +139,15 @@ pub struct ErrorFile {
     error_message: Option<String>,
 }
 
+pub struct AddedFileAttempts {
+    pub success_files: Vec<SuccessFile>,
+    pub error_files: Vec<ErrorFile>
+}
 
 
 
-pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<(Vec<SuccessFile>, Vec<ErrorFile>), AddError> {
+
+pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<AddedFileAttempts, AddError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
         AddError{ 
@@ -227,7 +232,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
         };
     }
 
-    return Ok((success_files, error_files))
+    return Ok(AddedFileAttempts{success_files, error_files})
 } // run_add_cmd
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {

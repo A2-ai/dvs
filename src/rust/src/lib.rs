@@ -26,12 +26,12 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> Robj {
         Err(e) => return Robj::from(e),
     };
 
-    let success_files = match added_files.0.into_dataframe() {
+    let success_files = match added_files.success_files.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting sucessfully added files to data frame: {}", e)),
     };
 
-    let error_files = match added_files.1.into_dataframe() {
+    let error_files = match added_files.error_files.into_dataframe() {
         Ok(dataframe) => dataframe.as_robj().clone(),
         Err(e) => Robj::from(format!("Error converting errored added files to data frame: {}", e)),
     };
