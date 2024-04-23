@@ -7,10 +7,10 @@
 dvs_status(files = c())
 }
 \arguments{
-\item{files}{optional argument, when specified, returns data frame with only these specified files}
+\item{files}{optional argument: when specified, returns data frame with only these specified file paths or glob patterns}
 }
 \value{
-a data frame with the statuses of files previously added
+a data frame with the statuses of all previously added files
 }
 \description{
 get the status of any file previously added to the storage directory

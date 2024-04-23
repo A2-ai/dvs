@@ -7,7 +7,7 @@
 dvs_get(files)
 }
 \arguments{
-\item{files}{files to get from the storage directory}
+\item{files}{file paths or glob patterns to get from the storage directory}
 }
 \value{
 a data frame with the states of success of retrieved files
