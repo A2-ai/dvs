@@ -110,19 +110,12 @@ impl AddErrorType {
 #[derive(Debug, Serialize)]
 pub struct AddError {
     pub error_type: String,
-    pub error_message: Option<String>,
+    pub error_message:String,
 }
 
 impl fmt::Display for AddError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.error_message.clone() {
-            Some(message) => {
-                write!(f, "{}", message)
-            }
-            None => {
-                write!(f, "NA")
-            }
-        }
+        write!(f, "{}: {}", self.error_type, self.error_message)
     }
 }
 
@@ -154,7 +147,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
         AddError{ 
             error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
-            error_message: Some(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))
+            error_message: format!("could not find git repo root - make sure you're in an active git repository: \n{e}")
         }
     )?;
 
@@ -162,7 +155,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let conf = config::read(&git_dir).map_err(|e| 
         AddError{
             error_type: AddErrorType::ConfigNotFound.add_error_type_to_string(),
-            error_message: Some(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))
+            error_message: format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")
         }
     )?;
 
@@ -175,7 +168,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
             Some(Group::from_name(&conf.group.as_str()).map_err(|e|
                 AddError{
                     error_type: AddErrorType::GroupNotFound.add_error_type_to_string(),
-                    error_message: Some(e.to_string())
+                    error_message: e.to_string()
                 }
             )?)
         };
@@ -184,7 +177,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let storage_dir = conf.storage_dir.canonicalize().map_err(|e|
         AddError{
             error_type: AddErrorType::StorageDirNotFound.add_error_type_to_string(),
-            error_message: Some(e.to_string())
+            error_message: e.to_string()
         }
     )?;
 
@@ -192,7 +185,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let permissions = config::get_mode_u32(&conf.permissions).map_err(|e|
         AddError{
             error_type: AddErrorType::PermissionsInvalid.add_error_type_to_string(),
-            error_message: Some(e.to_string())
+            error_message: e.to_string()
         }
     )?;
 
@@ -209,7 +202,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
        file.canonicalize().map_err(|e|
             AddError{
                 error_type: AddErrorType::AnyFilesDNE.add_error_type_to_string(),
-                error_message: Some(format!("{} not found: {e}", file.display()))
+                error_message: format!("{} not found: {e}", file.display())
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, AddError>>()?;
 
