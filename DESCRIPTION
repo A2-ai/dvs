@@ -1,9 +1,9 @@
 Package: Rdevious
 Title: Large/Sensitive File Linker for Git Repositories
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R: c(
     person("Jenna", "Johnson", , "jenna@a2-ai.com", role = c("aut", "cre")),
-    person("Devin", "Pastoor", , "devin@a2-ai.com", role = c("aut", "cre"))
+    person("Devin", "Pastoor", , "devin@a2-ai.com", role = c("aut")))
 Description: This package allows users to version large or sensitive files under Git without tracking the file directly in a repository.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license

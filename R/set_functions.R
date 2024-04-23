@@ -1,8 +1,7 @@
 # rextendr::document()
 # devtools::load_all()
-library(rlang)
-library(purrr)
-library(rjson)
+#library(rlang)
+#library(purrr)
 
 #' initialize devious
 #'
@@ -10,12 +9,13 @@ library(rjson)
 #' @param permissions optional argument to set linux file permissions (in octal format)
 #' @param group optional argument to set group of files stored
 #'
+#'
 #' @return nothing, or errors initializing
 #'
 #' @export
-dvs_init <- function(storage_directory, permissions = 664, group = "", strict = TRUE) {
+dvs_init <- function(storage_directory, permissions = 664, group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
-  res <- dvs_init_impl(storage_directory, permissions, group, strict)
+  res <- dvs_init_impl(storage_directory, permissions, group)
   if (!is.null(res$error)) {
     rlang::abort(res$error)
   }
@@ -39,9 +39,10 @@ clean_paths <- function(files) {
 #' @return a data frame with the states of success of added files
 #'
 #' @export
-dvs_add <- function(files, message = "", strict = TRUE) {
+dvs_add <- function(files, message = "") {
   files <- clean_paths(files)
 
+  strict = TRUE
   output <- dvs_add_impl(files, message, strict)
 
   if (length(output) == 1) { # if returned an error, one data frame with errors

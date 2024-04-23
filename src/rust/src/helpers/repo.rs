@@ -23,8 +23,7 @@ fn is_git_repo(dir: &PathBuf) -> bool {
 }
 
 pub fn is_directory_empty(directory: &Path) -> Result<bool> {
-    let mut entries = fs::read_dir(directory)
-    .with_context(|| format!("could not check if directory: {} is empty", directory.display()))?;
+    let mut entries = fs::read_dir(directory)?;
     Ok(entries.next().is_none())
 }
 
@@ -48,7 +47,7 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> Result<PathBuf> {
 pub fn is_in_git_repo(path: &PathBuf, git_dir: &PathBuf) -> bool {
     match path.canonicalize() {
         Ok(path) => {
-            return path.strip_prefix(&git_dir).unwrap() == path
+            return path.strip_prefix(&git_dir).unwrap() != path
         }
         Err(_) => return false,
     }
