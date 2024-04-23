@@ -239,25 +239,14 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
     // get absolute path
-    // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
     let absolute_path = Some(local_path.canonicalize().map_err(|e|
-        AddFileError{
+        AddFileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
             relative_path: None,
             absolute_path: None,
             error_type: AddFileErrorType::AbsolutePathNotFound.add_file_error_type_to_string(),
             error_message: Some(e.to_string())
         }
     )?.display().to_string());
-
-    // check if file in git repo
-    if !repo::is_in_git_repo(&local_path, &git_dir) {
-        return Err(AddFileError{
-            relative_path: None,
-            absolute_path,
-            error_type: AddFileErrorType::FileNotInGitRepo.add_file_error_type_to_string(),
-            error_message: None
-        })
-    }
 
     // get relative path
     let relative_path = Some(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
@@ -269,6 +258,15 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             }
         )?.display().to_string());
 
+    // check if file in git repo
+    if !repo::is_in_git_repo(&local_path, &git_dir) {
+        return Err(AddFileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: AddFileErrorType::FileNotInGitRepo.add_file_error_type_to_string(),
+            error_message: None
+        })
+    }
 
     // error if file is a directory
     if local_path.is_dir() {
@@ -302,6 +300,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
         }
     )?.len();
 
+    // get user name
     let user_name: String = local_path.owner()
         .map_err(|e|
             AddFileError{
@@ -325,8 +324,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let metadata = file::Metadata{
         file_hash: hash.clone(),
         file_size: size,
-        //time_stamp: chrono::Local::now().to_string(),
-        time_stamp: chrono::offset::Utc::now().to_string(),
+        time_stamp: chrono::Local::now().to_string(),
+        //time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),
         saved_by: user_name
     };
@@ -354,22 +353,20 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &hash);
     
-    let mut outcome: Outcome = Outcome::AlreadyPresent;
-   
     // copy
-    if !storage_path.exists() { // if not already copied
-        // copy and get error
-        match copy_file_to_storage_directory(local_path, &storage_path, &relative_path, &absolute_path, &permissions, &group) {
-            Ok(()) => outcome = Outcome::Success,
-            Err(e) => {
-                if strict {
-                    // TODO: delete metadata
-                    // TODO: delete copied file
-                }
-                return Err(e)
+    let outcome = if !storage_path.exists() { // if not already copied
+       if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &relative_path, &absolute_path, &permissions, &group) {
+            if strict {
+                // TODO
             }
-        };
+            return Err(e)
+       };
+        Outcome::Success
     }
+    else {
+        Outcome::AlreadyPresent
+    };
+
 
     return Ok(
         SuccessFile{relative_path: relative_path.unwrap(), absolute_path: absolute_path.unwrap(), hash, outcome: outcome.outcome_to_string(), size}
@@ -379,9 +376,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
 
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, relative_path: &Option<String>, absolute_path: &Option<String>, mode: &u32, group: &Option<Group>) -> std::result::Result<(), AddFileError> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, relative_path: &Option<String>, absolute_path: &Option<String>, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), AddFileError> {
    // copy
-    copy::copy(&local_path, &dest_path).map_err(|e|
+    copy::copy(&local_path, &storage_path).map_err(|e|
         AddFileError{
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
@@ -391,7 +388,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
     )?;
 
     // set file permissions
-    copy::set_file_permissions(&mode, &dest_path).map_err(|e|
+    copy::set_file_permissions(&permissions, &storage_path).map_err(|e|
         AddFileError {
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
@@ -402,7 +399,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, dest_path: &PathBuf, rel
 
     // set group (if specified)
     if group.is_some() {
-        dest_path.set_group(group.unwrap()).map_err(|e|
+        storage_path.set_group(group.unwrap()).map_err(|e|
             AddFileError{
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
