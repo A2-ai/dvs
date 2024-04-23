@@ -1,7 +1,5 @@
 # rextendr::document()
 # devtools::load_all()
-#library(rlang)
-#library(purrr)
 
 #' initialize devious
 #'
@@ -15,11 +13,7 @@
 #' @export
 dvs_init <- function(storage_directory, permissions = 664, group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
-  res <- dvs_init_impl(storage_directory, permissions, group)
-  # if (!is.null(res$error)) {
-  #   rlang::abort(res$error)
-  # }
-  return(invisible())
+  dvs_init_impl(storage_directory, permissions, group)
 }
 
 #' @import stringr
@@ -45,10 +39,6 @@ dvs_add <- function(files, message = "") {
 
   strict = TRUE
   res <- dvs_add_impl(files, message, strict)
-
-  # if (!is.null(res$error)) {
-  #   rlang::abort(res$error)
-  # }
 
   list(successes = res[[1]], errors = res[[2]])
 

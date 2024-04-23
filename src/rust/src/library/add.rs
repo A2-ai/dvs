@@ -214,7 +214,8 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     // add each file to the storage directory
     let mut success_files: Vec<SuccessFile> = Vec::new();
     let mut error_files: Vec<ErrorFile> = Vec::new();
-    for file in queued_paths { // had to use for loop instead of map because add returns a result
+
+    queued_paths.into_iter().for_each(|file| {
         match add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict) {
             Ok(file) => {
                 success_files.push(file);
@@ -230,10 +231,10 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
                 error_files.push(error_file)
             }
         };
-    }
+    });
 
     return Ok(AddedFileAttempts{success_files, error_files})
-} // run_add_cmd
+}
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<SuccessFile, AddFileError> {
     // get absolute path
@@ -369,7 +370,6 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             Outcome::AlreadyPresent
         };
 
-
     return Ok(
         SuccessFile{relative_path: relative_path.unwrap(), absolute_path: absolute_path.unwrap(), hash, outcome: outcome.outcome_to_string(), size}
     )
@@ -395,7 +395,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
             error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
-            error_message: Some(e.to_string()),
+            error_message: Some(format!("{permissions} {e}")),
         }
     )?;
 
@@ -406,7 +406,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
                 error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
-                error_message: Some(e.to_string())
+                error_message: Some(format!("{} {e}", group.unwrap())) // group.is_some() so can safely unwrap
             }
         )?;
     }
