@@ -2,7 +2,6 @@ use crate::helpers::{repo, config};
 use std::{ffi::OsStr, fmt, fs::create_dir, path::PathBuf};
 use path_absolutize::Absolutize;
 use file_owner::Group;
-// use anyhow::{anyhow, Context};
 
 #[derive(Debug)]
 pub struct InitError {
@@ -18,23 +17,27 @@ impl fmt::Display for InitError {
 
 #[derive(Clone, PartialEq)]
 enum InitErrorType {
+    ProjAlreadyInited,
     StorageDirNotCreated,
     StorageDirNotADir,
     GitRepoNotFound,
     ConfigNotCreated,
     GroupNotFound,
     PermissionsInvalid,
+    DirEmptyNotChecked
 }
 
 impl InitErrorType {
     fn init_error_type_to_string(&self) -> String {
         match self {
+            InitErrorType::ProjAlreadyInited => String::from("project already initialized"),
             InitErrorType::GitRepoNotFound => String::from("git repo not found"),
             InitErrorType::StorageDirNotADir => String::from("storage directory input is not a directory"),
             InitErrorType::ConfigNotCreated => String::from("configuration file not found"),
             InitErrorType::GroupNotFound => String::from("linux primary group not found"),
             InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
             InitErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
+            InitErrorType::DirEmptyNotChecked => String::from("could not check if storage directory is empty"),
         }
     }
 }
@@ -51,6 +54,16 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
             error_message: format!("make sure you're in an active git repository. {e}")
         }
     )?;
+
+    // if already initialized
+    if git_dir.join(PathBuf::from(r"dvs.yaml")).exists() {
+        return Err(
+            InitError{
+                error_type: InitErrorType::ProjAlreadyInited.init_error_type_to_string(),
+                error_message: format!("already initialized project with dvs. to change initialization settings, manually update dvs.yaml in project root")
+            }
+        )
+    }
 
     // get absolute path, but don't check if it exists yet
     let storage_dir_abs = PathBuf::from(storage_dir.absolutize().unwrap());
@@ -82,14 +95,15 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         println!("storage directory already exists");
 
         //  Warn if storage dir is not empty
-        match repo::is_directory_empty(&storage_dir_abs) {
-            Ok(empty) => {
-                if !empty {
-                    println!("warning: storage directory is not empty")
-                }
+        if !repo::is_directory_empty(&storage_dir_abs).map_err(|e|
+            InitError{
+                error_type: InitErrorType::DirEmptyNotChecked.init_error_type_to_string(),
+                error_message: e.to_string()
             }
-            Err(e) => {}
+        )? {
+            println!("warning: storage directory not empty")
         }
+
     } // else
 
     // warn if storage directory is in git repo

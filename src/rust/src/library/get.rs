@@ -34,13 +34,13 @@ pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
     // get git root
     let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
         Ok(git_dir) => git_dir,
-        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root - make sure you're in an active git repository: \n{e}"))),
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root; make sure you're in an active git repository: {e}"))),
     };
 
     // load the config
     let conf = match config::read(&git_dir) {
         Ok(conf) => conf,
-        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}"))),
+        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}"))),
     };
 
     // collect queued paths

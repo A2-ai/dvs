@@ -7,11 +7,11 @@
 dvs_init(storage_directory, permissions = 664, group = "")
 }
 \arguments{
+\item{storage_directory}{path to storage directory}
+
 \item{permissions}{optional argument to set linux file permissions (in octal format)}
 
 \item{group}{optional argument to set group of files stored}
-
-\item{directory}{path to storage directory}
 }
 \value{
 nothing, or errors initializing

@@ -152,7 +152,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
         AddError{ 
             error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
-            error_message: format!("could not find git repo root - make sure you're in an active git repository: \n{e}")
+            error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
         }
     )?;
 
@@ -160,7 +160,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let conf = config::read(&git_dir).map_err(|e| 
         AddError{
             error_type: AddErrorType::ConfigNotFound.add_error_type_to_string(),
-            error_message: format!("could not load configuration file - no dvs.yaml in directory - be sure to initiate devious: \n{e}")
+            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
         }
     )?;
 
@@ -355,13 +355,13 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let outcome = 
         if !storage_path.exists() { // if not already copied
             if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &relative_path, &absolute_path, &permissions, &group) {
-                    if strict {
-                        // remove metadata file
-                        let _ = fs::remove_file(PathBuf::from(local_path.display().to_string() + ".dvsmeta"));
-                        // remove copied file from storage directory
-                        let _ = fs::remove_file(storage_path);
-                    }
-                    return Err(e)
+                if strict {
+                    // remove metadata file
+                    let _ = fs::remove_file(PathBuf::from(local_path.display().to_string() + ".dvsmeta"));
+                    // remove copied file from storage directory
+                    let _ = fs::remove_file(storage_path);
+                }
+                return Err(e)
             };
             Outcome::Success
         }
