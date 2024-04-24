@@ -7,15 +7,22 @@
 dvs_init(storage_directory, permissions = 664, group = "")
 }
 \arguments{
-\item{storage_directory}{path to storage directory}
+\item{storage_directory}{path to the desired storage directory}
 
-\item{permissions}{optional argument to set linux file permissions (in octal format)}
+\item{permissions}{optional: linux file permissions to automatically set for files added to the storage directory (in octal format)}
 
-\item{group}{optional argument to set group of files stored}
+\item{group}{optional: group to automatically set for files added to the storage directory}
 }
 \value{
-nothing, or errors initializing
+nothing, or initializing errors
 }
 \description{
 initialize devious
+}
+\examples{
+\dontrun{
+dvs_init("/data/project_x") # would initialize the project's storage directory at /data/project_x
+dvs_init("/data/project_x", 777, "project_x_group") # would initialize the project's storage directory at /data/project_x and configure the linux permissions "777" and group "project_x_group" for all files added to the storage directory
+}
+
 }

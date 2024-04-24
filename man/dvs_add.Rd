@@ -7,7 +7,7 @@
 dvs_add(files, message = "")
 }
 \arguments{
-\item{files}{files to add to the storage directory}
+\item{files}{file paths or glob patterns to add to the storage directory}
 
 \item{message}{optional argument to add a message to future data frame rows associated with these files}
 }
@@ -16,4 +16,11 @@ a data frame with the states of success of added files
 }
 \description{
 add files to the storage directory
+}
+\examples{
+\dontrun{
+dvs_add("data/derived/*.csv") # would add all csv files in data/derived to the initialized storage directory
+
+}
+
 }

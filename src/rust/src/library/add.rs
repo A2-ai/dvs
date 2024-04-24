@@ -146,7 +146,6 @@ pub struct AddedFileAttempts {
 
 
 
-
 pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<AddedFileAttempts, AddError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
