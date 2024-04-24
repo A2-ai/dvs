@@ -20,7 +20,7 @@ add files to the storage directory
 \examples{
 \dontrun{
 dvs_add("data/derived/*.csv") # would add all csv files in data/derived to the initialized storage directory
-
+dvs_add(c("data/derived/*", "model/nonmem/1001/1001.ext")) would add all files in data/derived (excluding .dvsmeta and .gitignore files) and model/nonmem/1001/1001.ext to the initialized storage directory
 }
 
 }

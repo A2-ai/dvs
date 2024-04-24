@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_get}
 \alias{dvs_get}
-\title{get files previously added to the storage directory}
+\title{get added files}
 \usage{
 dvs_get(files)
 }
@@ -13,5 +13,21 @@ dvs_get(files)
 a data frame with the states of success of retrieved files
 }
 \description{
-get files previously added to the storage directory
+get added files
+}
+\details{
+retrieves files previously added with \link{dvs_add} to the storage directory (initialized by \link{dvs_init}).
+}
+\examples{
+\dontrun{
+# would get all previously added files in data/derived from
+# the initialized storage directory
+dvs_get("data/derived/*.dvsmeta")
+
+# would get all files in data/derived (excluding
+# .gitignore files) and ~Projects/project_x/large_file.pdf
+# from the initialized storage directory
+dvs_get(c("data/derived/*", "~Projects/project_x/large_file.pdf"))
+}
+
 }

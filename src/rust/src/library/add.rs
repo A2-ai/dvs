@@ -121,7 +121,7 @@ impl fmt::Display for AddError {
 
 impl std::error::Error for AddError {}
 
-#[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
+#[derive(Clone, PartialEq,  IntoDataFrameRow)]
 pub struct SuccessFile {
     relative_path: String,
     absolute_path: String,

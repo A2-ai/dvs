@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt, path::PathBuf};
 use crate::helpers::{config, copy, hash, file, repo, parse};
 use extendr_api::{Dataframe, IntoDataFrameRow, prelude::*};
 
@@ -21,13 +21,50 @@ impl Outcome {
 
 #[derive(IntoDataFrameRow)]
 pub struct RetrievedFile {
-    path: String,
+    relative_path: String,
     absolute_path: Option<String>,
     hash: Option<String>,
     outcome: String,
     error: Option<String>,
     size: Option<u64>
 }
+
+
+
+#[derive(Clone, PartialEq)]
+enum GetFileErrorType {
+   PathIsDirectory,
+   MetadataNotFound,
+   RelativePathNotFound,
+   FileNotCopied,
+   AbsolutePathNotFound
+}
+
+impl GetFileErrorType {
+    fn add_error_type_to_string(&self) -> String {
+        match self {
+            GetFileErrorType::PathIsDirectory => String::from("path is a directory"),
+            GetFileErrorType::MetadataNotFound => String::from("metadata file not found"),
+            GetFileErrorType::RelativePathNotFound => String::from("relative path not found"),
+            GetFileErrorType::FileNotCopied => String::from("file not copied"),
+            GetFileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GetFileError {
+    pub error_type: String,
+    pub error_message:String,
+}
+
+impl fmt::Display for GetFileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.error_type, self.error_message)
+    }
+}
+
+impl std::error::Error for GetFileError {}
 
 
 pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
@@ -72,9 +109,8 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
     // get metadata
     let metadata: Option<file::Metadata> = match file::load(&local_path) {
         Ok(data) => Some(data),
-        Err(e) => {
-            if error.is_none() {error = Some(format!("dvs metadata file not found"))}
-            println!("unable to find dvs metadata file for {}\n{e}", local_path.display());
+        Err(_e) => {
+            if error.is_none() {error = Some(format!("metadata file not found"))}
             None
         }
     };
@@ -92,7 +128,7 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
 
     if error.is_some() {
         return RetrievedFile{
-            path: local_path_display,
+            relative_path: local_path_display,
             absolute_path,
             hash: None,
             outcome: Outcome::Error.outcome_to_string(),
@@ -127,18 +163,16 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
                 // get absolute path again now that local_path should exist
                 absolute_path = match local_path.canonicalize() {
                     Ok(path) => Some(path.display().to_string()),
-                    Err(e) => {
+                    Err(_e) => {
                         outcome = Outcome::Error;
-                        error = Some(format!("TODO"));
-                        println!("TODO {}\n{e}", local_path.display());
+                        error = Some(format!("absolute path not found"));
                         None
                     }
                 };
             } // ok copy
-            Err(e) => {
+            Err(_e) => {
                 outcome = Outcome::Error;
                 error = Some(format!("file not copied"));
-                println!("unable to copy file to {}\n{e}", local_path.display());
             }
         }; // match copy
     }  // if file not present or not up-to-date
@@ -146,7 +180,7 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
     
 
     RetrievedFile {
-        path: local_path_display,
+        relative_path: local_path_display,
         absolute_path,
         hash: Some(metadata_hash),
         outcome: outcome.outcome_to_string(),

@@ -5,13 +5,14 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, IntoDataFrameRow)]
 pub struct FileStatus {
-    pub path: String,
-    pub status: String,
-    pub file_size: u64,
-    pub file_hash: String,
-    pub time_stamp: String,
-    pub saved_by: String,
-    pub message: String
+    pub relative_path: Option<String>,
+    pub status: Option<String>,
+    pub file_size: Option<u64>,
+    pub file_hash: Option<String>,
+    pub time_stamp: Option<String>,
+    pub saved_by: Option<String>,
+    pub message: Option<String>,
+    pub error: Option<String>,
 }
 
 pub fn dvs_status(globs: &Vec<String>) -> Result<Vec<FileStatus>> {
@@ -60,12 +61,50 @@ fn status(path: &PathBuf) -> FileStatus {
     // get local path relative to working directory
     let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &path) {
         Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => path.display().to_string(),
+        Err(_) => {
+            return FileStatus{
+                relative_path: None,
+                status: None,
+                file_size: None,
+                file_hash: None,
+                time_stamp: None,
+                saved_by: None,
+                message: None,
+                error: Some(format!("relative path for {} not found", path.display()))
+            }
+        },
     };
+
+    if path.is_dir() {
+        return FileStatus{
+            relative_path: Some(local_path_display),
+            status: None,
+            file_size: None,
+            file_hash: None,
+            time_stamp: None,
+            saved_by: None,
+            message: None,
+            error: Some(format!("path is a directory"))
+        }
+    }
     
     // get file info
-    let metadata = file::load(&path).expect("couldn't get metadata");
-    
+    let metadata = match file::load(&path) {
+        Ok(data) => data,
+        Err(_) => {
+            return FileStatus{
+                relative_path: Some(local_path_display),
+                status: None,
+                file_size: None,
+                file_hash: None,
+                time_stamp: None,
+                saved_by: None,
+                message: None,
+                error: Some(format!("metadata file not found"))
+            }
+        }
+    };
+            
     // assign status: not-present by default
     let mut status = String::from("out-of-sync");
 
@@ -86,13 +125,14 @@ fn status(path: &PathBuf) -> FileStatus {
 
     // assemble info intoFileStatus
     FileStatus{
-        path: local_path_display,
-        status,
-        file_size: metadata.file_size,
-        file_hash: metadata.file_hash,
-        time_stamp: metadata.time_stamp,
-        saved_by: metadata.saved_by,
-        message: metadata.message
+        relative_path: Some(local_path_display),
+        status: Some(status),
+        file_size: Some(metadata.file_size),
+        file_hash: Some(metadata.file_hash),
+        time_stamp: Some(metadata.time_stamp),
+        saved_by: Some(metadata.saved_by),
+        message: Some(metadata.message),
+        error: None,
     }
 }
 

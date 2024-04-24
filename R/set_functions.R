@@ -39,7 +39,7 @@ clean_paths <- function(files) {
 #' @examples
 #' \dontrun{
 #' dvs_add("data/derived/*.csv") # would add all csv files in data/derived to the initialized storage directory
-#'
+#' dvs_add(c("data/derived/*", "model/nonmem/1001/1001.ext")) would add all files in data/derived (excluding .dvsmeta and .gitignore files) and model/nonmem/1001/1001.ext to the initialized storage directory
 #' }
 #'
 #' @return a data frame with the states of success of added files
@@ -54,9 +54,23 @@ dvs_add <- function(files, message = "") {
   list(successes = res[[1]], errors = res[[2]])
 } # dvs_add
 
-#' get files previously added to the storage directory
+#' get added files
+#'
+#' @details retrieves files previously added with [dvs_add] to the storage directory (initialized by [dvs_init]).
 #'
 #' @param files file paths or glob patterns to get from the storage directory
+#'
+#'@examples
+#' \dontrun{
+#' # would get all previously added files in data/derived from
+#' # the initialized storage directory
+#' dvs_get("data/derived/*.dvsmeta")
+#'
+#' # would get all files in data/derived (excluding
+#' # .gitignore files) and ~Projects/project_x/large_file.pdf
+#' # from the initialized storage directory
+#' dvs_get(c("data/derived/*", "~Projects/project_x/large_file.pdf"))
+#'}
 #'
 #' @return a data frame with the states of success of retrieved files
 #'
@@ -68,11 +82,25 @@ dvs_get <- function(files) {
   dvs_get_impl(files)
 }
 
-#' get the status of any file previously added to the storage directory
+#' status report for added files
 #'
-#' @param files optional argument: when specified, returns data frame with only these specified file paths or glob patterns
+#' @details gives the statuses of previously added files (`up-to-date`, `out-of-sync`, or `not-present`)
+#' to make users aware if files stored in the storage directory don't exist in their local repository or have been updated.
+#' If no file paths or glob patterns are inputted, `dvs_status` gives the status of all previously added files.
 #'
-#' @return a data frame with the statuses of all previously added files
+#'
+#' @param files optional: when specified, returns data frame with only these specified file paths or glob patterns.
+#'
+#' @return a data frame with the statuses of previously added files
+#'
+#' @examples
+#' \dontrun{
+#'   # would give the status of all previously added files
+#'   dvs_status()
+#'   # would attempt to get the status of all files in data/derived except for .gitignore files
+#'   # (files not previously added will give an `<NA>` status in their respective row, and )
+#'   dvs_status("data/derived/*")
+#' }
 #'
 #' @import purrr
 #'

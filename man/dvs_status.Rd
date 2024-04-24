@@ -2,16 +2,31 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_status}
 \alias{dvs_status}
-\title{get the status of any file previously added to the storage directory}
+\title{status report for added files}
 \usage{
 dvs_status(files = c())
 }
 \arguments{
-\item{files}{optional argument: when specified, returns data frame with only these specified file paths or glob patterns}
+\item{files}{optional: when specified, returns data frame with only these specified file paths or glob patterns.}
 }
 \value{
-a data frame with the statuses of all previously added files
+a data frame with the statuses of previously added files
 }
 \description{
-get the status of any file previously added to the storage directory
+status report for added files
+}
+\details{
+gives the statuses of previously added files (\code{up-to-date}, \code{out-of-sync}, or \code{not-present})
+to make users aware if files stored in the storage directory don't exist in their local repository or have been updated.
+If no file paths or glob patterns are inputted, \code{dvs_status} gives the status of all previously added files.
+}
+\examples{
+\dontrun{
+  # would give the status of all previously added files
+  dvs_status()
+  # would attempt to get the status of all files in data/derived except for .gitignore files
+  # (files not previously added will give an `<NA>` status in their respective row, and )
+  dvs_status("data/derived/*")
+}
+
 }
