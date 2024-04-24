@@ -98,7 +98,7 @@ impl AddErrorType {
     fn add_error_type_to_string(&self) -> String {
         match self {
             AddErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
-            AddErrorType::GitRepoNotFound => String::from("git repo not found"),
+            AddErrorType::GitRepoNotFound => String::from("git repository not found"),
             AddErrorType::ConfigNotFound => String::from("configuration file not found"),
             AddErrorType::GroupNotFound => String::from("linux primary group not found"),
             AddErrorType::StorageDirNotFound => String::from("storage directory not found"),
@@ -121,7 +121,7 @@ impl fmt::Display for AddError {
 
 impl std::error::Error for AddError {}
 
-#[derive(Clone, PartialEq,  IntoDataFrameRow)]
+#[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct SuccessFile {
     relative_path: String,
     absolute_path: String,
@@ -320,8 +320,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
 
     // create metadata
     let metadata = file::Metadata{
-        file_hash: hash.clone(),
-        file_size: size,
+        hash: hash.clone(),
+        size,
         time_stamp: chrono::Local::now().to_string(),
         //time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),

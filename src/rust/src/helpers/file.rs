@@ -4,8 +4,8 @@ use anyhow::{anyhow, Result};
 
 #[derive(Serialize, Deserialize)]
 pub struct Metadata {
-    pub file_hash: String,
-    pub file_size: u64,
+    pub hash: String,
+    pub size: u64,
     pub time_stamp: String,
     pub message: String,
     pub saved_by: String
@@ -18,7 +18,7 @@ pub fn save(metadata: &Metadata, path: &PathBuf) -> Result<()> {
     // create file
     let _ = File::create(&metadata_file_path);
     // write to json
-    let contents = serde_json::to_string_pretty(&metadata).unwrap();
+    let contents = serde_json::to_string_pretty(&metadata)?;
     let _ = fs::write(&metadata_file_path, contents);
     Ok(())
 }
