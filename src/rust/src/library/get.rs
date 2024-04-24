@@ -31,54 +31,91 @@ pub struct RetrievedFile {
 
 
 
+// #[derive(Clone, PartialEq)]
+// enum GetFileErrorType {
+//    PathIsDirectory,
+//    MetadataNotFound,
+//    RelativePathNotFound,
+//    FileNotCopied,
+//    AbsolutePathNotFound
+// }
+
+// impl GetFileErrorType {
+//     fn get_file_error_type_to_string(&self) -> String {
+//         match self {
+//             GetFileErrorType::PathIsDirectory => String::from("path is a directory"),
+//             GetFileErrorType::MetadataNotFound => String::from("metadata file not found"),
+//             GetFileErrorType::RelativePathNotFound => String::from("relative path not found"),
+//             GetFileErrorType::FileNotCopied => String::from("file not copied"),
+//             GetFileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
+//         }
+//     }
+// }
+
+// #[derive(Debug)]
+// pub struct GetFileError {
+//     pub error_type: String,
+//     pub error_message:String,
+// }
+
+// impl fmt::Display for GetFileError {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "{}: {}", self.error_type, self.error_message)
+//     }
+// }
+
+// impl std::error::Error for GetFileError {}
+
+
 #[derive(Clone, PartialEq)]
-enum GetFileErrorType {
-   PathIsDirectory,
-   MetadataNotFound,
-   RelativePathNotFound,
-   FileNotCopied,
-   AbsolutePathNotFound
+enum GetErrorType {
+    AnyMetaFilesDNE,
+    GitRepoNotFound,
+    ConfigNotFound,
 }
 
-impl GetFileErrorType {
-    fn add_error_type_to_string(&self) -> String {
+impl GetErrorType {
+    fn get_error_type_to_string(&self) -> String {
         match self {
-            GetFileErrorType::PathIsDirectory => String::from("path is a directory"),
-            GetFileErrorType::MetadataNotFound => String::from("metadata file not found"),
-            GetFileErrorType::RelativePathNotFound => String::from("relative path not found"),
-            GetFileErrorType::FileNotCopied => String::from("file not copied"),
-            GetFileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
+            GetErrorType::AnyMetaFilesDNE => String::from("metadata file not found for at least one file"),
+            GetErrorType::GitRepoNotFound => String::from("git repository not found"),
+            GetErrorType::ConfigNotFound => String::from("configuration file not found"),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct GetFileError {
+pub struct GetError {
     pub error_type: String,
     pub error_message:String,
 }
 
-impl fmt::Display for GetFileError {
+impl fmt::Display for GetError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.error_type, self.error_message)
     }
 }
 
-impl std::error::Error for GetFileError {}
+impl std::error::Error for GetError {}
 
 
-pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
+pub fn dvs_get(globs: &Vec<String>) -> std::result::Result<Vec<RetrievedFile>, GetError> {
     // get git root
-    let git_dir = match repo::get_nearest_repo_dir(&PathBuf::from(".")) {
-        Ok(git_dir) => git_dir,
-        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not find git repo root; make sure you're in an active git repository: {e}"))),
-    };
+    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
+        GetError{
+            error_type: GetErrorType::GitRepoNotFound.get_error_type_to_string(), 
+            error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
+        }
+    )?;
 
     // load the config
-    let conf = match config::read(&git_dir) {
-        Ok(conf) => conf,
-        Err(e) => return Err(extendr_api::error::Error::Other(format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}"))),
-    };
+    // format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
+    let conf = config::read(&git_dir).map_err(|e|
+        GetError{
+            error_type: GetErrorType::ConfigNotFound.get_error_type_to_string(), 
+            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
+        }
+    )?;
 
     // collect queued paths
     let queued_paths = parse::parse_files_from_globs(&globs);
@@ -88,6 +125,9 @@ pub fn dvs_get(globs: &Vec<String>) -> Result<Vec<RetrievedFile>> {
         println!("warning: no files were queued")
      }
 
+     // check that metadata file exists for all files
+     check_meta_files_exist(&queued_paths)?;
+    
      // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
         get(&file, &conf)
@@ -187,4 +227,19 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
         error,
         size: Some(file_size)
     }
-} // get
+}
+
+fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), GetError> {
+    // Find the first path that does not have a corresponding .dvsmeta file
+    if let Some(path) = queued_paths
+        .into_iter()
+        .find(|p| !PathBuf::from(p.display().to_string() + ".dvsmeta").exists())
+    {
+        return Err(GetError {
+            error_type: GetErrorType::AnyMetaFilesDNE.get_error_type_to_string(),
+            error_message: format!("missing for {}", path.display()),
+        });
+    }
+
+    Ok(()) // If all .dvsmeta files found, return Ok
+}

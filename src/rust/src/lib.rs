@@ -36,7 +36,9 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> std::result:
 
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>) -> std::result::Result<Robj, String> {
-    Ok(get::dvs_get(&globs)?.into_dataframe()?.as_robj().clone())
+    Ok(get::dvs_get(&globs).map_err(|e|
+        Error::Other(format!("{}: {}", e.error_type, e.error_message))
+    )?.into_dataframe()?.as_robj().clone())
 } // dvs_get_impl
 
 

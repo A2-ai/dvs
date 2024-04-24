@@ -19,13 +19,14 @@ status report for added files
 gives the statuses of previously added files (\code{up-to-date}, \code{out-of-sync}, or \code{not-present})
 to make users aware if files stored in the storage directory don't exist in their local repository or have been updated.
 If no file paths or glob patterns are inputted, \code{dvs_status} gives the status of all previously added files.
+If there an error getting the status of a particular file, the function itself will not return an error, rather, a given error will be indicated in the data frame output.
 }
 \examples{
 \dontrun{
   # would give the status of all previously added files
   dvs_status()
-  # would attempt to get the status of all files in data/derived except for .gitignore files
-  # (files not previously added will give an `<NA>` status in their respective row, and )
+
+  # would attempt to get the status of all files in data/derived (except for .gitignore files)
   dvs_status("data/derived/*")
 }
 

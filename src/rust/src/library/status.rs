@@ -70,7 +70,7 @@ fn status(path: &PathBuf) -> FileStatus {
                 time_stamp: None,
                 saved_by: None,
                 message: None,
-                error: Some(format!("relative path for {} not found", path.display()))
+                error: Some(format!("relative path not found for {}", path.display()))
             }
         },
     };

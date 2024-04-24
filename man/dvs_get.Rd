@@ -17,6 +17,8 @@ get added files
 }
 \details{
 retrieves files previously added with \link{dvs_add} to the storage directory (initialized by \link{dvs_init}).
+If there's an error retrieving a particular file, the function itself will not return an error, rather the error
+will be indicated in the returned data frame.
 }
 \examples{
 \dontrun{

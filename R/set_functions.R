@@ -13,7 +13,7 @@
 #' dvs_init("/data/project_x", 777, "project_x_group") # would initialize the project's storage directory at /data/project_x and configure the linux permissions "777" and group "project_x_group" for all files added to the storage directory
 #' }
 #'
-#' @return nothing, or initializing errors
+#' @return nothing unless an initializing error occurs
 #'
 #' @export
 dvs_init <- function(storage_directory, permissions = 664, group = "") {
@@ -57,6 +57,8 @@ dvs_add <- function(files, message = "") {
 #' get added files
 #'
 #' @details retrieves files previously added with [dvs_add] to the storage directory (initialized by [dvs_init]).
+#' If there's an error retrieving a particular file, the function itself will not return an error, rather the error
+#' will be indicated in the returned data frame.
 #'
 #' @param files file paths or glob patterns to get from the storage directory
 #'
@@ -87,6 +89,7 @@ dvs_get <- function(files) {
 #' @details gives the statuses of previously added files (`up-to-date`, `out-of-sync`, or `not-present`)
 #' to make users aware if files stored in the storage directory don't exist in their local repository or have been updated.
 #' If no file paths or glob patterns are inputted, `dvs_status` gives the status of all previously added files.
+#' If there an error getting the status of a particular file, the function itself will not return an error, rather, a given error will be indicated in the data frame output.
 #'
 #'
 #' @param files optional: when specified, returns data frame with only these specified file paths or glob patterns.
@@ -97,8 +100,8 @@ dvs_get <- function(files) {
 #' \dontrun{
 #'   # would give the status of all previously added files
 #'   dvs_status()
-#'   # would attempt to get the status of all files in data/derived except for .gitignore files
-#'   # (files not previously added will give an `<NA>` status in their respective row, and )
+#'
+#'   # would attempt to get the status of all files in data/derived (except for .gitignore files)
 #'   dvs_status("data/derived/*")
 #' }
 #'

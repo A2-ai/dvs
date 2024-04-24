@@ -14,7 +14,7 @@ dvs_init(storage_directory, permissions = 664, group = "")
 \item{group}{optional: group to automatically set for files added to the storage directory}
 }
 \value{
-nothing, or initializing errors
+nothing unless an initializing error occurs
 }
 \description{
 initialize devious
