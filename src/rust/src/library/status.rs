@@ -1,4 +1,5 @@
 use extendr_api::{prelude::*, Dataframe, IntoDataFrameRow, eval_string, Pairlist};
+use path_absolutize::Absolutize;
 use crate::helpers::{config, hash, repo, file, parse};
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
@@ -6,6 +7,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug, IntoDataFrameRow)]
 pub struct FileStatus {
     pub relative_path: Option<String>,
+    pub absolute_path: String,
     pub status: Option<String>,
     pub file_size: Option<u64>,
     pub file_hash: Option<String>,
@@ -58,12 +60,14 @@ pub fn dvs_status(globs: &Vec<String>) -> Result<Vec<FileStatus>> {
 } // dvs_status
 
 fn status(path: &PathBuf) -> FileStatus {
+    let absolute_path = path.absolutize().unwrap().to_str().unwrap().to_string();
     // get local path relative to working directory
-    let local_path_display = match repo::get_relative_path(&PathBuf::from("."), &path) {
-        Ok(rel_path) => rel_path.display().to_string(),
+    let relative_path = match repo::get_relative_path(&PathBuf::from("."), &path) {
+        Ok(rel_path) => Some(rel_path.display().to_string()),
         Err(_) => {
             return FileStatus{
                 relative_path: None,
+                absolute_path,
                 status: None,
                 file_size: None,
                 file_hash: None,
@@ -77,7 +81,8 @@ fn status(path: &PathBuf) -> FileStatus {
 
     if path.is_dir() {
         return FileStatus{
-            relative_path: Some(local_path_display),
+            relative_path,
+            absolute_path,
             status: None,
             file_size: None,
             file_hash: None,
@@ -93,7 +98,8 @@ fn status(path: &PathBuf) -> FileStatus {
         Ok(data) => data,
         Err(_) => {
             return FileStatus{
-                relative_path: Some(local_path_display),
+                relative_path,
+                absolute_path,
                 status: None,
                 file_size: None,
                 file_hash: None,
@@ -115,7 +121,7 @@ fn status(path: &PathBuf) -> FileStatus {
         // get whether file was hashable and file hash
         match hash::get_file_hash(&path) {
             Some(file_hash) => {
-                if file_hash == metadata.file_hash {
+                if file_hash == metadata.hash {
                     status = String::from("up-to-date")
                 }
             }
@@ -125,10 +131,11 @@ fn status(path: &PathBuf) -> FileStatus {
 
     // assemble info intoFileStatus
     FileStatus{
-        relative_path: Some(local_path_display),
+        relative_path,
+        absolute_path,
         status: Some(status),
-        file_size: Some(metadata.file_size),
-        file_hash: Some(metadata.file_hash),
+        file_size: Some(metadata.size),
+        file_hash: Some(metadata.hash),
         time_stamp: Some(metadata.time_stamp),
         saved_by: Some(metadata.saved_by),
         message: Some(metadata.message),
