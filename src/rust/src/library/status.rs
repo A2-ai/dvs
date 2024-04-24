@@ -112,22 +112,23 @@ fn status(path: &PathBuf) -> FileStatus {
     };
             
     // assign status: not-present by default
-    let mut status = String::from("out-of-sync");
-
-    // if the file path doesn't exist, assign status to "not-present"
-    if !path.exists() {status = String::from("not-present")}
-    // else, the file path exists; check if up-to-date
-    else {
-        // get whether file was hashable and file hash
-        match hash::get_file_hash(&path) {
-            Some(file_hash) => {
-                if file_hash == metadata.hash {
-                    status = String::from("up-to-date")
+    let status = 
+        if !path.exists() {
+            String::from("not-present")
+        }
+        else {
+            match hash::get_file_hash(&path) {
+                Some(current_hash) => {
+                    if current_hash == metadata.hash {
+                        String::from("up-to-date")
+                    }
+                    else {String::from("out-of-sync")}
+                }
+                None => {
+                    String::from("out-of-sync")
                 }
             }
-            None => (),
-        }; 
-    }
+        };
 
     // assemble info intoFileStatus
     FileStatus{
