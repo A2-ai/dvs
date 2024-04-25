@@ -369,7 +369,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             Outcome::AlreadyPresent
         };
 
-    return Ok(
+    return Ok( // okay to unwrap
         SuccessFile{relative_path: relative_path.unwrap(), absolute_path: absolute_path.unwrap(), hash, outcome: outcome.outcome_to_string(), size}
     )
 }
@@ -399,13 +399,14 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
     )?;
 
     // set group (if specified)
-    if group.is_some() { // group.is_some() so can safely unwrap
-        storage_path.set_group(group.unwrap()).map_err(|e|
+    if group.is_some() { 
+        let group_name = group.unwrap(); // group.is_some() so can safely unwrap
+        storage_path.set_group(group_name).map_err(|e|
             AddFileError{
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
                 error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
-                error_message: Some(format!("{} {e}", group.unwrap())) // group.is_some() so can safely unwrap
+                error_message: Some(format!("{group_name} {e}"))
             }
         )?;
     }

@@ -20,6 +20,7 @@ enum InitErrorType {
     ProjAlreadyInited,
     StorageDirNotCreated,
     StorageDirNotADir,
+    StorageDirAbsPathNotFound,
     GitRepoNotFound,
     ConfigNotCreated,
     GroupNotFound,
@@ -33,6 +34,7 @@ impl InitErrorType {
             InitErrorType::ProjAlreadyInited => String::from("project already initialized"),
             InitErrorType::GitRepoNotFound => String::from("git repo not found"),
             InitErrorType::StorageDirNotADir => String::from("storage directory input is not a directory"),
+            InitErrorType::StorageDirAbsPathNotFound => String::from("could not get absolute path for storage directory"),
             InitErrorType::ConfigNotCreated => String::from("configuration file not found"),
             InitErrorType::GroupNotFound => String::from("linux primary group not found"),
             InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
@@ -66,7 +68,12 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     }
 
     // get absolute path, but don't check if it exists yet
-    let storage_dir_abs = PathBuf::from(storage_dir.absolutize().unwrap());
+    let storage_dir_abs = repo::absolutize_result(&storage_dir).map_err(|e|
+        InitError{
+            error_type: InitErrorType::StorageDirAbsPathNotFound.init_error_type_to_string(),
+            error_message: e.to_string()
+        }
+    )?;
     
     if storage_dir_abs.extension().and_then(OsStr::to_str).is_some() {
         println!("warning: file path inputted as storage directory. Is this intentional?")

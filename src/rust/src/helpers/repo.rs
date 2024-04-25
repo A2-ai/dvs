@@ -1,17 +1,21 @@
 use std::path::{PathBuf, Path};
 use std::fs;
-use path_absolutize::*;
+use path_absolutize::Absolutize;
 
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
-pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<PathBuf> {
-    let abs_file_path = PathBuf::from(file_path
+pub fn absolutize_result(path: &PathBuf) -> Result<PathBuf> {
+    Ok(PathBuf::from(path
         .absolutize()?
         .to_str()
-        .ok_or_else(||format!("could not get absolute path for {}", file_path.display()))?
+        .ok_or_else(||format!("could not get absolute path for {}", path.display()))?
         .to_string()
-    );
+    ))
+}
+
+pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<PathBuf> {
+    let abs_file_path = absolutize_result(&file_path)?;
 
     let abs_root_dir = root_dir.canonicalize()?;
 
@@ -35,8 +39,15 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> Result<PathBuf> {
     while directory != PathBuf::from("/") {
         directory = match directory.parent() {
             Some(_) => {
-                if is_git_repo(&directory.to_path_buf()) {return Ok(directory.to_path_buf())}
-                else {directory.parent().unwrap().to_path_buf()}
+                if is_git_repo(&directory.to_path_buf()) {
+                    return Ok(directory.to_path_buf())
+                }
+                else {
+                    directory
+                    .parent()
+                    .ok_or_else(|| format!("no nearby git repo"))?
+                    .to_path_buf()
+                }
             }
             None => directory,
         };
