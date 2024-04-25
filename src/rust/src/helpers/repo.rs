@@ -1,21 +1,21 @@
 use std::path::{PathBuf, Path};
-use anyhow::{anyhow, Context, Result};
 use std::fs;
 use path_absolutize::*;
 
+pub type Result<T> = core::result::Result<T, Error>;
+pub type Error = Box<dyn std::error::Error>;
+
 pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<PathBuf> {
-    let abs_file_string = file_path.absolutize().unwrap().to_str().unwrap().to_string();
-    let abs_file_path = PathBuf::from(abs_file_string);
+    let abs_file_path = PathBuf::from(file_path
+        .absolutize()?
+        .to_str()
+        .ok_or_else(||format!("could not get absolute path for {}", file_path.display()))?
+        .to_string()
+    );
 
     let abs_root_dir = root_dir.canonicalize()?;
 
-    match abs_file_path.strip_prefix(abs_root_dir) {
-        Ok(path) => return Ok(path.to_path_buf()),
-        Err(e) => {
-            return Err(anyhow!("could not get relative path for {} and {}: {e}", 
-            root_dir.display(), file_path.display()))
-        }
-    }
+    Ok(abs_file_path.strip_prefix(abs_root_dir)?.to_path_buf())
 }
 
 fn is_git_repo(dir: &PathBuf) -> bool {
@@ -28,7 +28,7 @@ pub fn is_directory_empty(directory: &Path) -> Result<bool> {
 }
 
 pub fn get_nearest_repo_dir(dir: &PathBuf) -> Result<PathBuf> {
-    let mut directory = dir.canonicalize().with_context(|| format!("could not find directory {}", dir.display()))?;
+    let mut directory = dir.canonicalize()?;
 
     if is_git_repo(&dir) {return Ok(directory)}
 
@@ -41,7 +41,7 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> Result<PathBuf> {
             None => directory,
         };
     }
-    return Err(anyhow!("no nearby git repo"));
+    return Err(format!("no nearby git repo").into());
 }
 
 pub fn is_in_git_repo(path: &PathBuf, git_dir: &PathBuf) -> bool {

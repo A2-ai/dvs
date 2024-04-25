@@ -107,8 +107,8 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     } // else
 
     // warn if storage directory is in git repo
-    if storage_dir_abs.strip_prefix(&git_dir).unwrap() != storage_dir_abs {
-        println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git, subverting the purpose of devious.")
+    if repo::is_in_git_repo(&storage_dir_abs, &git_dir) {
+        println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git.")
     }
 
     // check group exists

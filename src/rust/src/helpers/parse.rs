@@ -20,7 +20,7 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
 
     for entry in globs {
         let glob = match glob(&entry) {
-            Ok(paths) => {paths},
+            Ok(paths) => paths,
             Err(_) => {
                 queued_paths.push(PathBuf::from(entry));
                 continue;

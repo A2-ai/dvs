@@ -172,7 +172,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
             Some(Group::from_name(&conf.group.as_str()).map_err(|e|
                 AddError{
                     error_type: AddErrorType::GroupNotFound.add_error_type_to_string(),
-                    error_message: e.to_string()
+                    error_message: format!("change group: {} in dvs.yaml, {e}", conf.group)
                 }
             )?)
         };
@@ -181,7 +181,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let storage_dir = conf.storage_dir.canonicalize().map_err(|e|
         AddError{
             error_type: AddErrorType::StorageDirNotFound.add_error_type_to_string(),
-            error_message: e.to_string()
+            error_message: format!("change storage_dir: {} in dvs.yaml, {e}", conf.storage_dir.display())
         }
     )?;
 
@@ -189,7 +189,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let permissions = config::get_mode_u32(&conf.permissions).map_err(|e|
         AddError{
             error_type: AddErrorType::PermissionsInvalid.add_error_type_to_string(),
-            error_message: e.to_string()
+            error_message: format!("change permissions: {} in dvs.yaml, {e}", conf.permissions)
         }
     )?;
 
@@ -399,7 +399,7 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
     )?;
 
     // set group (if specified)
-    if group.is_some() {
+    if group.is_some() { // group.is_some() so can safely unwrap
         storage_path.set_group(group.unwrap()).map_err(|e|
             AddFileError{
                 relative_path: relative_path.clone(),

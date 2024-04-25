@@ -19,6 +19,7 @@
 dvs_init <- function(storage_directory, permissions = 664, group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
   dvs_init_impl(storage_directory, permissions, group)
+  return(invisible())
 }
 
 #' @import stringr

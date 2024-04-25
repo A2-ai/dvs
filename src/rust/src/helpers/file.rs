@@ -1,6 +1,8 @@
 use std::{fs::{self, File}, path::PathBuf};
 use serde::{Deserialize, Serialize};
-use anyhow::{anyhow, Result};
+
+pub type Result<T> = core::result::Result<T, Error>;
+pub type Error = Box<dyn std::error::Error>;
 
 #[derive(Serialize, Deserialize)]
 pub struct Metadata {
@@ -24,32 +26,14 @@ pub fn save(metadata: &Metadata, path: &PathBuf) -> Result<()> {
 }
 
 pub fn load(path: &PathBuf) -> Result<Metadata> {
-    let metadata_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
-    let metafile_path_abs = match metadata_path.canonicalize() {
-        Ok(path) => path,
-        Err(e) => return Err(anyhow!(format!("{} not found: be sure to add this file to devious \n{e} ", metadata_path.display())))
-    };
-    let contents = match fs::read_to_string(metafile_path_abs) {
-        Ok(contents) => contents,
-        Err(e) => return Err(anyhow!(format!("could not display contents of {}: \n{e}", path.display())))
-    };
-    let metadata: Metadata = match serde_json::from_str(&contents) {
-        Ok(data) => data,
-        Err(e) => return Err(anyhow!(format!("could not get metadata for {}: \n{e}", path.display())))
-    };
-
+    let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
+    let contents = fs::read_to_string(metadata_path_abs)?;
+    let metadata: Metadata = serde_json::from_str(&contents)?;
     return Ok(metadata);
 }
 
 pub fn delete(path: &PathBuf) -> Result<()> {
-    let metadata_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
-    let metafile_path_abs = match metadata_path.canonicalize() {
-        Ok(path) => path,
-        Err(e) => return Err(anyhow!(format!("{} not found\n{e} ", metadata_path.display())))
-    };
-    match fs::remove_file(&metafile_path_abs) {
-        Ok(_) => {}
-        Err(e) => return Err(anyhow!(format!("could not remove metadata file: {}\n{e} ", metadata_path.display())))
-    };
+    let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
+    fs::remove_file(&metadata_path_abs)?;
     Ok(())
 }

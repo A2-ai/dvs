@@ -138,7 +138,6 @@ pub fn dvs_get(globs: &Vec<String>) -> std::result::Result<Vec<RetrievedFile>, G
 
 // gets a file from storage
 pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
-    let mut error: Option<String> = None;
      // get local path relative to working directory
      // might not exist
      let mut relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
@@ -189,7 +188,7 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
     // check if up-to-date file is already present locally
     let outcome = 
         if !local_path.exists() || metadata.hash == String::from("") || local_hash == String::from("") || local_hash != metadata.hash {
-            if let Err(e) = copy::copy(&storage_path, &local_path) {
+            if let Err(_e) = copy::copy(&storage_path, &local_path) {
                 return RetrievedFile{
                     relative_path,
                     absolute_path,
@@ -205,7 +204,7 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
             Outcome::AlreadyPresent
         };
 
-    // try to get relative and absolute paths again
+    // try to get relative and absolute paths again if error before
     if relative_path == "unknown".to_string() {
         relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
             Ok(rel_path) => rel_path,
@@ -241,7 +240,7 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
         absolute_path,
         hash: Some(metadata.hash),
         outcome: outcome.outcome_to_string(),
-        error,
+        error: None,
         size: Some(metadata.size)
     }
 }

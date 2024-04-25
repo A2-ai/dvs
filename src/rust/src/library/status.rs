@@ -130,7 +130,7 @@ fn status(path: &PathBuf) -> FileStatus {
             }
         };
 
-    // assemble info intoFileStatus
+    // assemble info into FileStatus
     FileStatus{
         relative_path,
         absolute_path,
