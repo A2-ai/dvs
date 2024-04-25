@@ -124,19 +124,19 @@ impl std::error::Error for AddError {}
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct SuccessFile {
     relative_path: String,
-    absolute_path: String,
-    hash: String,
     outcome: String,
     size: u64,
+    hash: String,
+    absolute_path: String,
 }
 
 #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
 pub struct ErrorFile {
     input: String,
-    relative_path: Option<String>,
-    absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
+    relative_path: Option<String>,
+    absolute_path: Option<String>,
 }
 
 pub struct AddedFileAttempts {

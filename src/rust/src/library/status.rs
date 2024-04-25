@@ -7,14 +7,14 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug, IntoDataFrameRow)]
 pub struct FileStatus {
     pub relative_path: Option<String>,
-    pub absolute_path: String,
     pub status: Option<String>,
+    pub error: Option<String>,
     pub file_size: Option<u64>,
-    pub file_hash: Option<String>,
     pub time_stamp: Option<String>,
     pub saved_by: Option<String>,
     pub message: Option<String>,
-    pub error: Option<String>,
+    pub absolute_path: String,
+    pub file_hash: Option<String>,
 }
 
 pub fn dvs_status(globs: &Vec<String>) -> Result<Vec<FileStatus>> {

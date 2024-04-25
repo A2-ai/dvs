@@ -22,11 +22,11 @@ impl Outcome {
 #[derive(IntoDataFrameRow)]
 pub struct RetrievedFile {
     relative_path: String,
-    absolute_path: Option<String>,
-    hash: Option<String>,
     outcome: String,
     error: Option<String>,
-    size: Option<u64>
+    size: Option<u64>,
+    absolute_path: Option<String>,
+    hash: Option<String>,
 }
 
 
@@ -140,16 +140,17 @@ pub fn dvs_get(globs: &Vec<String>) -> std::result::Result<Vec<RetrievedFile>, G
 pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
      // get local path relative to working directory
      // might not exist
+     let unknown = "unknown".to_string();
      let mut relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
         Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => "unknown".to_string(),
+        Err(_) => unknown.clone(),
     };
 
     // get absolute path
     // might not exist
-    let mut absolute_path = match local_path.canonicalize() {
-        Ok(path) => Some(path.display().to_string()),
-        Err(_) => None,
+    let mut absolute_path = match repo::absolutize_result(&local_path) {
+            Ok(path) => Some(path.display().to_string()),
+            Err(_) => None,
     };
 
     // return if is dir
@@ -204,10 +205,10 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
             Outcome::AlreadyPresent
         };
 
-    // try to get relative and absolute paths again if error before
-    if relative_path == "unknown".to_string() {
-        relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-            Ok(rel_path) => rel_path,
+    if absolute_path.is_none() || relative_path == unknown {
+        // try to get relative and absolute paths again
+        absolute_path = match local_path.canonicalize() {
+            Ok(path) => Some(path.display().to_string()),
             Err(_) => {
                 return RetrievedFile{
                     relative_path,
@@ -217,23 +218,24 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
                     error: Some(format!("relative path not found")),
                     size: None
                 }
-            },
-        }.display().to_string();
-    
-        absolute_path = match local_path.canonicalize() {
-            Ok(path) => Some(path.display().to_string()),
+            }
+        };
+
+        relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
+            Ok(rel_path) => rel_path,
             Err(_) => {
                 return RetrievedFile{
-                    relative_path,
-                    absolute_path: None,
+                    relative_path: local_path.display().to_string(),
+                    absolute_path,
                     hash: None,
                     outcome: Outcome::Error.outcome_to_string(),
                     error: Some(format!("relative path not found")),
                     size: None
                 }
-            }
-        }
+            },
+        }.display().to_string();
     }
+    
 
     RetrievedFile {
         relative_path,

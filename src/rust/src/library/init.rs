@@ -1,6 +1,5 @@
 use crate::helpers::{repo, config};
 use std::{ffi::OsStr, fmt, fs::create_dir, path::PathBuf};
-use path_absolutize::Absolutize;
 use file_owner::Group;
 
 #[derive(Debug)]

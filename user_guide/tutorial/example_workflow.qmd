@@ -1,0 +1,127 @@
+```{r}
+# library(rdevious)
+```
+
+### Role #1: the file creator
+
+```{r}
+derDir <- "data/derived"
+# create a csv file you want to version with dvs
+data <- data.frame(
+  Flowers = c("Iris", "Rose", "Tulip"),
+  Bugs = c("Ladybug", "Dragonfly", "Bumblebee")
+)
+
+nature_csv_path <- file.path(derDir, "nature.csv")
+write.csv(data, nature_csv_path)
+```
+
+```{r}
+# in general, you'll want your storage directory to be "/data/dvs/<project_name>"
+my_storage_dir <- "/data/dvs/tutorial"
+dvs_init(storage_directory = my_storage_dir)
+
+# optionally, this is the time set the linux file permissions or group if you'd
+# this tutorial won't cover this, see the ReadMe if you'd like to check this
+```
+
+```{r}
+added_files <- dvs_add(nature_csv_path)
+
+# alternatively, add all files in data/derived with the below code (excludes .gitignore)
+# added_files <- dvs_add("data/derived/*") 
+```
+
+```{r}
+# there should be one row of added_files$successes with nature.csv 
+# if it was successfully added
+added_files$successes
+```
+
+```{r}
+# will be empty if all files were added without error
+added_files$errors
+```
+
+```{r}
+# say I want to update my data frame
+data <- data.frame(
+  Flowers = c("Marigold", "Daffodil", "Lily"),
+  Bugs = c("Butterfly", "Beetle", "Ant")
+)
+
+write.csv(data, nature_csv_path)
+```
+
+```{r}
+added_files <- dvs_add(nature_csv_path)
+```
+
+```{r}
+added_files$successes
+```
+
+```{r}
+added_files$errors
+```
+
+If you push to github, you'll see that nature.csv isn't present! You no longer have to modify your .gitignore to exclude files added to devious (you can check the .gitignore in this directory to see the generated entry)
+
+### Role #2: the file retriever
+
+```{r}
+# let's pretend you're a collaborator who pulled your code from github, in which case, nature.csv isn't present, 
+# so run this chunk to delete the file
+file.remove(nature_csv_path)
+```
+
+```{r}
+# your first step as a collaborator is to use dvs_status check out what files have been versioned with devious
+status <- dvs_status()
+status
+# if you want to status files a specific file, you can do that too
+# dvs_status(nature_csv_path)
+```
+
+```{r}
+# check if there were any errors
+# number of errors = sum of values in the error column that aren't NA
+sum(!is.na(status$error))
+```
+```{r}
+# now we can get the file back
+get <- dvs_get(nature_csv_path)
+get
+```
+```{r}
+# check if there were any errors
+sum(!is.na(get$error))
+```
+
+
+`dvs_status` will list files with one of the following statuses:
+
+-   up-to-date
+
+-   not-present
+
+-   out-of-sync
+
+    -   out-of-sync files may be ahead or behind current work
+
+    -   if you believe your work is behind the current version on devious, run `dvs_get` to retrieve it
+
+```{r}
+file.remove(nature_csv_path)
+# here is an example piping pattern to get all not-present and out-of-sync files from data/derived
+dvs_status(file.path(derDir, "*")) %>% filter(status != "up-to-date") %>% pull(relative_path) %>% dvs_get()
+```
+
+```{r}
+# clean up
+file.remove(nature_csv_path)
+file.remove(paste0(nature_csv_path, ".dvsmeta"))
+file.remove(file.path(derDir, ".gitignore"))
+file.remove("~/Projects/Rdevious/dvs.yaml")
+unlink(my_storage_dir, recursive=TRUE)
+```
