@@ -19,10 +19,10 @@ write.csv(data, nature_csv_path)
 ```{r}
 # in general, you'll want your storage directory to be "/data/dvs/<project_name>"
 my_storage_dir <- "/data/dvs/tutorial"
-dvs_init(storage_directory = my_storage_dir)
+dvs_init(my_storage_dir)
 
-# optionally, this is the time set the linux file permissions or group if you'd
-# this tutorial won't cover this, see the ReadMe if you'd like to check this
+# optionally, you could set the linux file permissions or group for added files in this function
+# see the ReadMe if you'd like to learn more 
 ```
 
 ```{r}
@@ -88,16 +88,17 @@ status
 # number of errors = sum of values in the error column that aren't NA
 sum(!is.na(status$error))
 ```
+
 ```{r}
 # now we can get the file back
 get <- dvs_get(nature_csv_path)
 get
 ```
+
 ```{r}
 # check if there were any errors
 sum(!is.na(get$error))
 ```
-
 
 `dvs_status` will list files with one of the following statuses:
 

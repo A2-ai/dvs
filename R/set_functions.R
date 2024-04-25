@@ -48,11 +48,8 @@ clean_paths <- function(files) {
 #' @export
 dvs_add <- function(files, message = "") {
   files <- clean_paths(files)
-
   strict = TRUE
-  res <- dvs_add_impl(files, message, strict)
-
-  list(successes = res[[1]], errors = res[[2]])
+  dvs_add_impl(files, message, strict)
 } # dvs_add
 
 #' get added files

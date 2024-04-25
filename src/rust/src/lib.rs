@@ -29,7 +29,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> std::result:
         Error::Other(format!("Error converting errored added files to data frame: {e}"))
     )?.as_robj().clone();
 
-    return Ok(list!(success_files, error_files))
+    return Ok(list!(successes = success_files, errors = error_files))
 } // dvs_add_impl
 
 
