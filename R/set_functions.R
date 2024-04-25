@@ -78,7 +78,7 @@ dvs_add <- function(files, message = "") {
 #'
 #' @export
 dvs_get <- function(files) {
-  files <- files |> purrr::map_chr(normalizePath, mustWork = FALSE)
+  files <- clean_paths(files)
   dvs_get_impl(files)
 }
 
@@ -107,7 +107,12 @@ dvs_get <- function(files) {
 #'
 #' @export
 dvs_status <- function(files = c()) {
-    files <- files |> purrr::map_chr(normalizePath, mustWork = FALSE)
+  files <- clean_paths(files)
   dvs_status_impl(files)
+}
+
+dvs_info <- function(files = c(), df) {
+  files <- clean_paths(files)
+  get_file_info_impl(files, df)
 }
 

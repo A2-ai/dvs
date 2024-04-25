@@ -19,5 +19,7 @@ dvs_get_impl <- function(globs) .Call(wrap__dvs_get_impl, globs)
 
 dvs_status_impl <- function(files) .Call(wrap__dvs_status_impl, files)
 
+get_file_info_impl <- function(paths, df) .Call(wrap__get_file_info_impl, paths, df)
+
 
 # nolint end

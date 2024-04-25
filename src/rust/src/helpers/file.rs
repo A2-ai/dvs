@@ -1,4 +1,5 @@
 use std::{fs::{self, File}, path::PathBuf};
+use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -36,4 +37,11 @@ pub fn delete(path: &PathBuf) -> Result<()> {
     let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
     fs::remove_file(&metadata_path_abs)?;
     Ok(())
+}
+
+pub fn get_user_name(path: &PathBuf) -> Result<String> {
+    Ok(path
+        .owner()?
+        .name()?
+        .ok_or_else(|| format!("owner not found"))?)
 }
