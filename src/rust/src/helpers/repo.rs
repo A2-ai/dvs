@@ -45,10 +45,18 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> Result<PathBuf> {
 }
 
 pub fn is_in_git_repo(path: &PathBuf, git_dir: &PathBuf) -> bool {
-    match path.canonicalize() {
-        Ok(path) => {
-            return path.strip_prefix(&git_dir).unwrap() != path
-        }
-        Err(_) => return false,
+    let canonical_path = 
+        if let Ok(path) = path.canonicalize() {
+            path
+        } 
+        else {
+            return false;
+        };
+
+    if let Ok(stripped) = canonical_path.strip_prefix(git_dir) {
+        // if the stripped prefix is different from the original, it's inside the repo
+        stripped != canonical_path
+    } else {
+        false
     }
 }
