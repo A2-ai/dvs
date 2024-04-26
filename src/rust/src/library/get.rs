@@ -112,19 +112,9 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Result<RetrievedFile, FileError> {
-     // get local path relative to working directory
-     // might not exist
-     let mut relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-        Ok(rel_path) => Some(rel_path),
-        Err(_) => None,
-    };
-
-    // get absolute path
-    // might not exist
-    let mut absolute_path = match repo::absolutize_result(&local_path) {
-            Ok(path) => Some(path),
-            Err(_) => None,
-    };
+    // get relative and absolute paths - probably don't exist, so make mutable options
+    let mut relative_path = repo::get_relative_path(&PathBuf::from("."), &local_path).ok();
+    let mut absolute_path = repo::absolutize_result(&local_path).ok();
 
     // return if is dir
     if local_path.is_dir() {
