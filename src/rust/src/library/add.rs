@@ -29,8 +29,8 @@ pub enum FileErrorType {
 
 #[derive(Debug)]
 pub struct FileError {
-    pub relative_path: Option<String>,
-    pub absolute_path: Option<String>,
+    pub relative_path: Option<PathBuf>,
+    pub absolute_path: Option<PathBuf>,
     pub error_type: FileErrorType,
     pub error_message: Option<String>,
 }
@@ -79,11 +79,11 @@ impl std::error::Error for BatchError {}
 
 #[derive(Clone, PartialEq)]
 pub struct AddedFile {
-    pub relative_path: String,
+    pub relative_path: PathBuf,
     pub outcome: Outcome,
     pub size: u64,
     pub hash: String,
-    pub absolute_path: String,
+    pub absolute_path: PathBuf,
 }
 
 pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
@@ -162,7 +162,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             error_type: FileErrorType::AbsolutePathNotFound,
             error_message: Some(e.to_string())
         }
-    )?.display().to_string());
+    )?);
 
     // get relative path
     let relative_path = Some(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
@@ -172,7 +172,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
                 error_type: FileErrorType::RelativePathNotFound,
                 error_message: Some(e.to_string())
             }
-        )?.display().to_string());
+        )?);
 
     // check if file in git repo
     if !repo::is_in_git_repo(&local_path, &git_dir) {
@@ -291,7 +291,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
 
 
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, relative_path: &Option<String>, absolute_path: &Option<String>, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), FileError> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), FileError> {
    // copy
     copy::copy(&local_path, &storage_path).map_err(|e|
         FileError{

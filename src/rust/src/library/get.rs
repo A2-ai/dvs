@@ -11,10 +11,10 @@ pub enum Outcome {
 
 #[derive(Debug)]
 pub struct RetrievedFile {
-    pub relative_path: String,
+    pub relative_path: PathBuf,
     pub outcome: Outcome,
     pub size: u64,
-    pub absolute_path: String,
+    pub absolute_path: PathBuf,
     pub hash: String,
 }
 
@@ -29,8 +29,8 @@ pub enum FileErrorType {
 
 #[derive(Debug)]
 pub struct FileError {
-    pub relative_path: Option<String>,
-    pub absolute_path: Option<String>,
+    pub relative_path: Option<PathBuf>,
+    pub absolute_path: Option<PathBuf>,
     pub error_type: FileErrorType,
     pub error_message: Option<String>,
 }
@@ -58,11 +58,10 @@ pub enum BatchErrorType {
 }
 
 
-
 #[derive(Debug)]
 pub struct BatchError {
     pub error_type: BatchErrorType,
-    pub error_message:String,
+    pub error_message: String,
 }
 
 impl fmt::Display for BatchError {
@@ -116,14 +115,14 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
      // get local path relative to working directory
      // might not exist
      let mut relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-        Ok(rel_path) => Some(rel_path.display().to_string()),
+        Ok(rel_path) => Some(rel_path),
         Err(_) => None,
     };
 
     // get absolute path
     // might not exist
     let mut absolute_path = match repo::absolutize_result(&local_path) {
-            Ok(path) => Some(path.display().to_string()),
+            Ok(path) => Some(path),
             Err(_) => None,
     };
 
@@ -179,7 +178,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
                 error_type: FileErrorType::AbsolutePathNotFound,
                 error_message: Some(e.to_string())
             }
-        })?.display().to_string());
+        })?);
     }
 
     if relative_path.is_none() {
@@ -190,7 +189,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
                 error_type: FileErrorType::RelativePathNotFound,
                 error_message: Some(e.to_string())
             }
-        })?.display().to_string());
+        })?);
     }
 
     Ok(RetrievedFile {

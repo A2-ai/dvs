@@ -104,21 +104,21 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
         .zip(&globs)
         .map(|(fi, input)| match fi {
             Ok(fi) => RAddedFile{
-                relative_path: Some(fi.relative_path.clone()),
+                relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
                 hash: Some(fi.hash.clone()),
-                absolute_path: Some(fi.absolute_path.clone()),
+                absolute_path: Some(fi.absolute_path.display().to_string()),
                 input: input.clone(),
                 error_type: None,
                 error_message: None,
             },
             Err(e) => RAddedFile{
-                relative_path: e.relative_path.clone(),
+                relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
                 size: None,
                 hash:  None,
-                absolute_path: e.absolute_path.clone(),
+                absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 input: input.clone(),
                 error_type: Some(e.error_type.add_file_error_type_to_string()),
                 error_message: e.error_message.clone(),
@@ -266,20 +266,20 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
         .zip(&globs)
         .map(|(fi, input)| match fi {
             Ok(fi) => RRetrievedFile{
-                relative_path: Some(fi.relative_path.clone()),
+                relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
-                absolute_path: Some(fi.absolute_path.clone()),
+                absolute_path: Some(fi.absolute_path.display().to_string()),
                 hash: Some(fi.hash.clone()),
                 input: input.clone(),
                 error_type: None,
                 error_message: None
             },
             Err(e) => RRetrievedFile{
-                relative_path: e.relative_path.clone(),
+                relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
                 size: None,
-                absolute_path: e.absolute_path.clone(),
+                absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 hash: None,
                 input: input.clone(),
                 error_type: Some(e.error_type.file_error_type_to_string()),
