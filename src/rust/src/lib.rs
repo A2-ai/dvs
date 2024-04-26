@@ -1,6 +1,7 @@
 pub mod helpers;
 pub mod library;
-use library::{init, add, get, status, info};
+use library::add_new::{AddErrorType, AddFileErrorType, Outcome};
+use library::{init, add_new, get, status, info};
 use extendr_api::{prelude::*, robj::Robj};
 use std::path::PathBuf;
 use std::collections::HashMap;
@@ -14,23 +15,174 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
     Ok(())
 } // dvs_init_impl
 
+// ADD
+// one df
+#[derive(Clone, PartialEq, IntoDataFrameRow)]
+pub struct RAddedFile {
+    relative_path: Option<String>,
+    outcome: Option<String>,
+    size: Option<u64>,
+    hash: Option<String>,
+    absolute_path: Option<String>,
+    input: String,
+    error_type: Option<String>,
+    error_message: Option<String>,
+}
 
+// success df
+#[derive(Clone, PartialEq, IntoDataFrameRow)]
+pub struct RAddFileSuccess {
+    pub relative_path: String,
+    pub outcome: String,
+    pub size: u64,
+    pub hash: String,
+    pub absolute_path: String,
+    pub input: String,
+}
+
+// error df
+#[derive(Debug, IntoDataFrameRow)]
+pub struct RAddFileError {
+    pub relative_path: Option<String>,
+    pub absolute_path: Option<String>,
+    pub error_type: String,
+    pub error_message: Option<String>,
+    pub input: String,
+}
+
+impl AddFileErrorType {
+    pub fn add_file_error_type_to_string(&self) -> String {
+        match self {
+            AddFileErrorType::RelativePathNotFound => String::from("relative path not found"),
+            AddFileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
+            AddFileErrorType::AbsolutePathNotFound => String::from("file not found"),
+            AddFileErrorType::PathIsDirectory => String::from("path is a directory"),
+            AddFileErrorType::HashNotFound => String::from("hash not found"),
+            AddFileErrorType::SizeNotFound => String::from("size not found"),
+            AddFileErrorType::OwnerNotFound => String::from("owner not found"),
+            AddFileErrorType::GroupNotSet => String::from("group not set"),
+            AddFileErrorType::PermissionsNotSet => String::from("group not set"),
+            AddFileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
+            AddFileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not added"),
+            AddFileErrorType::FileNotCopied => String::from("file not copied"),
+        }
+    }
+}
+
+impl AddErrorType {
+    pub fn add_error_type_to_string(&self) -> String {
+        match self {
+            AddErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
+            AddErrorType::GitRepoNotFound => String::from("git repository not found"),
+            AddErrorType::ConfigNotFound => String::from("configuration file not found"),
+            AddErrorType::GroupNotFound => String::from("linux primary group not found"),
+            AddErrorType::StorageDirNotFound => String::from("storage directory not found"),
+            AddErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
+        }
+    }
+}
+
+impl Outcome {
+    pub fn outcome_to_string(&self) -> String {
+        match self {
+            Outcome::Success => String::from("Success"),
+            Outcome::AlreadyPresent => String::from("Already Present")
+        }
+    }
+}
 
 #[extendr]
-fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool) -> std::result::Result<List, String> {
-    let added_files = add::add(&globs, &String::from(message), strict).map_err(|e| {
-        Error::Other(format!("{}: {}", e.error_type, e.error_message))
+// std::result::Result<Robj, String> 
+fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -> Result<Robj> {
+    let added_files = add_new::add(&globs, &String::from(message), strict).map_err(|e| {
+        Error::Other(format!("{}: {}", e.error_type.add_error_type_to_string(), e.error_message))
     })?;
 
-    let success_files = added_files.success_files.into_dataframe().map_err(|e|
-        Error::Other(format!("Error converting sucessfully added files to data frame: {e}"))
-    )?.as_robj().clone();
+    let results = added_files
+        .iter()
+        .zip(&globs)
+        .map(|(fi, input)| match fi {
+            Ok(fi) => RAddedFile{
+                relative_path: Some(fi.relative_path.clone()),
+                outcome: Some(fi.outcome.outcome_to_string()),
+                size: Some(fi.size),
+                hash: Some(fi.hash.clone()),
+                absolute_path: Some(fi.absolute_path.clone()),
+                input: input.clone(),
+                error_type: None,
+                error_message: None,
+            },
+            Err(e) => RAddedFile{
+                relative_path: e.relative_path.clone(),
+                outcome: None,
+                size: None,
+                hash:  None,
+                absolute_path: e.absolute_path.clone(),
+                input: input.clone(),
+                error_type: Some(e.error_type.add_file_error_type_to_string()),
+                error_message: e.error_message.clone(),
+            }
+        })
+        .collect::<Vec<RAddedFile>>();
 
-    let error_files = added_files.error_files.into_dataframe().map_err(|e|
-        Error::Other(format!("Error converting errored added files to data frame: {e}"))
-    )?.as_robj().clone();
+    if one_df {
+        Ok(results
+            .into_dataframe()
+            .map_err(|e| Error::Other(format!("Error converting added files to data frame: {e}")))?
+            .as_robj().clone())
+    }
+    else {
+        let failures = results
+            .iter()
+            .filter_map(|res| {
+                if res.error_type.is_some() {
+                    Some(RAddFileError{
+                        input: res.input.clone(),
+                        relative_path: res.clone().relative_path,
+                        absolute_path: res.clone().absolute_path,
+                        error_type: res.clone().error_type.unwrap(),
+                        error_message: res.clone().error_message
+                        }
+                    )
+                }
+                else {None}
+            }).collect::<Vec<RAddFileError>>();
 
-    return Ok(list!(successes = success_files, errors = error_files))
+        let successes = results
+            .into_iter()
+            .filter_map(|res| {
+                if res.error_type.is_none() {
+                    Some(
+                        RAddFileSuccess{
+                            relative_path: res.relative_path.unwrap(),
+                            outcome: res.outcome.unwrap(),
+                            size: res.size.unwrap(),
+                            hash: res.hash.unwrap(),
+                            absolute_path: res.absolute_path.unwrap(),
+                            input: res.input,
+                        }
+                    )
+                }
+                else {None}
+            }).collect::<Vec<RAddFileSuccess>>();
+
+            let mut result = HashMap::new();
+            if successes.len() > 0 {
+                result.insert(
+                    "successes",
+                    successes.into_dataframe().unwrap().as_robj().clone(),
+                );
+            }
+            if failures.len() > 0 {
+                result.insert(
+                    "failures",
+                    failures.into_dataframe().unwrap().as_robj().clone(),
+                );
+            }
+            
+            Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
+            
+    }
 } // dvs_add_impl
 
 
@@ -50,6 +202,7 @@ fn dvs_status_impl(files: Vec<String>) -> std::result::Result<Robj, String> {
 } // dvs_status_impl
 
 
+// one df
 #[derive(Debug, IntoDataFrameRow, Clone)]
 pub struct RFileInfo {
     pub path: String,
@@ -63,6 +216,7 @@ pub struct RFileInfo {
     pub error: Option<String>,
 }
 
+// success df
 #[derive(Debug, IntoDataFrameRow, Clone)]
 pub struct RFileInfoSuccess {
     pub path: String,
@@ -75,6 +229,7 @@ pub struct RFileInfoSuccess {
     pub permissions: Option<String>
 }
 
+// error df
 #[derive(Debug, IntoDataFrameRow, Clone)]
 pub struct RFileError {
     pub path: String,
@@ -82,7 +237,7 @@ pub struct RFileError {
 }
 
 #[extendr]
-fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
+fn get_file_info_impl(paths: Vec<String>, one_df: bool) -> Robj {
     let file_info = info::info(&paths);
     let results = file_info
         .iter()
@@ -112,7 +267,7 @@ fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
             },
         })
         .collect::<Vec<RFileInfo>>();
-    if df {
+    if one_df {
         match results.into_dataframe() {
             Ok(dataframe) => dataframe.as_robj().clone(),
             Err(err) => Robj::from(format!("error converint to dataframe: {}", err)),
@@ -151,6 +306,7 @@ fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
                 }
             })
             .collect::<Vec<RFileInfoSuccess>>();
+
         let mut result = HashMap::new();
         if successes.len() > 0 {
             result.insert(

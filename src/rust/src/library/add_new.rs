@@ -1,5 +1,4 @@
 use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
-use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
 use std::{fmt, fs, path::PathBuf, u32};
 use file_owner::{Group, PathExt};
 use serde::Serialize;
@@ -8,23 +7,16 @@ use serde::Serialize;
 
 // Outcome enum
 #[derive(Clone, PartialEq, Serialize)]
-enum Outcome {
+pub enum Outcome {
     Success,
     AlreadyPresent,
 }
 
-impl Outcome {
-    fn outcome_to_string(&self) -> String {
-        match self {
-            Outcome::Success => String::from("Success"),
-            Outcome::AlreadyPresent => String::from("Already Present")
-        }
-    }
-}
+
 
 // Custom error individual files
-#[derive(Clone, PartialEq, Serialize)]
-enum AddFileErrorType {
+#[derive(Clone, PartialEq, Debug)]
+pub enum AddFileErrorType {
     RelativePathNotFound,
     FileNotInGitRepo,
     AbsolutePathNotFound,
@@ -39,32 +31,14 @@ enum AddFileErrorType {
     FileNotCopied,
 }
 
-impl AddFileErrorType {
-    fn add_file_error_type_to_string(&self) -> String {
-        match self {
-            AddFileErrorType::RelativePathNotFound => String::from("relative path not found"),
-            AddFileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
-            AddFileErrorType::AbsolutePathNotFound => String::from("file not found"),
-            AddFileErrorType::PathIsDirectory => String::from("path is a directory"),
-            AddFileErrorType::HashNotFound => String::from("hash not found"),
-            AddFileErrorType::SizeNotFound => String::from("size not found"),
-            AddFileErrorType::OwnerNotFound => String::from("owner not found"),
-            AddFileErrorType::GroupNotSet => String::from("group not set"),
-            AddFileErrorType::PermissionsNotSet => String::from("group not set"),
-            AddFileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
-            AddFileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not added"),
-            AddFileErrorType::FileNotCopied => String::from("file not copied"),
-        }
-    }
-}
+
 
 #[derive(Debug)]
 pub struct AddFileError {
-    input: String,
-    relative_path: Option<String>,
-    absolute_path: Option<String>,
-    error_type: String,
-    error_message: Option<String>,
+    pub relative_path: Option<String>,
+    pub absolute_path: Option<String>,
+    pub error_type: AddFileErrorType,
+    pub error_message: Option<String>,
 }
 
 impl fmt::Display for AddFileError {
@@ -84,8 +58,8 @@ impl std::error::Error for AddFileError {}
 
 
 // custom error for add function (not file-specific errors)
-#[derive(Clone, PartialEq, Serialize)]
-enum AddErrorType {
+#[derive(Clone, PartialEq, Debug)]
+pub enum AddErrorType {
     AnyFilesDNE,
     GitRepoNotFound,
     ConfigNotFound,
@@ -94,63 +68,36 @@ enum AddErrorType {
     PermissionsInvalid,
 }
 
-impl AddErrorType {
-    fn add_error_type_to_string(&self) -> String {
-        match self {
-            AddErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
-            AddErrorType::GitRepoNotFound => String::from("git repository not found"),
-            AddErrorType::ConfigNotFound => String::from("configuration file not found"),
-            AddErrorType::GroupNotFound => String::from("linux primary group not found"),
-            AddErrorType::StorageDirNotFound => String::from("storage directory not found"),
-            AddErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
-        }
-    }
-}
 
-#[derive(Debug, Serialize)]
+
+#[derive(Debug)]
 pub struct AddError {
-    pub error_type: String,
-    pub error_message:String,
+    pub error_type: AddErrorType,
+    pub error_message: String,
 }
 
 impl fmt::Display for AddError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}", self.error_type, self.error_message)
+        write!(f, "{}: {}", self.error_type.add_error_type_to_string(), self.error_message)
     }
 }
 
 impl std::error::Error for AddError {}
 
-#[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
+#[derive(Clone, PartialEq)]
 pub struct AddedFile {
-    relative_path: String,
-    outcome: String,
-    size: u64,
-    hash: String,
-    absolute_path: String,
+    pub relative_path: String,
+    pub outcome: Outcome,
+    pub size: u64,
+    pub hash: String,
+    pub absolute_path: String,
 }
-
-// #[derive(Clone, PartialEq, Serialize, IntoDataFrameRow)]
-// pub struct ErrorFile {
-//     input: String,
-//     error_type: String,
-//     error_message: Option<String>,
-//     relative_path: Option<String>,
-//     absolute_path: Option<String>,
-// }
-
-// pub struct AddedFileAttempts {
-//     pub success_files: Vec<SuccessFile>,
-//     pub error_files: Vec<ErrorFile>
-// }
-
-
 
 pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, AddFileError>>, AddError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
         AddError{ 
-            error_type: AddErrorType::GitRepoNotFound.add_error_type_to_string(),
+            error_type: AddErrorType::GitRepoNotFound,
             error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
         }
     )?;
@@ -158,7 +105,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     // load the config
     let conf = config::read(&git_dir).map_err(|e| 
         AddError{
-            error_type: AddErrorType::ConfigNotFound.add_error_type_to_string(),
+            error_type: AddErrorType::ConfigNotFound,
             error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
         }
     )?;
@@ -169,7 +116,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
         else {
             Some(Group::from_name(&conf.group.as_str()).map_err(|e|
                 AddError{
-                    error_type: AddErrorType::GroupNotFound.add_error_type_to_string(),
+                    error_type: AddErrorType::GroupNotFound,
                     error_message: format!("change group: {} in dvs.yaml, {e}", conf.group)
                 }
             )?)
@@ -178,7 +125,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     // check storage directory exists
     let storage_dir = conf.storage_dir.canonicalize().map_err(|e|
         AddError{
-            error_type: AddErrorType::StorageDirNotFound.add_error_type_to_string(),
+            error_type: AddErrorType::StorageDirNotFound,
             error_message: format!("change storage_dir: {} in dvs.yaml, {e}", conf.storage_dir.display())
         }
     )?;
@@ -186,7 +133,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     // get file permissions
     let permissions = config::get_mode_u32(&conf.permissions).map_err(|e|
         AddError{
-            error_type: AddErrorType::PermissionsInvalid.add_error_type_to_string(),
+            error_type: AddErrorType::PermissionsInvalid,
             error_message: format!("change permissions: {} in dvs.yaml, {e}", conf.permissions)
         }
     )?;
@@ -203,7 +150,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     queued_paths.iter().map(|file| {
        file.canonicalize().map_err(|e|
             AddError{
-                error_type: AddErrorType::AnyFilesDNE.add_error_type_to_string(),
+                error_type: AddErrorType::AnyFilesDNE,
                 error_message: format!("{} not found: {e}", file.display())
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, AddError>>()?;
@@ -217,10 +164,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get absolute path
     let absolute_path = Some(local_path.canonicalize().map_err(|e|
         AddFileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
-            input: local_path.display().to_string(),
             relative_path: None,
             absolute_path: None,
-            error_type: AddFileErrorType::AbsolutePathNotFound.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::AbsolutePathNotFound,
             error_message: Some(e.to_string())
         }
     )?.display().to_string());
@@ -228,10 +174,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get relative path
     let relative_path = Some(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
             AddFileError{
-                input: local_path.display().to_string(),
                 relative_path: None,
                 absolute_path: absolute_path.clone(),
-                error_type: AddFileErrorType::RelativePathNotFound.add_file_error_type_to_string(),
+                error_type: AddFileErrorType::RelativePathNotFound,
                 error_message: Some(e.to_string())
             }
         )?.display().to_string());
@@ -239,10 +184,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // check if file in git repo
     if !repo::is_in_git_repo(&local_path, &git_dir) {
         return Err(AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::FileNotInGitRepo.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::FileNotInGitRepo,
             error_message: None
         })
     }
@@ -251,10 +195,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     if local_path.is_dir() {
         return Err(
             AddFileError{
-                input: local_path.display().to_string(),
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
-                error_type: AddFileErrorType::PathIsDirectory.add_file_error_type_to_string(),
+                error_type: AddFileErrorType::PathIsDirectory,
                 error_message: None
             }
         )
@@ -263,10 +206,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get file hash
     let hash = hash::get_file_hash(&local_path).ok_or(
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::HashNotFound.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::HashNotFound,
             error_message: None
         }
     )?;
@@ -274,10 +216,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get file size
     let size = local_path.metadata().map_err(|e|
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::SizeNotFound.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::SizeNotFound,
             error_message: Some(e.to_string())
         }
     )?.len();
@@ -285,10 +226,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get user name
     let user_name: String = file::get_user_name(&local_path).map_err(|e|
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::OwnerNotFound.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::OwnerNotFound,
             error_message: Some(e.to_string())
         }
     )?;
@@ -306,10 +246,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // write metadata file
     file::save(&metadata, &local_path).map_err(|e|
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::MetadataNotSaved.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string())
         }
     )?;
@@ -317,10 +256,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // Add file to gitignore
     ignore::add_gitignore_entry(local_path).map_err(|e|
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::GitIgnoreNotAdded.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::GitIgnoreNotAdded,
             error_message: Some(e.to_string())
         }
     )?;
@@ -344,7 +282,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
         }
         else {
             Outcome::AlreadyPresent
-        }.outcome_to_string();
+        };
 
     return Ok(
         AddedFile{
@@ -364,10 +302,9 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
    // copy
     copy::copy(&local_path, &storage_path).map_err(|e|
         AddFileError{
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::FileNotCopied.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::FileNotCopied,
             error_message: Some(e.to_string())
         }
     )?;
@@ -375,10 +312,9 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
     // set file permissions
     copy::set_file_permissions(&permissions, &storage_path).map_err(|e|
         AddFileError {
-            input: local_path.display().to_string(),
             relative_path: relative_path.clone(),
             absolute_path: absolute_path.clone(),
-            error_type: AddFileErrorType::PermissionsNotSet.add_file_error_type_to_string(),
+            error_type: AddFileErrorType::PermissionsNotSet,
             error_message: Some(format!("{permissions} {e}")),
         }
     )?;
@@ -388,10 +324,9 @@ fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, 
         let group_name = group.unwrap(); // group.is_some() so can safely unwrap
         storage_path.set_group(group_name).map_err(|e|
             AddFileError{
-                input: local_path.display().to_string(),
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
-                error_type: AddFileErrorType::GroupNotSet.add_file_error_type_to_string(),
+                error_type: AddFileErrorType::GroupNotSet,
                 error_message: Some(format!("{group_name} {e}"))
             }
         )?;

@@ -46,10 +46,10 @@ clean_paths <- function(files) {
 #' @return a data frame with the states of success of added files
 #'
 #' @export
-dvs_add <- function(files, message = "") {
+dvs_add <- function(files, message = "", one_df = TRUE) {
   files <- clean_paths(files)
   strict = TRUE
-  dvs_add_impl(files, message, strict)
+  dvs_add_impl(files, message, strict, one_df)
 } # dvs_add
 
 #' get added files
