@@ -77,9 +77,9 @@ dvs_add <- function(files, message = "", one_df = TRUE) {
 #' @import purrr
 #'
 #' @export
-dvs_get <- function(files) {
+dvs_get <- function(files, one_df = TRUE) {
   files <- clean_paths(files)
-  dvs_get_impl(files)
+  dvs_get_impl(files, one_df)
 }
 
 #' status report for added files

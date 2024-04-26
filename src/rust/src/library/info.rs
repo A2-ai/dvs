@@ -1,5 +1,4 @@
 use std::fs;
-// use std::io::Error;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;

@@ -15,7 +15,7 @@ dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, s
 
 dvs_add_impl <- function(globs, message, strict, one_df) .Call(wrap__dvs_add_impl, globs, message, strict, one_df)
 
-dvs_get_impl <- function(globs) .Call(wrap__dvs_get_impl, globs)
+dvs_get_impl <- function(globs, one_df) .Call(wrap__dvs_get_impl, globs, one_df)
 
 dvs_status_impl <- function(files) .Call(wrap__dvs_status_impl, files)
 

@@ -9,7 +9,7 @@ derDir <- "data/derived"
 # create a csv file you want to version with dvs
 data <- data.frame(
   Flowers = c("Iris", "Rose", "Tulip"),
-  Bugs = c("Ladybug", "Dragonfly", "Bumblebee")
+  Bugs = c("Ladybug", "Firefly", "Bumblebee")
 )
 
 nature_csv_path <- file.path(derDir, "nature.csv")
@@ -47,7 +47,7 @@ added_files$errors
 # say I want to update my data frame
 data <- data.frame(
   Flowers = c("Marigold", "Daffodil", "Lily"),
-  Bugs = c("Butterfly", "Beetle", "Ant")
+  Bugs = c("Butterfly", "Grasshopper", "Dragonfly")
 )
 
 write.csv(data, nature_csv_path)

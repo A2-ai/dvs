@@ -1,117 +1,92 @@
 use std::{fmt, path::PathBuf};
 use crate::helpers::{config, copy, hash, file, repo, parse};
-use extendr_api::{Dataframe, IntoDataFrameRow, prelude::*};
+// use extendr_api::{Dataframe, IntoDataFrameRow, prelude::*};
 
-#[derive(PartialEq)]
-enum Outcome {
+#[derive(PartialEq, Debug)]
+pub enum Outcome {
     Copied,
     AlreadyPresent,
     Error,
 }
 
-impl Outcome {
-    fn outcome_to_string(&self) -> String {
-        match self {
-            Outcome::Copied => String::from("Copied"),
-            Outcome::AlreadyPresent => String::from("Already Present"),
-            Outcome::Error => String::from("Error"),
+#[derive(Debug)]
+pub struct RetrievedFile {
+    pub relative_path: String,
+    pub outcome: Outcome,
+    pub size: u64,
+    pub absolute_path: String,
+    pub hash: String,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum FileErrorType {
+   PathIsDirectory,
+   MetadataNotFound,
+   RelativePathNotFound,
+   FileNotCopied,
+   AbsolutePathNotFound
+}
+
+#[derive(Debug)]
+pub struct FileError {
+    pub relative_path: Option<String>,
+    pub absolute_path: Option<String>,
+    pub error_type: FileErrorType,
+    pub error_message: Option<String>,
+}
+
+impl fmt::Display for FileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.error_message.clone() {
+            Some(message) => {
+                write!(f, "{message}")
+            }
+            None => {
+                write!(f, "NA")
+            }
         }
     }
 }
 
-#[derive(IntoDataFrameRow)]
-pub struct RetrievedFile {
-    relative_path: String,
-    outcome: String,
-    error: Option<String>,
-    size: Option<u64>,
-    absolute_path: Option<String>,
-    hash: Option<String>,
-}
+impl std::error::Error for FileError {}
 
-
-
-// #[derive(Clone, PartialEq)]
-// enum GetFileErrorType {
-//    PathIsDirectory,
-//    MetadataNotFound,
-//    RelativePathNotFound,
-//    FileNotCopied,
-//    AbsolutePathNotFound
-// }
-
-// impl GetFileErrorType {
-//     fn get_file_error_type_to_string(&self) -> String {
-//         match self {
-//             GetFileErrorType::PathIsDirectory => String::from("path is a directory"),
-//             GetFileErrorType::MetadataNotFound => String::from("metadata file not found"),
-//             GetFileErrorType::RelativePathNotFound => String::from("relative path not found"),
-//             GetFileErrorType::FileNotCopied => String::from("file not copied"),
-//             GetFileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
-//         }
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct GetFileError {
-//     pub error_type: String,
-//     pub error_message:String,
-// }
-
-// impl fmt::Display for GetFileError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{}: {}", self.error_type, self.error_message)
-//     }
-// }
-
-// impl std::error::Error for GetFileError {}
-
-
-#[derive(Clone, PartialEq)]
-enum GetErrorType {
+#[derive(Clone, PartialEq, Debug)]
+pub enum BatchErrorType {
     AnyMetaFilesDNE,
     GitRepoNotFound,
     ConfigNotFound,
 }
 
-impl GetErrorType {
-    fn get_error_type_to_string(&self) -> String {
-        match self {
-            GetErrorType::AnyMetaFilesDNE => String::from("metadata file not found for at least one file"),
-            GetErrorType::GitRepoNotFound => String::from("git repository not found"),
-            GetErrorType::ConfigNotFound => String::from("configuration file not found"),
-        }
-    }
-}
+
 
 #[derive(Debug)]
-pub struct GetError {
-    pub error_type: String,
+pub struct BatchError {
+    pub error_type: BatchErrorType,
     pub error_message:String,
 }
 
-impl fmt::Display for GetError {
+impl fmt::Display for BatchError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}", self.error_type, self.error_message)
+        write!(f, "{}", self.error_message)
     }
 }
 
-impl std::error::Error for GetError {}
+impl std::error::Error for BatchError {}
 
 
-pub fn dvs_get(globs: &Vec<String>) -> std::result::Result<Vec<RetrievedFile>, GetError> {
+pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<RetrievedFile, FileError>>, BatchError> {
     // get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
-        GetError{
-            error_type: GetErrorType::GitRepoNotFound.get_error_type_to_string(), 
+        BatchError{
+            error_type: BatchErrorType::GitRepoNotFound, 
             error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
         }
     )?;
 
     // load the config
     let conf = config::read(&git_dir).map_err(|e|
-        GetError{
-            error_type: GetErrorType::ConfigNotFound.get_error_type_to_string(), 
+        BatchError{
+            error_type: BatchErrorType::ConfigNotFound, 
             error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
         }
     )?;
@@ -129,21 +104,20 @@ pub fn dvs_get(globs: &Vec<String>) -> std::result::Result<Vec<RetrievedFile>, G
     
      // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get(&file, &conf)
-    }).collect::<Vec<RetrievedFile>>();
+        get_file(&file, &conf)
+    }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();
 
     Ok(retrieved_files)
 }
 
 
 // gets a file from storage
-pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
+pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Result<RetrievedFile, FileError> {
      // get local path relative to working directory
      // might not exist
-     let unknown = "unknown".to_string();
      let mut relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-        Ok(rel_path) => rel_path.display().to_string(),
-        Err(_) => unknown.clone(),
+        Ok(rel_path) => Some(rel_path.display().to_string()),
+        Err(_) => None,
     };
 
     // get absolute path
@@ -155,30 +129,23 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
 
     // return if is dir
     if local_path.is_dir() {
-        return RetrievedFile{
-            relative_path,
-            absolute_path,
-            hash: None,
-            outcome: Outcome::Error.outcome_to_string(),
-            error: Some(format!("path is a directory: {}", local_path.display())),
-            size: None
-        };
+        return Err(FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::PathIsDirectory,
+            error_message: None
+        })
     }
 
     // get metadata
-    let metadata = match file::load(&local_path) {
-        Ok(data) => data,
-        Err(_e) => {
-            return RetrievedFile{
-                relative_path,
-                absolute_path,
-                hash: None,
-                outcome: Outcome::Error.outcome_to_string(),
-                error: Some(format!("metadata file not found for {}", local_path.display())),
-                size: None
-            };
+    let metadata = file::load(&local_path).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::MetadataNotFound,
+            error_message: Some(e.to_string())
         }
-    };
+    })?;
 
     // get local hash 
     let local_hash = hash::get_file_hash(&local_path).clone().unwrap_or_default(); 
@@ -189,72 +156,61 @@ pub fn get(local_path: &PathBuf, conf: &config::Config) -> RetrievedFile {
     // check if up-to-date file is already present locally
     let outcome = 
         if !local_path.exists() || metadata.hash == String::from("") || local_hash == String::from("") || local_hash != metadata.hash {
-            if let Err(_e) = copy::copy(&storage_path, &local_path) {
-                return RetrievedFile{
-                    relative_path,
-                    absolute_path,
-                    hash: None,
-                    outcome: Outcome::Error.outcome_to_string(),
-                    error: Some(format!("file not copied: {}", local_path.display())),
-                    size: None
-                };
-            } // if error
+            copy::copy(&storage_path, &local_path).map_err(|e| {
+                FileError{
+                    relative_path: relative_path.clone(),
+                    absolute_path: absolute_path.clone(),
+                    error_type: FileErrorType::FileNotCopied,
+                    error_message: Some(e.to_string())
+                }
+            })?;
             Outcome::Copied
         }  // if file not present or not up-to-date
         else {
             Outcome::AlreadyPresent
         };
 
-    if absolute_path.is_none() || relative_path == unknown {
+    if absolute_path.is_none() {
         // try to get relative and absolute paths again
-        absolute_path = match local_path.canonicalize() {
-            Ok(path) => Some(path.display().to_string()),
-            Err(_) => {
-                return RetrievedFile{
-                    relative_path,
-                    absolute_path,
-                    hash: None,
-                    outcome: Outcome::Error.outcome_to_string(),
-                    error: Some(format!("relative path not found")),
-                    size: None
-                }
+        absolute_path = Some(local_path.canonicalize().map_err(|e| {
+            FileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: FileErrorType::AbsolutePathNotFound,
+                error_message: Some(e.to_string())
             }
-        };
-
-        relative_path = match repo::get_relative_path(&PathBuf::from("."), &local_path) {
-            Ok(rel_path) => rel_path,
-            Err(_) => {
-                return RetrievedFile{
-                    relative_path: local_path.display().to_string(),
-                    absolute_path,
-                    hash: None,
-                    outcome: Outcome::Error.outcome_to_string(),
-                    error: Some(format!("relative path not found")),
-                    size: None
-                }
-            },
-        }.display().to_string();
+        })?.display().to_string());
     }
-    
 
-    RetrievedFile {
-        relative_path,
-        absolute_path,
-        hash: Some(metadata.hash),
-        outcome: outcome.outcome_to_string(),
-        error: None,
-        size: Some(metadata.size)
+    if relative_path.is_none() {
+        relative_path = Some(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e| {
+            FileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: FileErrorType::RelativePathNotFound,
+                error_message: Some(e.to_string())
+            }
+        })?.display().to_string());
     }
+
+    Ok(RetrievedFile {
+            relative_path: relative_path.unwrap(),
+            absolute_path: absolute_path.unwrap(),
+            hash: metadata.hash,
+            outcome: outcome,
+            size: metadata.size
+        }
+    )
 }
 
-fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), GetError> {
+fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
     // Find the first path that does not have a corresponding .dvsmeta file
     if let Some(path) = queued_paths
         .into_iter()
         .find(|p| !PathBuf::from(p.display().to_string() + ".dvsmeta").exists())
     {
-        return Err(GetError {
-            error_type: GetErrorType::AnyMetaFilesDNE.get_error_type_to_string(),
+        return Err(BatchError {
+            error_type: BatchErrorType::AnyMetaFilesDNE,
             error_message: format!("missing for {}", path.display()),
         });
     }
