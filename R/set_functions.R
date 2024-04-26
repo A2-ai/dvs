@@ -111,8 +111,8 @@ dvs_status <- function(files = c()) {
   dvs_status_impl(files)
 }
 
-dvs_info <- function(files = c(), df) {
+dvs_info <- function(files = c(), one_df = TRUE) {
   files <- clean_paths(files)
-  get_file_info_impl(files, df)
+  get_file_info_impl(files, one_df)
 }
 

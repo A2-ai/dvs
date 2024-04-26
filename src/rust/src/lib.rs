@@ -182,9 +182,8 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
             }
             
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
-            
     }
-} // dvs_add_impl
+}
 
 // GET
 // one df
