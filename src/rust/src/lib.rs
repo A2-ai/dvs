@@ -53,13 +53,31 @@ fn dvs_status_impl(files: Vec<String>) -> std::result::Result<Robj, String> {
 #[derive(Debug, IntoDataFrameRow, Clone)]
 pub struct RFileInfo {
     pub path: String,
-    pub owner_id: Option<u32>,
-    pub owner_name: Option<String>,
+    pub user_id: Option<u32>,
+    pub user_name: Option<String>,
     pub group_id: Option<u32>,
     pub group_name: Option<String>,
     pub modification_time: Option<u64>,
     pub creation_time: Option<u64>,
     pub permissions: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, IntoDataFrameRow, Clone)]
+pub struct RFileInfoSuccess {
+    pub path: String,
+    pub user_id: Option<u32>,
+    pub user_name: Option<String>,
+    pub group_id: Option<u32>,
+    pub group_name: Option<String>,
+    pub modification_time: Option<u64>,
+    pub creation_time: Option<u64>,
+    pub permissions: Option<String>
+}
+
+#[derive(Debug, IntoDataFrameRow, Clone)]
+pub struct RFileError {
+    pub path: String,
     pub error: Option<String>,
 }
 
@@ -72,9 +90,9 @@ fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
         .map(|(fi, path)| match fi {
             Ok(fi) => RFileInfo {
                 path: fi.path.clone(),
-                owner_id: Some(fi.owner_id),
-                owner_name: Some(fi.owner_name.clone()),
-                group_id: Some(fi.group_id),
+                user_id: Some(fi.user_id.clone()),
+                user_name: Some(fi.user_name.clone()),
+                group_id: Some(fi.group_id.clone()),
                 group_name: Some(fi.group_name.clone()),
                 modification_time: Some(fi.modification_time),
                 creation_time: Some(fi.creation_time),
@@ -83,8 +101,8 @@ fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
             },
             Err(err) => RFileInfo {
                 path: path.to_string(),
-                owner_id: None,
-                owner_name: None,
+                user_id: None,
+                user_name: None,
                 group_id: None,
                 group_name: None,
                 modification_time: None,
@@ -101,14 +119,38 @@ fn get_file_info_impl(paths: Vec<String>, df: bool) -> Robj {
         }
     } else {
         let failures = results
-            .clone()
-            .into_iter()
-            .filter(|res| res.error.is_some())
-            .collect::<Vec<RFileInfo>>();
+            .iter()
+            .filter_map(|res| {
+                if res.error.is_some() {
+                    Some(RFileError {
+                        path: res.path.clone(),
+                        error: res.error.clone(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<RFileError>>();
         let successes = results
             .into_iter()
-            .filter(|res| res.error.is_none())
-            .collect::<Vec<RFileInfo>>();
+            .filter_map(|res| {
+                if res.error.is_none() {
+                    Some(RFileInfoSuccess{
+                        path: res.path,
+                        user_id: res.user_id,
+                        user_name: res.user_name,
+                        group_id: res.group_id,
+                        group_name: res.group_name,
+                        modification_time: res.modification_time,
+                        creation_time: res.creation_time,
+                        permissions: res.permissions
+                    })
+                }
+                else {
+                    None
+                }
+            })
+            .collect::<Vec<RFileInfoSuccess>>();
         let mut result = HashMap::new();
         if successes.len() > 0 {
             result.insert(

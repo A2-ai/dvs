@@ -1,11 +1,10 @@
 use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
-
 use extendr_api::{IntoDataFrameRow, Dataframe, eval_string, prelude::*};
 use std::{fmt, fs, path::PathBuf, u32};
 use file_owner::{Group, PathExt};
 use serde::Serialize;
 
-//pub type Result<T> = core::result::Result<T, Error>;
+// pub type Result<T> = core::result::Result<T, Error>;
 
 // Outcome enum
 #[derive(Clone, PartialEq, Serialize)]
@@ -166,9 +165,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 
     // get group, check if specified
     let group = 
-        if conf.group == "" {
-            None
-        }
+        if conf.group == "" {None}
         else {
             Some(Group::from_name(&conf.group.as_str()).map_err(|e|
                 AddError{
@@ -211,11 +208,9 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, AddError>>()?;
 
-    let vec_of_added_files = queued_paths.into_iter().map(|file| {
+    Ok(queued_paths.into_iter().map(|file| {
         add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict)
-    }).collect::<Vec<std::result::Result<AddedFile, AddFileError>>>();
-
-    Ok(vec_of_added_files)
+    }).collect::<Vec<std::result::Result<AddedFile, AddFileError>>>())
 }
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<AddedFile, AddFileError> {

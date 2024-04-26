@@ -12,8 +12,8 @@ pub type Error = Box<dyn std::error::Error>;
 #[derive(Debug, Clone)]
 pub struct FileInfo {
     pub path: String,
-    pub owner_id: u32,
-    pub owner_name: String,
+    pub user_id: u32,
+    pub user_name: String,
     pub group_id: u32,
     pub group_name: String,
     pub creation_time: u64,
@@ -27,8 +27,8 @@ pub fn info(paths: &Vec<String>) -> Vec<Result<FileInfo>> {
         .map(|path| {
             let path_buf = PathBuf::from(path);
             let metadata = fs::metadata(Path::new(path))?;
-            let owner_id = metadata.uid();
-            let owner_name = file::get_user_name(&path_buf)?;
+            let user_id = metadata.uid();
+            let user_name = file::get_user_name(&path_buf)?;
             let group_id = metadata.gid();
             let group_name = path_buf.group()?.name()?.unwrap_or_default();
             let modification_time = metadata
@@ -43,8 +43,8 @@ pub fn info(paths: &Vec<String>) -> Vec<Result<FileInfo>> {
 
             Ok(FileInfo {
                 path: path.clone(),
-                owner_id,
-                owner_name,
+                user_id,
+                user_name,
                 group_id,
                 group_name,
                 creation_time,
