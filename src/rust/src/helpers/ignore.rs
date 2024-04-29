@@ -1,11 +1,12 @@
 use std::{fs::{File, OpenOptions}, path::PathBuf};
 use crate::helpers::repo;
 use std::io::prelude::*;
+use crate::helpers::error::{FileError, FileErrorType};
 
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
-pub fn add_gitignore_entry(path: &PathBuf) -> Result<()> {
+pub fn add_gitignore_helper(path: &PathBuf) -> Result<()> {
     let abs_path = path.canonicalize()?;
 
     let dir = abs_path
@@ -26,6 +27,7 @@ pub fn add_gitignore_entry(path: &PathBuf) -> Result<()> {
     }
 
     let contents = std::fs::read_to_string(&ignore_file)?;
+    
     if !contents.contains(&ignore_entry) {
         let mut file = OpenOptions::new()
         .write(true)
@@ -36,4 +38,16 @@ pub fn add_gitignore_entry(path: &PathBuf) -> Result<()> {
 
     } // add ignore entry
     Ok(())
+}
+
+pub fn add_gitignore_entry(local_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<(), FileError> {
+    add_gitignore_helper(local_path).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::GitIgnoreNotAdded,
+            error_message: Some(e.to_string())
+        }
+    })
+    
 }

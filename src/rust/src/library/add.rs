@@ -1,4 +1,4 @@
-use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError, FileErrorType}, file, hash, ignore, outcome::Outcome, parse, repo};
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, parse, repo};
 use std::{fs, path::PathBuf, u32};
 use file_owner::Group;
 
@@ -69,14 +69,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let size = file::get_file_size(local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // get user name
-    let user_name: String = file::get_user_name(&local_path).map_err(|e|
-        FileError{
-            relative_path: Some(relative_path),
-            absolute_path: Some(absolute_path),
-            error_type: FileErrorType::OwnerNotFound,
-            error_message: Some(e.to_string())
-        }
-    )?;
+    let user_name: String = file::get_user_name(&local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // create metadata
     let metadata = file::Metadata{
@@ -89,24 +82,10 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     };
 
     // write metadata file
-    file::save(&metadata, &local_path).map_err(|e|
-        FileError{
-            relative_path: Some(relative_path),
-            absolute_path: Some(absolute_path),
-            error_type: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string())
-        }
-    )?;
+    file::save(&metadata, &local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // Add file to gitignore
-    ignore::add_gitignore_entry(local_path).map_err(|e|
-        FileError{
-            relative_path: Some(relative_path),
-            absolute_path: Some(absolute_path),
-            error_type: FileErrorType::GitIgnoreNotAdded,
-            error_message: Some(e.to_string())
-        }
-    )?;
+    ignore::add_gitignore_entry(local_path, &Some(relative_path), &Some(absolute_path))?;
     
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &hash);

@@ -18,7 +18,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 // ADD
 // one df
 #[derive(Clone, PartialEq, IntoDataFrameRow)]
-pub struct RAddedFile {
+pub struct RFile {
     relative_path: Option<String>,
     outcome: String,
     size: Option<u64>,
@@ -31,7 +31,7 @@ pub struct RAddedFile {
 
 // success df
 #[derive(Clone, PartialEq, IntoDataFrameRow)]
-pub struct RAddFileSuccess {
+pub struct RFileSuccess {
     pub relative_path: String,
     pub outcome: String,
     pub size: u64,
@@ -42,7 +42,7 @@ pub struct RAddFileSuccess {
 
 // error df
 #[derive(Debug, IntoDataFrameRow)]
-pub struct RAddFileError {
+pub struct RFileError {
     pub relative_path: Option<String>,
     pub absolute_path: Option<String>,
     pub error_type: String,
@@ -60,7 +60,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
         .iter()
         .zip(&globs)
         .map(|(fi, input)| match fi {
-            Ok(fi) => RAddedFile{
+            Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
@@ -70,7 +70,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                 error_type: None,
                 error_message: None,
             },
-            Err(e) => RAddedFile{
+            Err(e) => RFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
                 size: None,
@@ -81,7 +81,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                 error_message: e.error_message.clone(),
             }
         })
-        .collect::<Vec<RAddedFile>>();
+        .collect::<Vec<RFile>>();
 
     if one_df {
         Ok(results
@@ -94,7 +94,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
             .iter()
             .filter_map(|res| {
                 if res.error_type.is_some() {
-                    Some(RAddFileError{
+                    Some(RFileError{
                         input: res.input.clone(),
                         relative_path: res.clone().relative_path,
                         absolute_path: res.clone().absolute_path,
@@ -104,14 +104,14 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                     )
                 }
                 else {None}
-            }).collect::<Vec<RAddFileError>>();
+            }).collect::<Vec<RFileError>>();
 
         let successes = results
             .into_iter()
             .filter_map(|res| {
                 if res.error_type.is_none() {
                     Some(
-                        RAddFileSuccess{
+                        RFileSuccess{
                             relative_path: res.relative_path.unwrap(),
                             outcome: res.outcome,
                             size: res.size.unwrap(),
@@ -122,7 +122,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                     )
                 }
                 else {None}
-            }).collect::<Vec<RAddFileSuccess>>();
+            }).collect::<Vec<RFileSuccess>>();
 
             let mut result = HashMap::new();
             if successes.len() > 0 {
@@ -142,41 +142,6 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
     }
 }
 
-// GET
-// one df
-#[derive(Clone, Debug, IntoDataFrameRow)]
-pub struct RRetrievedFile {
-    relative_path: Option<String>,
-    outcome: String,
-    size: Option<u64>,
-    absolute_path: Option<String>,
-    hash: Option<String>,
-    input: String,
-    error_type: Option<String>,
-    error_message: Option<String>,
-}
-
-// success df
-#[derive(Clone, PartialEq, IntoDataFrameRow)]
-pub struct RRetrievedFileSuccess {
-    pub relative_path: String,
-    pub outcome: String,
-    pub size: u64,
-    pub hash: String,
-    pub absolute_path: String,
-    pub input: String,
-}
-
-// error df
-#[derive(Debug, IntoDataFrameRow)]
-pub struct RRetrievedFileError {
-    pub relative_path: Option<String>,
-    pub absolute_path: Option<String>,
-    pub error_type: String,
-    pub error_message: Option<String>,
-    pub input: String,
-}
-
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
     let got_files = get::get(&globs).map_err(|e|
@@ -187,7 +152,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
         .iter()
         .zip(&globs)
         .map(|(fi, input)| match fi {
-            Ok(fi) => RRetrievedFile{
+            Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
@@ -197,7 +162,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                 error_type: None,
                 error_message: None
             },
-            Err(e) => RRetrievedFile{
+            Err(e) => RFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
                 size: None,
@@ -209,7 +174,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             }
 
         })
-        .collect::<Vec<RRetrievedFile>>();
+        .collect::<Vec<RFile>>();
 
     if one_df {
         Ok(results
@@ -222,7 +187,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             .iter()
             .filter_map(|res| {
                 if res.error_type.is_some() {
-                    Some(RRetrievedFileError{
+                    Some(RFileError{
                         input: res.input.clone(),
                         relative_path: res.clone().relative_path,
                         absolute_path: res.clone().absolute_path,
@@ -232,14 +197,14 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                     )
                 }
                 else {None}
-            }).collect::<Vec<RRetrievedFileError>>();
+            }).collect::<Vec<RFileError>>();
 
         let successes = results
             .into_iter()
             .filter_map(|res| {
                 if res.error_type.is_none() {
                     Some(
-                        RAddFileSuccess{
+                        RFileSuccess{
                             relative_path: res.relative_path.unwrap(),
                             outcome: res.outcome,
                             size: res.size.unwrap(),
@@ -250,7 +215,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                     )
                 }
                 else {None}
-            }).collect::<Vec<RAddFileSuccess>>();
+            }).collect::<Vec<RFileSuccess>>();
 
             let mut result = HashMap::new();
             if successes.len() > 0 {
@@ -274,50 +239,98 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
 } // dvs_get_impl
 
 
-// STATUS
-// one df
-#[derive(Clone, Debug, IntoDataFrameRow)]
-pub struct RFileStatus {
-    relative_path: Option<String>,
-    status: String,
-    size: Option<u64>,
-    absolute_path: Option<String>,
-    hash: Option<String>,
-    input: String,
-    error_type: Option<String>,
-    error_message: Option<String>,
-}
-
-// success df
-#[derive(Clone, PartialEq, IntoDataFrameRow)]
-pub struct RFileStatusSuccess {
-    pub relative_path: String,
-    pub outcome: String,
-    pub size: u64,
-    pub hash: String,
-    pub absolute_path: String,
-    pub input: String,
-}
-
-// error df
-#[derive(Debug, IntoDataFrameRow)]
-pub struct RFileStatusError {
-    pub relative_path: Option<String>,
-    pub absolute_path: Option<String>,
-    pub error_type: String,
-    pub error_message: Option<String>,
-    pub input: String,
-}
-
 #[extendr]
-fn dvs_status_impl(files: Vec<String>) -> Result<Robj> {
-    let status = status::dvs_status(&files).map_err(|e|
+fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
+    let status = status::dvs_status(&globs).map_err(|e|
         Error::Other(format!("{}: {}", e.error_type.batch_error_type_to_string(), e.error_message))
     )?;
 
+    let results = status
+        .iter()
+        .zip(&globs)
+        .map(|(fi, input)| match fi {
+            Ok(fi) => RFile{
+                relative_path: Some(fi.relative_path.display().to_string()),
+                outcome: fi.outcome.outcome_to_string(),
+                size: Some(fi.size),
+                absolute_path: Some(fi.absolute_path.display().to_string()),
+                hash: Some(fi.hash.clone()),
+                input: input.clone(),
+                error_type: None,
+                error_message: None
+            },
+            Err(e) => RFile{
+                relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
+                outcome: Outcome::Error.outcome_to_string(),
+                size: None,
+                absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
+                hash: None,
+                input: input.clone(),
+                error_type: Some(e.error_type.file_error_type_to_string()),
+                error_message: e.error_message.clone()
+            }
 
-} // dvs_status_impl
+        })
+        .collect::<Vec<RFile>>();
 
+    if one_df {
+        Ok(results
+            .into_dataframe()
+            .map_err(|e| Error::Other(format!("Error converting added files to data frame: {e}")))?
+            .as_robj().clone())
+    }
+    else {
+        let failures = results
+            .iter()
+            .filter_map(|res| {
+                if res.error_type.is_some() {
+                    Some(RFileError{
+                        input: res.input.clone(),
+                        relative_path: res.clone().relative_path,
+                        absolute_path: res.clone().absolute_path,
+                        error_type: res.clone().error_type.unwrap(),
+                        error_message: res.clone().error_message
+                        }
+                    )
+                }
+                else {None}
+            }).collect::<Vec<RFileError>>();
+
+        let successes = results
+            .into_iter()
+            .filter_map(|res| {
+                if res.error_type.is_none() {
+                    Some(
+                        RFileSuccess{
+                            relative_path: res.relative_path.unwrap(),
+                            outcome: res.outcome,
+                            size: res.size.unwrap(),
+                            hash: res.hash.unwrap(),
+                            absolute_path: res.absolute_path.unwrap(),
+                            input: res.input,
+                        }
+                    )
+                }
+                else {None}
+            }).collect::<Vec<RFileSuccess>>();
+
+            let mut result = HashMap::new();
+            if successes.len() > 0 {
+                result.insert(
+                    "successes",
+                    successes.into_dataframe().unwrap().as_robj().clone(),
+                );
+            }
+            if failures.len() > 0 {
+                result.insert(
+                    "failures",
+                    failures.into_dataframe().unwrap().as_robj().clone(),
+                );
+            }
+            
+            Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
+        }
+}
 
 // one df
 #[derive(Debug, IntoDataFrameRow, Clone)]
@@ -348,7 +361,7 @@ pub struct RFileInfoSuccess {
 
 // error df
 #[derive(Debug, IntoDataFrameRow, Clone)]
-pub struct RFileError {
+pub struct RInfoFileError {
     pub path: String,
     pub error: Option<String>,
 }
@@ -394,7 +407,7 @@ fn get_file_info_impl(paths: Vec<String>, one_df: bool) -> Robj {
             .iter()
             .filter_map(|res| {
                 if res.error.is_some() {
-                    Some(RFileError {
+                    Some(RInfoFileError {
                         path: res.path.clone(),
                         error: res.error.clone(),
                     })
@@ -402,7 +415,7 @@ fn get_file_info_impl(paths: Vec<String>, one_df: bool) -> Robj {
                     None
                 }
             })
-            .collect::<Vec<RFileError>>();
+            .collect::<Vec<RInfoFileError>>();
         let successes = results
             .into_iter()
             .filter_map(|res| {

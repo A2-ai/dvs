@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError, BatchErrorType, FileErrorType}};
+use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError, BatchErrorType}};
 
 #[derive(Debug)]
 pub struct RetrievedFile {
@@ -54,14 +54,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     file::check_if_dir(local_path, &relative_path_temp, &absolute_path_temp);
 
     // get metadata
-    let metadata = file::load(&local_path).map_err(|e| {
-        FileError{
-            relative_path: relative_path_temp.clone(),
-            absolute_path: absolute_path_temp.clone(),
-            error_type: FileErrorType::MetadataNotFound,
-            error_message: Some(e.to_string())
-        }
-    })?;
+    let metadata = file::load(&local_path, &relative_path_temp, &absolute_path_temp)?;
 
     // get local hash 
     let local_hash = hash::get_file_hash(local_path, &relative_path_temp, &absolute_path_temp)?;

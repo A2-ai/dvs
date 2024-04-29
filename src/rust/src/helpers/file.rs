@@ -15,23 +15,55 @@ pub struct Metadata {
     pub saved_by: String
 }
 
-pub fn save(metadata: &Metadata, path: &PathBuf) -> Result<()> {
+pub fn save(metadata: &Metadata, path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<(), FileError> {
     // compose path file/to/file.ext.dvsmeta
     let metadata_file_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
 
     // create file
-    let _ = File::create(&metadata_file_path);
-    // write to json
-    let contents = serde_json::to_string_pretty(&metadata)?;
-    let _ = fs::write(&metadata_file_path, contents);
+    File::create(&metadata_file_path).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::MetadataNotSaved,
+            error_message: Some(e.to_string())
+        }
+    })?;
+    let contents = serde_json::to_string_pretty(&metadata).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::MetadataNotSaved,
+            error_message: Some(e.to_string())
+        }
+    })?;
+    fs::write(&metadata_file_path, contents).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::MetadataNotSaved,
+            error_message: Some(e.to_string())
+        }
+    })?;
     Ok(())
 }
 
-pub fn load(path: &PathBuf) -> Result<Metadata> {
+pub fn load_helper(path: &PathBuf) -> Result<Metadata> {
     let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
     let contents = fs::read_to_string(metadata_path_abs)?;
     let metadata: Metadata = serde_json::from_str(&contents)?;
     return Ok(metadata);
+}
+
+pub fn load(path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<Metadata, FileError> {
+    Ok(load_helper(path).map_err(|e| {
+            FileError{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                error_type: FileErrorType::MetadataNotFound,
+                error_message: Some(e.to_string())
+            }
+        })?)
+    
 }
 
 pub fn delete(path: &PathBuf) -> Result<()> {
@@ -40,14 +72,26 @@ pub fn delete(path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn get_user_name(path: &PathBuf) -> Result<String> {
+pub fn get_user_helper(path: &PathBuf) -> Result<String> {
     Ok(path
-            .owner()?
-            .name()?
-            .ok_or_else(|| format!("owner not found"))?
+        .owner()?
+        .name()?
+        .ok_or_else(|| format!("owner not found"))?
     )
-    
 }
+
+pub fn get_user_name(local_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<String, FileError> {
+    Ok(get_user_helper(local_path).map_err(|e| {
+        FileError{
+            relative_path: relative_path.clone(),
+            absolute_path: absolute_path.clone(),
+            error_type: FileErrorType::OwnerNotFound,
+            error_message: Some(e.to_string())
+        }
+    })?)
+}
+
+
 
 pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
     Ok(local_path.canonicalize().map_err(|e|

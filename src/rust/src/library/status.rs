@@ -1,11 +1,11 @@
 
-use crate::helpers::{config, hash, repo, file, parse, error::{BatchError, FileError, FileErrorType}};
+use crate::helpers::{config, error::{BatchError, FileError}, file, hash, outcome::Outcome, parse, repo};
 use std::path::PathBuf;
 
 #[derive(PartialEq, Debug)]
 pub struct FileStatus {
     pub relative_path: PathBuf,
-    pub status: String,
+    pub outcome: Outcome,
     pub size: u64,
     pub time_stamp: String,
     pub saved_by: String,
@@ -43,30 +43,23 @@ fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
     file::check_if_dir(local_path, &Some(relative_path), &Some(absolute_path));
     
     // get file info
-    let metadata = file::load(&local_path).map_err(|e| {
-        FileError{
-            relative_path: Some(relative_path.clone()),
-            absolute_path: Some(absolute_path.clone()),
-            error_type: FileErrorType::MetadataNotFound,
-            error_message: Some(e.to_string())
-        }
-    })?;
+    let metadata = file::load(local_path, &Some(relative_path), &Some(absolute_path))?;
             
     // assign status: not-present by default
-    let status = 
+    let outcome = 
         if !local_path.exists() {
-            String::from("not-present")
+            Outcome::NotPresent
         }
         else {
             match hash::get_file_hash(&local_path, &Some(relative_path), &Some(absolute_path)) {
                 Ok(current_hash) => {
                     if current_hash == metadata.hash {
-                        String::from("up-to-date")
+                        Outcome::UpToDate
                     }
-                    else {String::from("out-of-sync")}
+                    else {Outcome::OutOfSync}
                 }
                 Err(_) => {
-                    String::from("out-of-sync")
+                    Outcome::OutOfSync
                 }
             }
         };
@@ -75,7 +68,7 @@ fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
     Ok(FileStatus{
             relative_path,
             absolute_path,
-            status: status,
+            outcome,
             size: metadata.size,
             hash: metadata.hash,
             time_stamp: metadata.time_stamp,
