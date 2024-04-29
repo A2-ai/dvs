@@ -40,7 +40,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Result<RetrievedFile, FileError> {
     // get temporary relative and absolute paths because they probably don't exist
-    let relative_path_temp: Option<PathBuf> = match repo::get_relative_path_to_wd(&PathBuf::from("."), &local_path) {
+    let relative_path_temp: Option<PathBuf> = match repo::get_relative_path_to_wd(&local_path) {
         Ok(path) => Some(path),
         Err(_) => None,
     };
@@ -51,13 +51,13 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     };
 
     // return if is dir
-    file::check_if_dir(local_path, &relative_path_temp, &absolute_path_temp);
+    file::check_if_dir(local_path);
 
     // get metadata
     let metadata = file::load(&local_path, &relative_path_temp, &absolute_path_temp)?;
 
     // get local hash 
-    let local_hash = hash::get_file_hash(local_path, &relative_path_temp, &absolute_path_temp)?;
+    let local_hash = hash::get_file_hash(local_path)?;
 
     // get storage data
     let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.hash);
@@ -82,7 +82,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
    
     let relative_path = 
         if relative_path_temp.is_none() {
-            repo::get_relative_path_to_wd(local_path, &absolute_path)?
+            repo::get_relative_path_to_wd(local_path)?
         }
         else {
             relative_path_temp.unwrap()

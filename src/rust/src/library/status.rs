@@ -38,9 +38,9 @@ pub fn dvs_status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::R
 fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
     let absolute_path = file::get_absolute_path(local_path)?;
 
-    let relative_path = repo::get_relative_path_to_wd(local_path, &absolute_path)?;    
+    let relative_path = repo::get_relative_path_to_wd(local_path)?;    
 
-    file::check_if_dir(local_path, &Some(relative_path), &Some(absolute_path));
+    file::check_if_dir(local_path);
     
     // get file info
     let metadata = file::load(local_path, &Some(relative_path), &Some(absolute_path))?;
@@ -51,7 +51,7 @@ fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
             Outcome::NotPresent
         }
         else {
-            match hash::get_file_hash(&local_path, &Some(relative_path), &Some(absolute_path)) {
+            match hash::get_file_hash(&local_path) {
                 Ok(current_hash) => {
                     if current_hash == metadata.hash {
                         Outcome::UpToDate

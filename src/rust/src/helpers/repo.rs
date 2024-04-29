@@ -1,7 +1,7 @@
 use std::path::{PathBuf, Path};
 use std::fs;
 use path_absolutize::Absolutize;
-use crate::helpers::error::{BatchError, BatchErrorType, FileError, FileErrorType};
+use crate::helpers::{file, error::{BatchError, BatchErrorType, FileError, FileErrorType}};
 
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
@@ -23,11 +23,11 @@ pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<Path
     Ok(abs_file_path.strip_prefix(abs_root_dir)?.to_path_buf())
 }
 
-pub fn get_relative_path_to_wd(local_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
+pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
     Ok(get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
         FileError{
             relative_path: None,
-            absolute_path: Some(absolute_path.clone()),
+            absolute_path: file::get_absolute_path(local_path).ok(),
             error_type: FileErrorType::RelativePathNotFound,
             error_message: Some(e.to_string())
         }

@@ -1,7 +1,8 @@
 use std::{fs::File, path::PathBuf, io::{self, Read, Result}};
 use crate::helpers::cache;
 use blake3::Hasher;
-use crate::helpers::error::{FileError, FileErrorType};
+use crate::helpers::{error::{FileError, FileErrorType}, file::{get_absolute_path, get_relative_path_to_wd}};
+
 
 pub fn hash_file_with_blake3(file_path: &PathBuf) -> io::Result<Option<String>> {
     let file = File::open(file_path)?;
@@ -70,23 +71,23 @@ fn maybe_memmap_file(file: &File) -> Result<Option<memmap2::Mmap>> {
 }
 
 
-pub fn get_file_hash(path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<String, FileError> {
+pub fn get_file_hash(local_path: &PathBuf) -> std::result::Result<String, FileError> {
     // get cache if possible
-    if let Ok(cached_hash) = cache::get_cached_hash(path) {
+    if let Ok(cached_hash) = cache::get_cached_hash(local_path) {
         return Ok(cached_hash); // Return cached hash if found
     }
 
     // if no cached hash, try hashing with blake3
-    match hash_file_with_blake3(path) {
+    match hash_file_with_blake3(local_path) {
         Ok(Some(hash)) => {
             // Cache the hash and return it
-            let _ = cache::write_hash_to_cache(path, &hash);
+            let _ = cache::write_hash_to_cache(local_path, &hash);
             Ok(hash)
         },
         Ok(None) => {
             Err(FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::HashNotFound,
                 error_message: None
             })
@@ -94,8 +95,8 @@ pub fn get_file_hash(path: &PathBuf, relative_path: &Option<PathBuf>, absolute_p
         Err(e) => {
             // if there's no hash or an error, return None
             Err(FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::HashNotFound,
                 error_message: Some(e.to_string())
             })

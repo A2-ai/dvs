@@ -1,7 +1,8 @@
 use std::{fs::{self, File}, path::PathBuf};
 use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
-use crate::helpers::error::{FileError, FileErrorType};
+use crate::helpers::{repo, error::{FileError, FileErrorType}};
+
 
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
@@ -15,31 +16,31 @@ pub struct Metadata {
     pub saved_by: String
 }
 
-pub fn save(metadata: &Metadata, path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<(), FileError> {
+pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<(), FileError> {
     // compose path file/to/file.ext.dvsmeta
-    let metadata_file_path = PathBuf::from(path.display().to_string() + ".dvsmeta");
+    let metadata_file_path = PathBuf::from(local_path.display().to_string() + ".dvsmeta");
 
     // create file
     File::create(&metadata_file_path).map_err(|e| {
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: get_absolute_path(local_path).ok(),
+            absolute_path: get_relative_path_to_wd(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string())
         }
     })?;
     let contents = serde_json::to_string_pretty(&metadata).map_err(|e| {
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: get_absolute_path(local_path).ok(),
+            absolute_path: get_relative_path_to_wd(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string())
         }
     })?;
     fs::write(&metadata_file_path, contents).map_err(|e| {
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: get_relative_path_to_wd(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string())
         }
@@ -92,7 +93,6 @@ pub fn get_user_name(local_path: &PathBuf, relative_path: &Option<PathBuf>, abso
 }
 
 
-
 pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
     Ok(local_path.canonicalize().map_err(|e|
             FileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
@@ -104,11 +104,24 @@ pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, F
         )?)
 }
 
-pub fn check_if_dir(local_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<(), FileError> {
+pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
+    Ok(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
+        FileError{
+            relative_path: None,
+            absolute_path: get_absolute_path(local_path).ok(),
+            error_type: FileErrorType::RelativePathNotFound,
+            error_message: Some(e.to_string())
+        }
+    )?)
+}
+
+
+
+pub fn check_if_dir(local_path: &PathBuf) -> std::result::Result<(), FileError> {
     if local_path.is_dir() {
         Err(FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: repo::get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::PathIsDirectory,
                 error_message: None
             }
@@ -119,11 +132,11 @@ pub fn check_if_dir(local_path: &PathBuf, relative_path: &Option<PathBuf>, absol
     }
 }
 
-pub fn get_file_size(local_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<u64, FileError> {
+pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError> {
     Ok(local_path.metadata().map_err(|e|
             FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: repo::get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::SizeNotFound,
                 error_message: Some(e.to_string())
             }
