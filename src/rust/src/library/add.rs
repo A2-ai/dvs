@@ -1,81 +1,6 @@
-use crate::helpers::{config, copy, hash, file, repo, parse, ignore};
-use std::{fmt, fs, path::PathBuf, u32};
-use file_owner::{Group, PathExt};
-
-// Outcome enum
-#[derive(Clone, PartialEq, Debug)]
-pub enum Outcome {
-    Success,
-    AlreadyPresent,
-    Error,
-}
-
-// Custom error individual files
-#[derive(Clone, PartialEq, Debug)]
-pub enum FileErrorType {
-    RelativePathNotFound,
-    FileNotInGitRepo,
-    AbsolutePathNotFound,
-    PathIsDirectory,
-    HashNotFound,
-    SizeNotFound,
-    OwnerNotFound,
-    GroupNotSet,
-    PermissionsNotSet,
-    MetadataNotSaved,
-    GitIgnoreNotAdded,
-    FileNotCopied,
-}
-
-#[derive(Debug)]
-pub struct FileError {
-    pub relative_path: Option<PathBuf>,
-    pub absolute_path: Option<PathBuf>,
-    pub error_type: FileErrorType,
-    pub error_message: Option<String>,
-}
-
-impl fmt::Display for FileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.error_message.clone() {
-            Some(message) => {
-                write!(f, "{message}")
-            }
-            None => {
-                write!(f, "NA")
-            }
-        }
-    }
-}
-
-impl std::error::Error for FileError {}
-
-
-// custom error for add function (not file-specific errors)
-#[derive(Clone, PartialEq, Debug)]
-pub enum BatchErrorType {
-    AnyFilesDNE,
-    GitRepoNotFound,
-    ConfigNotFound,
-    GroupNotFound,
-    StorageDirNotFound,
-    PermissionsInvalid,
-}
-
-
-#[derive(Debug)]
-pub struct BatchError {
-    pub error_type: BatchErrorType,
-    pub error_message: String,
-}
-
-impl fmt::Display for BatchError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.error_message)
-    }
-}
-
-impl std::error::Error for BatchError {}
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError, FileErrorType}, file, hash, ignore, outcome::Outcome, parse, repo};
+use std::{fs, path::PathBuf, u32};
+use file_owner::Group;
 
 #[derive(Clone, PartialEq)]
 pub struct AddedFile {
@@ -88,48 +13,19 @@ pub struct AddedFile {
 
 pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
     // Get git root
-    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e| 
-        BatchError{ 
-            error_type: BatchErrorType::GitRepoNotFound,
-            error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
-        }
-    )?;
+    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
     // load the config
-    let conf = config::read(&git_dir).map_err(|e| 
-        BatchError{
-            error_type: BatchErrorType::ConfigNotFound,
-            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
-        }
-    )?;
+    let conf = config::read(&git_dir)?;
 
     // get group, check if specified
-    let group = 
-        if conf.group == "" {None}
-        else {
-            Some(Group::from_name(&conf.group.as_str()).map_err(|e|
-                BatchError{
-                    error_type: BatchErrorType::GroupNotFound,
-                    error_message: format!("change group: {} in dvs.yaml, {e}", conf.group)
-                }
-            )?)
-        };
+    let group = config::get_group(&conf.group)?;
         
     // check storage directory exists
-    let storage_dir = conf.storage_dir.canonicalize().map_err(|e|
-        BatchError{
-            error_type: BatchErrorType::StorageDirNotFound,
-            error_message: format!("change storage_dir: {} in dvs.yaml, {e}", conf.storage_dir.display())
-        }
-    )?;
+    let storage_dir = config::get_storage_dir(&conf.storage_dir)?;
 
     // get file permissions
-    let permissions = config::get_mode_u32(&conf.permissions).map_err(|e|
-        BatchError{
-            error_type: BatchErrorType::PermissionsInvalid,
-            error_message: format!("change permissions: {} in dvs.yaml, {e}", conf.permissions)
-        }
-    )?;
+    let permissions = config::get_mode_u32(&conf.permissions)?;
 
     // collect paths out of input - sort through globs/explicitly-named files
     let queued_paths = parse::parse_files_from_globs(&globs);
@@ -155,72 +51,28 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 
 fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<AddedFile, FileError> {
     // get absolute path
-    let absolute_path = Some(local_path.canonicalize().map_err(|e|
-        FileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
-            relative_path: None,
-            absolute_path: None,
-            error_type: FileErrorType::AbsolutePathNotFound,
-            error_message: Some(e.to_string())
-        }
-    )?);
+    let absolute_path = file::get_absolute_path(local_path)?;
 
     // get relative path
-    let relative_path = Some(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
-            FileError{
-                relative_path: None,
-                absolute_path: absolute_path.clone(),
-                error_type: FileErrorType::RelativePathNotFound,
-                error_message: Some(e.to_string())
-            }
-        )?);
+    let relative_path = repo::get_relative_path_to_wd(local_path, &absolute_path)?;
 
     // check if file in git repo
-    if !repo::is_in_git_repo(&local_path, &git_dir) {
-        return Err(FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
-            error_type: FileErrorType::FileNotInGitRepo,
-            error_message: None
-        })
-    }
+    repo::check_file_in_git_repo(local_path, &git_dir, &relative_path, &absolute_path)?;
 
     // error if file is a directory
-    if local_path.is_dir() {
-        return Err(
-            FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
-                error_type: FileErrorType::PathIsDirectory,
-                error_message: None
-            }
-        )
-    }
+    file::check_if_dir(local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // get file hash
-    let hash = hash::get_file_hash(&local_path).ok_or(
-        FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
-            error_type: FileErrorType::HashNotFound,
-            error_message: None
-        }
-    )?;
+    let hash = hash::get_file_hash(local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // get file size
-    let size = local_path.metadata().map_err(|e|
-        FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
-            error_type: FileErrorType::SizeNotFound,
-            error_message: Some(e.to_string())
-        }
-    )?.len();
+    let size = file::get_file_size(local_path, &Some(relative_path), &Some(absolute_path))?;
 
     // get user name
     let user_name: String = file::get_user_name(&local_path).map_err(|e|
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: Some(relative_path),
+            absolute_path: Some(absolute_path),
             error_type: FileErrorType::OwnerNotFound,
             error_message: Some(e.to_string())
         }
@@ -239,8 +91,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // write metadata file
     file::save(&metadata, &local_path).map_err(|e|
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: Some(relative_path),
+            absolute_path: Some(absolute_path),
             error_type: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string())
         }
@@ -249,8 +101,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // Add file to gitignore
     ignore::add_gitignore_entry(local_path).map_err(|e|
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: Some(relative_path),
+            absolute_path: Some(absolute_path),
             error_type: FileErrorType::GitIgnoreNotAdded,
             error_message: Some(e.to_string())
         }
@@ -262,7 +114,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // copy
     let outcome = 
         if !storage_path.exists() { // if not already copied
-            if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &relative_path, &absolute_path, &permissions, &group) {
+            if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &permissions, &group, &relative_path, &absolute_path) {
                 if strict {
                     // remove metadata file
                     let _ = fs::remove_file(PathBuf::from(local_path.display().to_string() + ".dvsmeta"));
@@ -277,10 +129,9 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             Outcome::AlreadyPresent
         };
 
-    Ok(
-        AddedFile{
-            relative_path: relative_path.unwrap(),
-            absolute_path: absolute_path.unwrap(),
+    Ok(AddedFile{
+            relative_path,
+            absolute_path,
             outcome,
             size,
             hash
@@ -288,41 +139,13 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     )
 }
 
-
-
-
-fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), FileError> {
-   // copy
-    copy::copy(&local_path, &storage_path).map_err(|e|
-        FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
-            error_type: FileErrorType::FileNotCopied,
-            error_message: Some(e.to_string())
-        }
-    )?;
+fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, permissions: &u32, group: &Option<Group>, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
+    // copy
+    copy::copy(local_path, storage_path, &Some(relative_path.clone()), &Some(absolute_path.clone()))?;
 
     // set file permissions
-    copy::set_file_permissions(&permissions, &storage_path).map_err(|e|
-        FileError {
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
-            error_type: FileErrorType::PermissionsNotSet,
-            error_message: Some(format!("{permissions} {e}")),
-        }
-    )?;
+    copy::set_file_permissions(permissions, storage_path, relative_path, absolute_path)?;
 
     // set group (if specified)
-    if group.is_some() { 
-        let group_name = group.unwrap(); // group.is_some() so can safely unwrap
-        storage_path.set_group(group_name).map_err(|e|
-            FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
-                error_type: FileErrorType::GroupNotSet,
-                error_message: Some(format!("{group_name} {e}"))
-            }
-        )?;
-    }
-    return Ok(())
+    Ok(copy::set_group(group, storage_path, relative_path, absolute_path)?)
 }

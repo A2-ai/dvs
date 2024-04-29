@@ -1,6 +1,6 @@
 pub mod helpers;
 pub mod library;
-use library::add::{BatchErrorType, FileErrorType, Outcome};
+use helpers::outcome::Outcome;
 use library::{init, add, get, status, info};
 use extendr_api::{prelude::*, robj::Robj};
 use std::path::PathBuf;
@@ -50,53 +50,10 @@ pub struct RAddFileError {
     pub input: String,
 }
 
-impl add::FileErrorType {
-    pub fn add_file_error_type_to_string(&self) -> String {
-        match self {
-            FileErrorType::RelativePathNotFound => String::from("relative path not found"),
-            FileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
-            FileErrorType::AbsolutePathNotFound => String::from("file not found"),
-            FileErrorType::PathIsDirectory => String::from("path is a directory"),
-            FileErrorType::HashNotFound => String::from("hash not found"),
-            FileErrorType::SizeNotFound => String::from("size not found"),
-            FileErrorType::OwnerNotFound => String::from("owner not found"),
-            FileErrorType::GroupNotSet => String::from("group not set"),
-            FileErrorType::PermissionsNotSet => String::from("group not set"),
-            FileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
-            FileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not added"),
-            FileErrorType::FileNotCopied => String::from("file not copied"),
-        }
-    }
-}
-
-impl add::BatchErrorType {
-    pub fn add_error_type_to_string(&self) -> String {
-        match self {
-            BatchErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
-            BatchErrorType::GitRepoNotFound => String::from("git repository not found"),
-            BatchErrorType::ConfigNotFound => String::from("configuration file not found"),
-            BatchErrorType::GroupNotFound => String::from("linux primary group not found"),
-            BatchErrorType::StorageDirNotFound => String::from("storage directory not found"),
-            BatchErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
-        }
-    }
-}
-
-impl add::Outcome {
-    pub fn outcome_to_string(&self) -> String {
-        match self {
-            Outcome::Success => String::from("Success"),
-            Outcome::AlreadyPresent => String::from("Already Present"),
-            Outcome::Error => String::from("Error")
-        }
-    }
-}
-
 #[extendr]
-// std::result::Result<Robj, String> 
 fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -> Result<Robj> {
     let added_files = add::add(&globs, &String::from(message), strict).map_err(|e| {
-        Error::Other(format!("{}: {}", e.error_type.add_error_type_to_string(), e.error_message))
+        Error::Other(format!("{}: {}", e.error_type.batch_error_type_to_string(), e.error_message))
     })?;
 
     let results = added_files
@@ -120,7 +77,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                 hash:  None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 input: input.clone(),
-                error_type: Some(e.error_type.add_file_error_type_to_string()),
+                error_type: Some(e.error_type.file_error_type_to_string()),
                 error_message: e.error_message.clone(),
             }
         })
@@ -220,40 +177,6 @@ pub struct RRetrievedFileError {
     pub input: String,
 }
 
-impl get::Outcome {
-    pub fn outcome_to_string(&self) -> String {
-        match self {
-            get::Outcome::Copied => String::from("Copied"),
-            get::Outcome::AlreadyPresent => String::from("Already Present"),
-            get::Outcome::Error => String::from("Error"),
-        }
-    }
-}
-
-
-
-impl get::BatchErrorType {
-    fn batch_error_type_to_string(&self) -> String {
-        match self {
-            get::BatchErrorType::AnyMetaFilesDNE => String::from("metadata file not found for at least one file"),
-            get::BatchErrorType::GitRepoNotFound => String::from("git repository not found"),
-            get::BatchErrorType::ConfigNotFound => String::from("configuration file not found"),
-        }
-    }
-}
-
-impl get::FileErrorType {
-    fn file_error_type_to_string(&self) -> String {
-        match self {
-            get::FileErrorType::PathIsDirectory => String::from("path is a directory"),
-            get::FileErrorType::MetadataNotFound => String::from("metadata file not found"),
-            get::FileErrorType::RelativePathNotFound => String::from("relative path not found"),
-            get::FileErrorType::FileNotCopied => String::from("file not copied"),
-            get::FileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
-        }
-    }
-}
-
 #[extendr]
 fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
     let got_files = get::get(&globs).map_err(|e|
@@ -351,10 +274,48 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
 } // dvs_get_impl
 
 
+// STATUS
+// one df
+#[derive(Clone, Debug, IntoDataFrameRow)]
+pub struct RFileStatus {
+    relative_path: Option<String>,
+    status: String,
+    size: Option<u64>,
+    absolute_path: Option<String>,
+    hash: Option<String>,
+    input: String,
+    error_type: Option<String>,
+    error_message: Option<String>,
+}
+
+// success df
+#[derive(Clone, PartialEq, IntoDataFrameRow)]
+pub struct RFileStatusSuccess {
+    pub relative_path: String,
+    pub outcome: String,
+    pub size: u64,
+    pub hash: String,
+    pub absolute_path: String,
+    pub input: String,
+}
+
+// error df
+#[derive(Debug, IntoDataFrameRow)]
+pub struct RFileStatusError {
+    pub relative_path: Option<String>,
+    pub absolute_path: Option<String>,
+    pub error_type: String,
+    pub error_message: Option<String>,
+    pub input: String,
+}
 
 #[extendr]
-fn dvs_status_impl(files: Vec<String>) -> std::result::Result<Robj, String> {
-    Ok(status::dvs_status(&files)?.into_dataframe()?.as_robj().clone())
+fn dvs_status_impl(files: Vec<String>) -> Result<Robj> {
+    let status = status::dvs_status(&files).map_err(|e|
+        Error::Other(format!("{}: {}", e.error_type.batch_error_type_to_string(), e.error_message))
+    )?;
+
+
 } // dvs_status_impl
 
 
