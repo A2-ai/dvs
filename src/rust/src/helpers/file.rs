@@ -55,11 +55,11 @@ pub fn load_helper(path: &PathBuf) -> Result<Metadata> {
     return Ok(metadata);
 }
 
-pub fn load(path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<Metadata, FileError> {
-    Ok(load_helper(path).map_err(|e| {
+pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
+    Ok(load_helper(local_path).map_err(|e| {
             FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::MetadataNotFound,
                 error_message: Some(e.to_string())
             }
@@ -81,11 +81,11 @@ pub fn get_user_helper(path: &PathBuf) -> Result<String> {
     )
 }
 
-pub fn get_user_name(local_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<String, FileError> {
+pub fn get_user_name(local_path: &PathBuf) -> std::result::Result<String, FileError> {
     Ok(get_user_helper(local_path).map_err(|e| {
         FileError{
-            relative_path: relative_path.clone(),
-            absolute_path: absolute_path.clone(),
+            relative_path: get_absolute_path(local_path).ok(),
+            absolute_path: get_relative_path_to_wd(local_path).ok(),
             error_type: FileErrorType::OwnerNotFound,
             error_message: Some(e.to_string())
         }

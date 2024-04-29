@@ -1,5 +1,5 @@
 use std::{fs::{self, File}, path::PathBuf, os::unix::fs::PermissionsExt};
-use crate::helpers::error::{FileError, FileErrorType};
+use crate::helpers::{error::{FileError, FileErrorType}, file::{get_absolute_path, get_relative_path_to_wd}};
 use file_owner::{Group, PathExt};
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -43,23 +43,23 @@ pub fn copy_impl(src_path: &PathBuf, dest_path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn copy(local_path: &PathBuf, storage_path: &PathBuf, relative_path: &Option<PathBuf>, absolute_path: &Option<PathBuf>) -> std::result::Result<(), FileError> {
+pub fn copy(local_path: &PathBuf, storage_path: &PathBuf) -> std::result::Result<(), FileError> {
     Ok(copy_impl(local_path, storage_path).map_err(|e|
             FileError{
-                relative_path: relative_path.clone(),
-                absolute_path: absolute_path.clone(),
+                relative_path: get_absolute_path(local_path).ok(),
+                absolute_path: get_relative_path_to_wd(local_path).ok(),
                 error_type: FileErrorType::FileNotCopied,
                 error_message: Some(e.to_string())
             }
         )?)
 }
 
-pub fn set_file_permissions(mode: &u32, dest_path: &PathBuf, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
+pub fn set_file_permissions(mode: &u32, dest_path: &PathBuf) -> std::result::Result<(), FileError> {
     let new_permissions = fs::Permissions::from_mode(*mode);
     fs::set_permissions(&dest_path, new_permissions).map_err(|e| {
         FileError {
-            relative_path: Some(relative_path.clone()),
-            absolute_path: Some(absolute_path.clone()),
+            relative_path: get_absolute_path(dest_path).ok(),
+            absolute_path: get_relative_path_to_wd(dest_path).ok(),
             error_type: FileErrorType::PermissionsNotSet,
             error_message: Some(format!("{mode} {e}")),
         }
@@ -67,13 +67,13 @@ pub fn set_file_permissions(mode: &u32, dest_path: &PathBuf, relative_path: &Pat
     Ok(())
 }
 
-pub fn set_group(group: &Option<Group>, storage_path: &PathBuf, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
+pub fn set_group(group: &Option<Group>, storage_path: &PathBuf) -> std::result::Result<(), FileError> {
     if group.is_some() { 
         let group_name = group.unwrap(); // group.is_some() so can safely unwrap
         storage_path.set_group(group_name).map_err(|e|
             FileError{
-                relative_path: Some(relative_path.clone()),
-                absolute_path: Some(absolute_path.clone()),
+                relative_path: get_absolute_path(storage_path).ok(),
+                absolute_path: get_relative_path_to_wd(storage_path).ok(),
                 error_type: FileErrorType::GroupNotSet,
                 error_message: Some(format!("{group_name} {e}"))
             }

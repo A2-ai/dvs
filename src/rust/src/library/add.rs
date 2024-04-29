@@ -69,7 +69,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let size = file::get_file_size(local_path)?;
 
     // get user name
-    let user_name: String = file::get_user_name(&local_path, &Some(relative_path), &Some(absolute_path))?;
+    let user_name: String = file::get_user_name(&local_path)?;
 
     // create metadata
     let metadata = file::Metadata{
@@ -85,7 +85,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     file::save(&metadata, &local_path)?;
 
     // Add file to gitignore
-    ignore::add_gitignore_entry(local_path, &Some(relative_path), &Some(absolute_path))?;
+    ignore::add_gitignore_entry(local_path)?;
     
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &hash);
@@ -93,7 +93,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // copy
     let outcome = 
         if !storage_path.exists() { // if not already copied
-            if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &permissions, &group, &relative_path, &absolute_path) {
+            if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &permissions, &group) {
                 if strict {
                     // remove metadata file
                     let _ = fs::remove_file(PathBuf::from(local_path.display().to_string() + ".dvsmeta"));
@@ -118,13 +118,13 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     )
 }
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, permissions: &u32, group: &Option<Group>, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
+fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), FileError> {
     // copy
-    copy::copy(local_path, storage_path, &Some(relative_path.clone()), &Some(absolute_path.clone()))?;
+    copy::copy(local_path, storage_path)?;
 
     // set file permissions
-    copy::set_file_permissions(permissions, storage_path, relative_path, absolute_path)?;
+    copy::set_file_permissions(permissions, storage_path)?;
 
     // set group (if specified)
-    Ok(copy::set_group(group, storage_path, relative_path, absolute_path)?)
+    Ok(copy::set_group(group, storage_path)?)
 }

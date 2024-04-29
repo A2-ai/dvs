@@ -27,7 +27,7 @@ pub fn info(paths: &Vec<String>) -> Vec<Result<FileInfo>> {
             let path_buf = PathBuf::from(path);
             let metadata = fs::metadata(Path::new(path))?;
             let user_id = metadata.uid();
-            let user_name = file::get_user_name(&path_buf, &None, &None)?; // TODO
+            let user_name = file::get_user_name(&path_buf)?; // TODO
             let group_id = metadata.gid();
             let group_name = path_buf.group()?.name()?.unwrap_or_default();
             let modification_time = metadata

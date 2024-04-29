@@ -40,10 +40,10 @@ fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
 
     let relative_path = repo::get_relative_path_to_wd(local_path)?;    
 
-    file::check_if_dir(local_path);
+    file::check_if_dir(local_path)?;
     
     // get file info
-    let metadata = file::load(local_path, &Some(relative_path), &Some(absolute_path))?;
+    let metadata = file::load(local_path)?;
             
     // assign status: not-present by default
     let outcome = 

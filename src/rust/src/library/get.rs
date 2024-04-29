@@ -54,7 +54,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     file::check_if_dir(local_path);
 
     // get metadata
-    let metadata = file::load(&local_path, &relative_path_temp, &absolute_path_temp)?;
+    let metadata = file::load(&local_path)?;
 
     // get local hash 
     let local_hash = hash::get_file_hash(local_path)?;
@@ -65,7 +65,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     // check if up-to-date file is already present locally
     let outcome = 
         if !local_path.exists() || metadata.hash == String::from("") || local_hash == String::from("") || local_hash != metadata.hash {
-            copy::copy(&storage_path, &local_path, &relative_path_temp, &absolute_path_temp)?;
+            copy::copy(&storage_path, &local_path)?;
             Outcome::Success
         }  // if file not present or not up-to-date
         else {
