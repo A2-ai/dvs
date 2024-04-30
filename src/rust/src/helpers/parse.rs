@@ -11,7 +11,7 @@ pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().map_or(false, |ext| ext == "dvsmeta"))
         .map(|e| {
-            let string = file::metadata_path(&e.into_path());
+            let string = file::path_without_metadata(&e.into_path());
             PathBuf::from(string)
         })
         .collect()

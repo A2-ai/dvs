@@ -246,7 +246,7 @@ struct RStatusFile {
     absolute_path: Option<String>,
     error_type: Option<String>,
     error_message: Option<String>,
-    input: String,
+    input: Option<String>,
 }
 
 // success df
@@ -262,11 +262,11 @@ struct RStatusFileSuccess {
 // error df
 #[derive(Debug, IntoDataFrameRow)]
 struct RStatusFileError {
-    input: String,
     relative_path: Option<String>,
     absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
+    input: Option<String>,
 }
 
 #[extendr]
@@ -286,7 +286,7 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                 hash: Some(fi.hash.clone()),
                 error_type: None,
                 error_message: None,
-                input: fi.input.display().to_string(),
+                input: fi.input.clone().map(|p| p.to_string_lossy().to_string()),
             },
             Err(e) => RStatusFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
@@ -296,7 +296,7 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                 hash: None,
                 error_type: Some(e.error_type.file_error_type_to_string()),
                 error_message: e.error_message.clone(),
-                input: e.input.display().to_string(),
+                input: Some(e.input.display().to_string())
             }
         })
         .collect::<Vec<RStatusFile>>();

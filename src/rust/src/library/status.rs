@@ -12,7 +12,7 @@ pub struct FileStatus {
     pub message: String,
     pub absolute_path: Option<PathBuf>,
     pub hash: String,
-    pub input: PathBuf
+    pub input: Option<PathBuf>
 }
 
 pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<FileStatus, FileError>>, BatchError> {
@@ -21,23 +21,26 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
 
     // load the config
     config::read(&git_dir)?;
+
+    let input_manually: bool;
     
     let meta_paths: Vec<PathBuf> = 
         if globs.contains(&String::from("")) && globs.len() == 1 { // if no arguments are provided, get the status of all files in the current git repository
+            input_manually = false;
             parse::get_all_meta_files(&git_dir)
-           
         } 
         else { // else, parse specifically inputted globs
+            input_manually = true;
             parse::parse_files_from_globs(&globs)
         };
 
     // get the status of each file and collect
     Ok(meta_paths.into_iter().map(|path| {
-        status_file(&path)
+        status_file(&path, input_manually)
     }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
 } // dvs_status
 
-fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
+fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
     let metadata_path_abs = file::metadata_path(local_path);
 
     // work around because while metadata file might exist, file itself may not
@@ -75,6 +78,14 @@ fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileErro
             }
         };
 
+    let input = 
+        if input_manually {
+            Some(local_path.clone())
+        }
+        else {
+            None
+        };
+
     // assemble info into FileStatus
     Ok(FileStatus{
             relative_path,
@@ -85,7 +96,7 @@ fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileErro
             time_stamp: metadata.time_stamp,
             saved_by: metadata.saved_by,
             message: metadata.message,
-            input: local_path.clone()
+            input
         })
 }
 
