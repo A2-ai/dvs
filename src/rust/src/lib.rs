@@ -24,7 +24,7 @@ struct RFile {
     size: Option<u64>,
     hash: Option<String>,
     absolute_path: Option<String>,
-    input: String,
+    input: Option<String>,
     error_type: Option<String>,
     error_message: Option<String>,
 }
@@ -37,17 +37,16 @@ struct RFileSuccess {
     size: u64,
     hash: String,
     absolute_path: String,
-    input: String,
 }
 
 // error df
 #[derive(Debug, IntoDataFrameRow)]
 struct RFileError {
+    input: String,
     relative_path: Option<String>,
     absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
-    input: String,
 }
 
 #[extendr]
@@ -58,15 +57,14 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
 
     let results = added_files
         .iter()
-        .zip(&globs)
-        .map(|(fi, input)| match fi {
+        .map(|fi| match fi {
             Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
                 hash: Some(fi.hash.clone()),
                 absolute_path: Some(fi.absolute_path.display().to_string()),
-                input: input.clone(),
+                input: None,
                 error_type: None,
                 error_message: None,
             },
@@ -76,7 +74,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                 size: None,
                 hash:  None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
-                input: input.clone(),
+                input: Some(e.input.display().to_string()),
                 error_type: Some(e.error_type.file_error_type_to_string()),
                 error_message: e.error_message.clone(),
             }
@@ -95,11 +93,11 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
             .filter_map(|res| {
                 if res.error_type.is_some() {
                     Some(RFileError{
-                        input: res.input.clone(),
-                        relative_path: res.clone().relative_path,
-                        absolute_path: res.clone().absolute_path,
-                        error_type: res.clone().error_type.unwrap(),
-                        error_message: res.clone().error_message
+                        input: res.input.clone().unwrap(),
+                        relative_path: res.relative_path.clone(),
+                        absolute_path: res.absolute_path.clone(),
+                        error_type: res.error_type.clone().unwrap(),
+                        error_message: res.error_message.clone()
                         }
                     )
                 }
@@ -117,7 +115,6 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
                             size: res.size.unwrap(),
                             hash: res.hash.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
-                            input: res.input,
                         }
                     )
                 }
@@ -150,15 +147,14 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
 
     let results = got_files
         .iter()
-        .zip(&globs)
-        .map(|(fi, input)| match fi {
+        .map(|fi| match fi {
             Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
                 absolute_path: Some(fi.absolute_path.display().to_string()),
                 hash: Some(fi.hash.clone()),
-                input: input.clone(),
+                input: None,
                 error_type: None,
                 error_message: None
             },
@@ -168,7 +164,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                 size: None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 hash: None,
-                input: input.clone(),
+                input: Some(e.input.display().to_string()),
                 error_type: Some(e.error_type.file_error_type_to_string()),
                 error_message: e.error_message.clone()
             }
@@ -188,11 +184,11 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             .filter_map(|res| {
                 if res.error_type.is_some() {
                     Some(RFileError{
-                        input: res.input.clone(),
-                        relative_path: res.clone().relative_path,
-                        absolute_path: res.clone().absolute_path,
-                        error_type: res.clone().error_type.unwrap(),
-                        error_message: res.clone().error_message
+                        input: res.input.clone().unwrap(),
+                        relative_path: res.relative_path.clone(),
+                        absolute_path: res.absolute_path.clone(),
+                        error_type: res.error_type.clone().unwrap(),
+                        error_message: res.error_message.clone(),
                         }
                     )
                 }
@@ -210,7 +206,6 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                             size: res.size.unwrap(),
                             hash: res.hash.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
-                            input: res.input,
                         }
                     )
                 }
@@ -262,11 +257,11 @@ struct RStatusFileSuccess {
 // error df
 #[derive(Debug, IntoDataFrameRow)]
 struct RStatusFileError {
+    input: String,
     relative_path: Option<String>,
     absolute_path: Option<String>,
     error_type: String,
     error_message: Option<String>,
-    input: Option<String>,
 }
 
 #[extendr]
@@ -313,11 +308,11 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             .filter_map(|res| {
                 if res.error_type.is_some() {
                     Some(RStatusFileError{
-                        relative_path: res.clone().relative_path,
-                        absolute_path: res.clone().absolute_path,
-                        error_type: res.clone().error_type.unwrap(),
-                        error_message: res.clone().error_message,
-                        input: res.clone().input
+                        relative_path: res.relative_path.clone(),
+                        absolute_path: res.absolute_path.clone(),
+                        error_type: res.error_type.clone().unwrap(),
+                        error_message: res.error_message.clone(),
+                        input: res.input.clone().unwrap()
                         }
                     )
                 }

@@ -72,9 +72,7 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
                     }
                     else {Outcome::OutOfSync}
                 }
-                Err(_) => {
-                    Outcome::OutOfSync
-                }
+                Err(_) =>  Outcome::OutOfSync,
             }
         };
 

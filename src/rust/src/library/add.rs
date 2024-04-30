@@ -2,7 +2,7 @@ use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError
 use std::{fs, path::PathBuf, u32};
 use file_owner::Group;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AddedFile {
     pub relative_path: PathBuf,
     pub outcome: Outcome,

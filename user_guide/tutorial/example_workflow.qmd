@@ -1,15 +1,40 @@
-### Introduction to dvs
-Use dvs to make data accessible to project collaborators.
+# Introduction to devious (the R package)
+
+Devious is now an R package inspired by the original devious command line tool.
+
+While it implements the same base functionality, it has some new features, and output is organized into data frames.
+
+We can use devious to version data files without tracking them directly on github.
 
 ```{r}
-# library(rdevious)
+# library(devious)
 ```
 
-## Role #1: the Data Assembler
+## Role: the Data Assembler
+
+### Step 1: Initialize
+
+Suppose I created a new repo for a project.\
+I want to manage project data with devious, so I'll start with initialization.
+
+In the devious package, `dvs_init` sets up a project for versioning.
+
+I'll use `dvs_init` to create a storage directory for versioned files.\
+This command also creates a `dvs.yaml` in the project directory with the path of the storage directory, which devious consults for future commands.
+
+```{r}
+# in general, the storage directory should be named "/data/dvs/<project_name>"
+# this directory is outside of the project directory, in a directory accessible to everyone.
+my_storage_dir <- "/data/dvs/tutorial"
+dvs_init(my_storage_dir)
+```
+
+### Step 2: Add
+
+Suppose I assembled this data set and saved it as a csv file.
 
 ```{r}
 derDir <- "data/derived"
-# suppose I assembled a data set
 pk_data <- data.frame(
   USUBJID = c(1, 1, 1),
   NTFD = c(0.5, 1, 2),
@@ -20,52 +45,28 @@ pk_data_path <- file.path(derDir, "pk_data.csv")
 write.csv(pk_data, pk_data_path)
 ```
 
+I'll use `dvs_add` to version this file with devious.
 
-# Step 1: Initialize
-Use `dvs_init` to set up your project to use dvs.
-This will create afile called dvs.yaml in your project directory with information for dvs to consult for future commands.
-```{r}
-# in general, you'll name your storage directory "/data/dvs/<project_name>"
-my_storage_dir <- "/data/dvs/tutorial"
-dvs_init(my_storage_dir)
-```
+This will copy `pk_data.csv` to the storage directory previously initialized with `dvs_init`.
 
-# Step #2: Add
-Use `dvs_add` to version files with dvs
-This will copy the given files to the storage directory initialized with `dvs_init`.
-This will also create a metadata file for each added file in its respective directory, called <file_name>.dvsmeta
-The metadata file acts as a map for devious locate the copied file later.
-```{r}
-# add the csv file to dvs so it can be retrieved later
-dvs_add(pk_data_path)
-```
-Notice that besides a metadata file, a .gitignore was also added to data/derived!
-Surprise! You no longer have to manually create or update a .gitignore for files added to dvs.
+This will also create a metadata file for `pk_data.csv` called `pk_data.csv.dvsmeta` in its respective directory: `data/derived`.
+
+In general, a generated metadata file will be called `<file_name>.dvsmeta`.
+
+Each metadata file acts as a map for devious locate a given copied file later.
 
 ```{r}
-# suppose I have many files in data/derived and I want to add them all to devious, 
-# but I don't want to list them all in a vector like: 
-# dvs_add(c("data/derived/pk_data1.csv", "data/derived/pk_data2.csv", "data/derived/pk_data3.csv", ...))
-
-# I can use a file glob to just add at the files at once
-# the star means add everything in this directory
-added_files <- dvs_add("data/derived/*") 
+# add the csv file to devious so it can be retrieved later
+dvs_add(pk_data_path, message = "finished pk data assembly") # adding a message is optional
 ```
-In general, the `*` indicates every file/directory in a given directory,
-but dvs manually filters out .dvsmeta and .gitignore files so you don't have to worry about them
 
-Let's experiment with adding a file that doesn't exist
-```{r}
-dvs_add("this/isnt/a/file/path") # should panic
-```
-dvs will panic if you try to add or get a file that doesn't exist.
+Notice that a `.gitignore` was also added to data/derived!\
+You no longer have to manually create or update a `.gitignore` for files added to devious.
 
-For any other error, dvs will indicate such in the outcome column
-```{r}
-# for example, let's try adding a directory instead of a file
-dvs_add("data")
-```
-Let's say we found a bug and want to update my csv file
+### Step 3: Update as needed
+
+Let's say I found a bug and want to update `pk_data.csv` file
+
 ```{r}
 # say I want to update my data frame
 pk_data <- data.frame(
@@ -77,29 +78,87 @@ pk_data <- data.frame(
 write.csv(pk_data, pk_data_path)
 ```
 
-I can update my file in dvs by re-adding it
+To update a file I previously added to devious, I'll run `dvs_add` again with the same file path.
+
 ```{r}
-# be sure to use the same file name to avoid future confusion about 
-# which file is the most up-to-date
-added_files <- dvs_add(pk_data_path) 
-added_files
+dvs_add(pk_data_path) 
 ```
 
-Now if you push to github, you'll see that pk_data.csv isn't present.
+Notice that when updating, the outcome is Success instead of Already Present.
 
-## Role #2: the Analyst
+### Step 4: Push to github
+
+Now if you push to github, you'll see that `pk_data.csv` isn't present in `data/derived`, but its metadata file and the `.gitignore` are.
+
+![](github.png){width="213"}
+
+The `.gitignore` lists `pk_data.csv` to exclude it from files added to github.
+
+![](gitignore.png){width="368"}
+
+### Other Scenarios
+
+#### Multiple Files
+
+Suppose I have many files in data/derived and I want to add them all to devious,
 
 ```{r}
-# let's pretend you're an analyst who just pulled the project from github, 
-# in which case, pk_data.csv isn't present. 
+# create some copies to generate multiple files
+pk_data2_path <- file.path(derDir, "pk_data2.csv")
+write.csv(pk_data, pk_data2_path)
 
-# run this chunk to delete the file 
+pk_data3_path <- file.path(derDir, "pk_data3.csv")
+write.csv(pk_data, pk_data3_path)
+```
+
+I don't want to list them all in a vector like this:
+
+```{r}
+# dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
+```
+
+So I'll save time by using a file glob:
+
+```{r}
+dvs_add(file.path(derDir, "*"))
+
+# which is equivalent to:
+# dvs_add("data/derived/*")
+```
+
+In general, the `*` indicates every file/directory in a given directory, but devious manually filters out `.dvsmeta` and `.gitignore` files so these files aren't added.
+
+#### Errors
+
+Let's experiment with adding a file that doesn't exist
+
+```{r}
+dvs_add("this/isnt/a/file/path") # should panic
+```
+Devious will panic if you try to add a file that doesn't exist.
+
+For any other error, devious will indicate such in the outcome column
+
+```{r}
+# for example, let's try adding a directory instead of a file
+dvs_add("data")
+```
+
+## Role: the Analyst
+
+### Step 1: Pull from github
+```{r}
+# because the .gitignore excludes it, a analyst pulling from github won't have pk_data.csv
+# I'll simulate this by running this chunk to delete the file 
 file.remove(pk_data_path)
 ```
-Without dvs, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets.
 
-With dvs, I can start my workflow by running a status check to see which files
-have been added to dvs
+### Step 2: Status
+
+Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets.
+
+Suppose instead, I start my workflow by running a status check to see which files have been added to devious
+
 ```{r}
 dvs_status()
 
@@ -158,10 +217,13 @@ added_files$failures
 added_files$successes
 ```
 
-### Role #3: the QCer
+## Role: the QCer
+
 ```{r}
 # clean up
 file.remove(pk_data_path)
+file.remove(pk_data2_path)
+file.remove(pk_data3_path)
 file.remove(paste0(pk_data_path, ".dvsmeta"))
 file.remove(file.path(derDir, ".gitignore"))
 file.remove("~/Projects/Rdevious/dvs.yaml")
