@@ -2,6 +2,8 @@ use std::{ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 use glob::glob;
 
+use super::file;
+
 pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
     //let mut meta_files: Vec<String> = Vec::new();
     WalkDir::new(&dir)
@@ -9,7 +11,7 @@ pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().map_or(false, |ext| ext == "dvsmeta"))
         .map(|e| {
-            let string = e.into_path().display().to_string().replace(".dvsmeta", "");
+            let string = file::metadata_path(&e.into_path());
             PathBuf::from(string)
         })
         .collect()
@@ -54,7 +56,7 @@ pub fn parse_files_from_globs(globs: &Vec<String>) -> Vec<PathBuf> {
 }
 
 fn filter_path(path: &PathBuf, queued_paths: &Vec<PathBuf>) -> Option<PathBuf> {
-    let path_clean = PathBuf::from(path.display().to_string().replace(".dvsmeta", ""));
+    let path_clean = file::path_without_metadata(path);
 
     if path_clean.file_name().and_then(OsStr::to_str) == Some(".gitignore") {
         println!("skipping .gitignore file {}", path.display());

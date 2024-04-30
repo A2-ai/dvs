@@ -46,7 +46,8 @@ pub fn add_gitignore_entry(local_path: &PathBuf) -> std::result::Result<(), File
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::GitIgnoreNotAdded,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })
     

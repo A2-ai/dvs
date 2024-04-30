@@ -106,7 +106,7 @@ dvs_get <- function(files, one_df = TRUE) {
 #' @import purrr
 #'
 #' @export
-dvs_status <- function(files = c(), one_df = TRUE) {
+dvs_status <- function(files = c(""), one_df = TRUE) {
   files <- clean_paths(files)
   dvs_status_impl(files, one_df)
 }

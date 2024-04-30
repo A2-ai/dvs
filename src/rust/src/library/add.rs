@@ -93,10 +93,10 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // copy
     let outcome = 
         if !storage_path.exists() { // if not already copied
-            if let Err(e) = copy_file_to_storage_directory(&local_path, &storage_path, &permissions, &group) {
+            if let Err(e) = copy::copy_file_to_storage_directory(&local_path, &storage_path, &permissions, &group) {
                 if strict {
                     // remove metadata file
-                    let _ = fs::remove_file(PathBuf::from(local_path.display().to_string() + ".dvsmeta"));
+                    let _ = fs::remove_file(file::metadata_path(local_path));
                     // remove copied file from storage directory
                     let _ = fs::remove_file(storage_path);
                 }
@@ -118,13 +118,3 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     )
 }
 
-fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathBuf, permissions: &u32, group: &Option<Group>) -> std::result::Result<(), FileError> {
-    // copy
-    copy::copy(local_path, storage_path)?;
-
-    // set file permissions
-    copy::set_file_permissions(permissions, storage_path)?;
-
-    // set group (if specified)
-    Ok(copy::set_group(group, storage_path)?)
-}

@@ -89,7 +89,8 @@ pub fn get_file_hash(local_path: &PathBuf) -> std::result::Result<String, FileEr
                 relative_path: get_relative_path_to_wd(local_path).ok(), 
                 absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::HashNotFound,
-                error_message: None
+                error_message: None,
+                input: local_path.clone()
             })
         }
         Err(e) => {
@@ -98,7 +99,8 @@ pub fn get_file_hash(local_path: &PathBuf) -> std::result::Result<String, FileEr
                 relative_path: get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::HashNotFound,
-                error_message: Some(e.to_string())
+                error_message: Some(e.to_string()),
+                input: local_path.clone()
             })
         },
     }

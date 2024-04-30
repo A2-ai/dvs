@@ -25,6 +25,7 @@ pub struct FileError {
     pub absolute_path: Option<PathBuf>,
     pub error_type: FileErrorType,
     pub error_message: Option<String>,
+    pub input: PathBuf,
 }
 
 impl fmt::Display for FileError {

@@ -4,17 +4,18 @@ use std::path::PathBuf;
 
 #[derive(PartialEq, Debug)]
 pub struct FileStatus {
-    pub relative_path: PathBuf,
+    pub relative_path: Option<PathBuf>,
     pub outcome: Outcome,
     pub size: u64,
     pub time_stamp: String,
     pub saved_by: String,
-    pub message:String,
-    pub absolute_path: PathBuf,
+    pub message: String,
+    pub absolute_path: Option<PathBuf>,
     pub hash: String,
+    pub input: PathBuf
 }
 
-pub fn dvs_status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<FileStatus, FileError>>, BatchError> {
+pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<FileStatus, FileError>>, BatchError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
@@ -22,7 +23,7 @@ pub fn dvs_status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::R
     config::read(&git_dir)?;
     
     let meta_paths: Vec<PathBuf> = 
-        if globs.is_empty() { // if no arguments are provided, get the status of all files in the current git repository
+        if globs.contains(&String::from("")) && globs.len() == 1 { // if no arguments are provided, get the status of all files in the current git repository
             parse::get_all_meta_files(&git_dir)
            
         } 
@@ -32,14 +33,23 @@ pub fn dvs_status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::R
 
     // get the status of each file and collect
     Ok(meta_paths.into_iter().map(|path| {
-            status(&path)
-        }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
+        status_file(&path)
+    }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
 } // dvs_status
 
-fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
-    let absolute_path = file::get_absolute_path(local_path)?;
+fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
+    let metadata_path_abs = file::metadata_path(local_path);
 
-    let relative_path = repo::get_relative_path_to_wd(local_path)?;    
+    // work around because while metadata file might exist, file itself may not
+    let absolute_path = match file::get_absolute_path(&metadata_path_abs) {
+        Ok(path) => Some(file::path_without_metadata(&path)),
+        Err(_) => None,
+    };
+
+    let relative_path = match repo::get_relative_path_to_wd(&metadata_path_abs) {
+        Ok(path) => Some(file::path_without_metadata(&path)),
+        Err(_) => None,
+    };    
 
     file::check_if_dir(local_path)?;
     
@@ -75,6 +85,7 @@ fn status(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
             time_stamp: metadata.time_stamp,
             saved_by: metadata.saved_by,
             message: metadata.message,
+            input: local_path.clone()
         })
 }
 

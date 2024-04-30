@@ -29,7 +29,8 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
             relative_path: None,
             absolute_path: file::get_absolute_path(local_path).ok(),
             error_type: FileErrorType::RelativePathNotFound,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     )?)
 }
@@ -81,13 +82,14 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, Batch
    
 }
 
-pub fn check_file_in_git_repo(path: &PathBuf, git_dir: &PathBuf, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
-    let canonical_path = path.canonicalize().map_err(|e| {
+pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
+    let canonical_path = local_path.canonicalize().map_err(|e| {
         FileError{
             relative_path: Some(relative_path.clone()),
             absolute_path: Some(absolute_path.clone()),
             error_type: FileErrorType::FileNotInGitRepo,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?;
 
@@ -96,7 +98,8 @@ pub fn check_file_in_git_repo(path: &PathBuf, git_dir: &PathBuf, relative_path: 
             relative_path: Some(relative_path.clone()),
             absolute_path: Some(absolute_path.clone()),
             error_type: FileErrorType::FileNotInGitRepo,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?;
 
@@ -110,7 +113,8 @@ pub fn check_file_in_git_repo(path: &PathBuf, git_dir: &PathBuf, relative_path: 
                 relative_path: Some(relative_path.clone()),
                 absolute_path: Some(absolute_path.clone()),
                 error_type: FileErrorType::FileNotInGitRepo,
-                error_message: None
+                error_message: None,
+                input: local_path.clone()
             }
         );
     }

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError, BatchErrorType}};
+use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError}};
 
 #[derive(Debug)]
 pub struct RetrievedFile {
@@ -26,7 +26,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
      }
 
      // check that metadata file exists for all files
-     check_meta_files_exist(&queued_paths)?;
+     file::check_meta_files_exist(&queued_paths)?;
     
      // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
@@ -98,17 +98,4 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     )
 }
 
-fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
-    // Find the first path that does not have a corresponding .dvsmeta file
-    if let Some(path) = queued_paths
-        .into_iter()
-        .find(|dvs_path| !PathBuf::from(dvs_path.display().to_string() + ".dvsmeta").exists())
-    {
-        return Err(BatchError {
-            error_type: BatchErrorType::AnyMetaFilesDNE,
-            error_message: format!("missing for {}", path.display()),
-        });
-    }
 
-    Ok(()) // If all .dvsmeta files found, return Ok
-}

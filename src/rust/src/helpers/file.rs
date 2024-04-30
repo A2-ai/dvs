@@ -1,7 +1,7 @@
 use std::{fs::{self, File}, path::PathBuf};
 use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
-use crate::helpers::{repo, error::{FileError, FileErrorType}};
+use crate::helpers::{repo, error::{FileError, FileErrorType, BatchError, BatchErrorType}};
 
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -18,15 +18,15 @@ pub struct Metadata {
 
 pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<(), FileError> {
     // compose path file/to/file.ext.dvsmeta
-    let metadata_file_path = PathBuf::from(local_path.display().to_string() + ".dvsmeta");
-
+    let metadata_file_path = metadata_path(local_path);
     // create file
     File::create(&metadata_file_path).map_err(|e| {
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?;
     let contents = serde_json::to_string_pretty(&metadata).map_err(|e| {
@@ -34,7 +34,8 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?;
     fs::write(&metadata_file_path, contents).map_err(|e| {
@@ -42,14 +43,15 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?;
     Ok(())
 }
 
 pub fn load_helper(path: &PathBuf) -> Result<Metadata> {
-    let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
+    let metadata_path_abs = metadata_path(path).canonicalize()?;
     let contents = fs::read_to_string(metadata_path_abs)?;
     let metadata: Metadata = serde_json::from_str(&contents)?;
     return Ok(metadata);
@@ -61,16 +63,19 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
                 relative_path: get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::MetadataNotFound,
-                error_message: Some(e.to_string())
+                error_message: Some(e.to_string()),
+                input: local_path.clone()
             }
         })?)
     
 }
 
-pub fn delete(path: &PathBuf) -> Result<()> {
-    let metadata_path_abs = PathBuf::from(path.display().to_string() + ".dvsmeta").canonicalize()?;
-    fs::remove_file(&metadata_path_abs)?;
-    Ok(())
+pub fn metadata_path(path: &PathBuf) -> PathBuf {
+    PathBuf::from(path.display().to_string() + ".dvsmeta")
+}
+
+pub fn path_without_metadata(path: &PathBuf) -> PathBuf {
+    PathBuf::from(path.display().to_string().replace(".dvsmeta", ""))
 }
 
 pub fn get_user_helper(path: &PathBuf) -> Result<String> {
@@ -87,7 +92,8 @@ pub fn get_user_name(local_path: &PathBuf) -> std::result::Result<String, FileEr
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::OwnerNotFound,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     })?)
 }
@@ -99,7 +105,8 @@ pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, F
                 relative_path: None,
                 absolute_path: None,
                 error_type: FileErrorType::AbsolutePathNotFound,
-                error_message: Some(e.to_string())
+                error_message: Some(e.to_string()),
+                input: local_path.clone()
             }
         )?)
 }
@@ -110,7 +117,8 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
             relative_path: None,
             absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::RelativePathNotFound,
-            error_message: Some(e.to_string())
+            error_message: Some(e.to_string()),
+            input: local_path.clone()
         }
     )?)
 }
@@ -123,7 +131,8 @@ pub fn check_if_dir(local_path: &PathBuf) -> std::result::Result<(), FileError> 
                 relative_path: repo::get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::PathIsDirectory,
-                error_message: None
+                error_message: None,
+                input: local_path.clone()
             }
         )
     }
@@ -138,9 +147,25 @@ pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError
                 relative_path: repo::get_relative_path_to_wd(local_path).ok(), 
                 absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::SizeNotFound,
-                error_message: Some(e.to_string())
+                error_message: Some(e.to_string()),
+                input: local_path.clone()
             }
         )?.len())
+}
+
+pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
+    // Find the first path that does not have a corresponding .dvsmeta file
+    if let Some(path) = queued_paths
+        .into_iter()
+        .find(|dvs_path| !metadata_path(dvs_path).exists())
+    {
+        return Err(BatchError {
+            error_type: BatchErrorType::AnyMetaFilesDNE,
+            error_message: format!("missing for {}", path.display()),
+        });
+    }
+
+    Ok(()) // If all .dvsmeta files found, return Ok
 }
 
 

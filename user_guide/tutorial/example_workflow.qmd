@@ -1,100 +1,110 @@
+### Introduction to dvs
+Use dvs to make data accessible to project collaborators.
+
 ```{r}
 # library(rdevious)
 ```
 
-### Role #1: the file creator
+## Role #1: the Data Assembler
 
 ```{r}
 derDir <- "data/derived"
-# create a csv file you want to version with dvs
-data <- data.frame(
-  Flowers = c("Iris", "Rose", "Tulip"),
-  Bugs = c("Ladybug", "Firefly", "Bumblebee")
+# suppose I assembled a data set
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 0)
 )
 
-nature_csv_path <- file.path(derDir, "nature.csv")
-write.csv(data, nature_csv_path)
+pk_data_path <- file.path(derDir, "pk_data.csv")
+write.csv(pk_data, pk_data_path)
 ```
 
+
+# Step 1: Initialize
+Use `dvs_init` to set up your project to use dvs.
+This will create afile called dvs.yaml in your project directory with information for dvs to consult for future commands.
 ```{r}
 # in general, you'll name your storage directory "/data/dvs/<project_name>"
 my_storage_dir <- "/data/dvs/tutorial"
 dvs_init(my_storage_dir)
-
-# optionally, you could set the linux file permissions or group for added files in this function
-# see the ReadMe if you'd like to learn more 
 ```
 
+# Step #2: Add
+Use `dvs_add` to version files with dvs
+This will copy the given files to the storage directory initialized with `dvs_init`.
+This will also create a metadata file for each added file in its respective directory, called <file_name>.dvsmeta
+The metadata file acts as a map for devious locate the copied file later.
 ```{r}
-# now we'll add this data to dvs so it can be retrieved by others later
-dvs_add(nature_csv_path)
-
-# alternatively, add all files in data/derived with the below code (excludes .gitignore)
-# added_files <- dvs_add("data/derived/*") 
+# add the csv file to dvs so it can be retrieved later
+dvs_add(pk_data_path)
 ```
+Notice that besides a metadata file, a .gitignore was also added to data/derived!
+Surprise! You no longer have to manually create or update a .gitignore for files added to dvs.
 
 ```{r}
-# let's experiment with adding a file that doesn't exist
-dvs_add("this/isnt/a/file/path")
+# suppose I have many files in data/derived and I want to add them all to devious, 
+# but I don't want to list them all in a vector like: 
+# dvs_add(c("data/derived/pk_data1.csv", "data/derived/pk_data2.csv", "data/derived/pk_data3.csv", ...))
 
+# I can use a file glob to just add at the files at once
+# the star means add everything in this directory
+added_files <- dvs_add("data/derived/*") 
 ```
+In general, the `*` indicates every file/directory in a given directory,
+but dvs manually filters out .dvsmeta and .gitignore files so you don't have to worry about them
 
+Let's experiment with adding a file that doesn't exist
 ```{r}
-# dvs will panic if you try to add or get a file that doesn't exist
+dvs_add("this/isnt/a/file/path") # should panic
+```
+dvs will panic if you try to add or get a file that doesn't exist.
 
-# For any other error, dvs will list it in the output
+For any other error, dvs will indicate such in the outcome column
+```{r}
 # for example, let's try adding a directory instead of a file
 dvs_add("data")
 ```
-
-```{r}
-# we can split up the output to give us a data frame for the successful files and error files
-# by setting one_df to false
-added_files <- dvs_add(c(nature_csv_path, "data"), one_df = FALSE)
-```
-
-```{r}
-# view the failures
-added_files$failures
-```
-
-```{r}
-# view the successes
-added_files$successes
-```
-
+Let's say we found a bug and want to update my csv file
 ```{r}
 # say I want to update my data frame
-data <- data.frame(
-  Flowers = c("Marigold", "Daffodil", "Lily"),
-  Bugs = c("Butterfly", "Grasshopper", "Dragonfly")
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.842)
 )
 
-write.csv(data, nature_csv_path)
+write.csv(pk_data, pk_data_path)
 ```
 
+I can update my file in dvs by re-adding it
 ```{r}
-# I can update my file in dvs by just re-adding it
-added_files <- dvs_add(nature_csv_path)
+# be sure to use the same file name to avoid future confusion about 
+# which file is the most up-to-date
+added_files <- dvs_add(pk_data_path) 
 added_files
 ```
 
-If you push to github, you'll see that nature.csv isn't present! You no longer have to modify your .gitignore to exclude files added to devious (you can check the .gitignore in this directory to see the generated entry)
+Now if you push to github, you'll see that pk_data.csv isn't present.
 
-### Role #2: the file retriever
+## Role #2: the Analyst
 
 ```{r}
-# let's pretend you're a collaborator who pulled your code from github, in which case, nature.csv isn't present. 
+# let's pretend you're an analyst who just pulled the project from github, 
+# in which case, pk_data.csv isn't present. 
+
 # run this chunk to delete the file 
-file.remove(nature_csv_path)
+file.remove(pk_data_path)
 ```
+Without dvs, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets.
 
+With dvs, I can start my workflow by running a status check to see which files
+have been added to dvs
 ```{r}
-# your first step as a collaborator is to use dvs_status check out what files have been versioned with devious
-status <- dvs_status()
-status
+dvs_status()
+
 # if you want to status files a specific file, you can do that too
-# dvs_status(nature_csv_path)
+# dvs_status(pk_data_path)
 ```
 
 ```{r}
@@ -105,7 +115,7 @@ sum(!is.na(status$error))
 
 ```{r}
 # now we can get the file back
-get <- dvs_get(nature_csv_path)
+get <- dvs_get(pk_data_path)
 get
 ```
 
@@ -127,15 +137,32 @@ sum(!is.na(get$error))
     -   if you believe your work is behind the current version on devious, run `dvs_get` to retrieve it
 
 ```{r}
-file.remove(nature_csv_path)
+file.remove(pk_data_path)
 # here is an example piping pattern to get all not-present and out-of-sync files from data/derived
 dvs_status(file.path(derDir, "*")) %>% filter(status != "up-to-date") %>% pull(relative_path) %>% dvs_get()
 ```
 
 ```{r}
+# we can split up the output to give us a data frame for the successful files and error files
+# by setting one_df to false
+added_files <- dvs_add(c(pk_data_path, "data"), one_df = FALSE)
+```
+
+```{r}
+# view the failures
+added_files$failures
+```
+
+```{r}
+# view the successes
+added_files$successes
+```
+
+### Role #3: the QCer
+```{r}
 # clean up
-file.remove(nature_csv_path)
-file.remove(paste0(nature_csv_path, ".dvsmeta"))
+file.remove(pk_data_path)
+file.remove(paste0(pk_data_path, ".dvsmeta"))
 file.remove(file.path(derDir, ".gitignore"))
 file.remove("~/Projects/Rdevious/dvs.yaml")
 unlink(my_storage_dir, recursive=TRUE)

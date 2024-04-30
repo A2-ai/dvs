@@ -1,5 +1,5 @@
-pub mod helpers;
-pub mod library;
+mod helpers;
+mod library;
 use helpers::outcome::Outcome;
 use library::{init, add, get, status, info};
 use extendr_api::{prelude::*, robj::Robj};
@@ -18,7 +18,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 // ADD
 // one df
 #[derive(Clone, PartialEq, Debug, IntoDataFrameRow)]
-pub struct RFile {
+struct RFile {
     relative_path: Option<String>,
     outcome: String,
     size: Option<u64>,
@@ -31,23 +31,23 @@ pub struct RFile {
 
 // success df
 #[derive(Clone, PartialEq, IntoDataFrameRow)]
-pub struct RFileSuccess {
-    pub relative_path: String,
-    pub outcome: String,
-    pub size: u64,
-    pub hash: String,
-    pub absolute_path: String,
-    pub input: String,
+struct RFileSuccess {
+    relative_path: String,
+    outcome: String,
+    size: u64,
+    hash: String,
+    absolute_path: String,
+    input: String,
 }
 
 // error df
 #[derive(Debug, IntoDataFrameRow)]
-pub struct RFileError {
-    pub relative_path: Option<String>,
-    pub absolute_path: Option<String>,
-    pub error_type: String,
-    pub error_message: Option<String>,
-    pub input: String,
+struct RFileError {
+    relative_path: Option<String>,
+    absolute_path: Option<String>,
+    error_type: String,
+    error_message: Option<String>,
+    input: String,
 }
 
 #[extendr]
@@ -234,44 +234,72 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
             
     }
-
-
 } // dvs_get_impl
 
 
+#[derive(Clone, PartialEq, Debug, IntoDataFrameRow)]
+struct RStatusFile {
+    relative_path: Option<String>,
+    status: String,
+    size: Option<u64>,
+    hash: Option<String>,
+    absolute_path: Option<String>,
+    error_type: Option<String>,
+    error_message: Option<String>,
+    input: String,
+}
+
+// success df
+#[derive(Clone, PartialEq, IntoDataFrameRow)]
+struct RStatusFileSuccess {
+    relative_path: String,
+    status: String,
+    size: u64,
+    hash: String,
+    absolute_path: String,
+}
+
+// error df
+#[derive(Debug, IntoDataFrameRow)]
+struct RStatusFileError {
+    input: String,
+    relative_path: Option<String>,
+    absolute_path: Option<String>,
+    error_type: String,
+    error_message: Option<String>,
+}
+
 #[extendr]
 fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
-    let status = status::dvs_status(&globs).map_err(|e|
+    let status = status::status(&globs).map_err(|e|
         Error::Other(format!("{}: {}", e.error_type.batch_error_type_to_string(), e.error_message))
     )?;
 
     let results = status
         .iter()
-        .zip(&globs) // TODO: fix bug: what if input was empty vector?
-        .map(|(fi, input)| match fi {
-            Ok(fi) => RFile{
-                relative_path: Some(fi.relative_path.display().to_string()),
-                outcome: fi.outcome.outcome_to_string(),
+        .map(|fi| match fi {
+            Ok(fi) => RStatusFile{
+                relative_path: fi.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
+                status: fi.outcome.outcome_to_string(),
                 size: Some(fi.size),
-                absolute_path: Some(fi.absolute_path.display().to_string()),
+                absolute_path: fi.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 hash: Some(fi.hash.clone()),
-                input: input.clone(),
                 error_type: None,
-                error_message: None
+                error_message: None,
+                input: fi.input.display().to_string(),
             },
-            Err(e) => RFile{
+            Err(e) => RStatusFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
-                outcome: Outcome::Error.outcome_to_string(),
+                status: Outcome::Error.outcome_to_string(),
                 size: None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 hash: None,
-                input: input.clone(),
                 error_type: Some(e.error_type.file_error_type_to_string()),
-                error_message: e.error_message.clone()
+                error_message: e.error_message.clone(),
+                input: e.input.display().to_string(),
             }
-
         })
-        .collect::<Vec<RFile>>();
+        .collect::<Vec<RStatusFile>>();
 
     if one_df {
         Ok(results
@@ -284,35 +312,34 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             .iter()
             .filter_map(|res| {
                 if res.error_type.is_some() {
-                    Some(RFileError{
-                        input: res.input.clone(),
+                    Some(RStatusFileError{
                         relative_path: res.clone().relative_path,
                         absolute_path: res.clone().absolute_path,
                         error_type: res.clone().error_type.unwrap(),
-                        error_message: res.clone().error_message
+                        error_message: res.clone().error_message,
+                        input: res.clone().input
                         }
                     )
                 }
                 else {None}
-            }).collect::<Vec<RFileError>>();
+            }).collect::<Vec<RStatusFileError>>();
 
         let successes = results
             .into_iter()
             .filter_map(|res| {
                 if res.error_type.is_none() {
                     Some(
-                        RFileSuccess{
+                        RStatusFileSuccess{
                             relative_path: res.relative_path.unwrap(),
-                            outcome: res.outcome,
+                            status: res.status,
                             size: res.size.unwrap(),
                             hash: res.hash.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
-                            input: res.input,
                         }
                     )
                 }
                 else {None}
-            }).collect::<Vec<RFileSuccess>>();
+            }).collect::<Vec<RStatusFileSuccess>>();
 
             let mut result = HashMap::new();
             if successes.len() > 0 {
@@ -334,36 +361,36 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
 
 // one df
 #[derive(Debug, IntoDataFrameRow, Clone)]
-pub struct RFileInfo {
-    pub path: String,
-    pub user_id: Option<u32>,
-    pub user_name: Option<String>,
-    pub group_id: Option<u32>,
-    pub group_name: Option<String>,
-    pub modification_time: Option<u64>,
-    pub creation_time: Option<u64>,
-    pub permissions: Option<String>,
-    pub error: Option<String>,
+struct RFileInfo {
+    path: String,
+    user_id: Option<u32>,
+    user_name: Option<String>,
+    group_id: Option<u32>,
+    group_name: Option<String>,
+    modification_time: Option<u64>,
+    creation_time: Option<u64>,
+    permissions: Option<String>,
+    error: Option<String>,
 }
 
 // success df
 #[derive(Debug, IntoDataFrameRow, Clone)]
-pub struct RFileInfoSuccess {
-    pub path: String,
-    pub user_id: Option<u32>,
-    pub user_name: Option<String>,
-    pub group_id: Option<u32>,
-    pub group_name: Option<String>,
-    pub modification_time: Option<u64>,
-    pub creation_time: Option<u64>,
-    pub permissions: Option<String>
+struct RFileInfoSuccess {
+    path: String,
+    user_id: Option<u32>,
+    user_name: Option<String>,
+    group_id: Option<u32>,
+    group_name: Option<String>,
+    modification_time: Option<u64>,
+    creation_time: Option<u64>,
+    permissions: Option<String>
 }
 
 // error df
 #[derive(Debug, IntoDataFrameRow, Clone)]
-pub struct RInfoFileError {
-    pub path: String,
-    pub error: Option<String>,
+struct RInfoFileError {
+    path: String,
+    error: Option<String>,
 }
 
 #[extendr]
@@ -464,13 +491,7 @@ extendr_module! {
     fn get_file_info_impl;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
 
-    fn test() {
-        let vec: Vec<String> = Vec::new();
-        let _ = dvs_status_impl(vec, true);
-    }
-}
+
+ 
