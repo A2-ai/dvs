@@ -17,7 +17,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 
 // ADD
 // one df
-#[derive(Clone, PartialEq, IntoDataFrameRow)]
+#[derive(Clone, PartialEq, Debug, IntoDataFrameRow)]
 pub struct RFile {
     relative_path: Option<String>,
     outcome: String,
@@ -247,7 +247,7 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
 
     let results = status
         .iter()
-        .zip(&globs)
+        .zip(&globs) // TODO: fix bug: what if input was empty vector?
         .map(|(fi, input)| match fi {
             Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
@@ -462,4 +462,15 @@ extendr_module! {
     fn dvs_get_impl;
     fn dvs_status_impl;
     fn get_file_info_impl;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    fn test() {
+        let vec: Vec<String> = Vec::new();
+        let _ = dvs_status_impl(vec, true);
+    }
 }

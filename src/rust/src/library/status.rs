@@ -22,8 +22,9 @@ pub fn dvs_status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::R
     config::read(&git_dir)?;
     
     let meta_paths: Vec<PathBuf> = 
-        if globs.len() == 0 { // if no arguments are provided, get the status of all files in the current git repository
+        if globs.is_empty() { // if no arguments are provided, get the status of all files in the current git repository
             parse::get_all_meta_files(&git_dir)
+           
         } 
         else { // else, parse specifically inputted globs
             parse::parse_files_from_globs(&globs)

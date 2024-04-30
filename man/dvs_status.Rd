@@ -4,7 +4,7 @@
 \alias{dvs_status}
 \title{status report for added files}
 \usage{
-dvs_status(files = c())
+dvs_status(files = c(), one_df = TRUE)
 }
 \arguments{
 \item{files}{optional: when specified, returns data frame with only these specified file paths or glob patterns.}

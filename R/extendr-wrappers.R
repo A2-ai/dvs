@@ -17,7 +17,7 @@ dvs_add_impl <- function(globs, message, strict, one_df) .Call(wrap__dvs_add_imp
 
 dvs_get_impl <- function(globs, one_df) .Call(wrap__dvs_get_impl, globs, one_df)
 
-dvs_status_impl <- function(files) .Call(wrap__dvs_status_impl, files)
+dvs_status_impl <- function(globs, one_df) .Call(wrap__dvs_status_impl, globs, one_df)
 
 get_file_info_impl <- function(paths, one_df) .Call(wrap__get_file_info_impl, paths, one_df)
 

@@ -43,8 +43,8 @@ pub fn add_gitignore_helper(path: &PathBuf) -> Result<()> {
 pub fn add_gitignore_entry(local_path: &PathBuf) -> std::result::Result<(), FileError> {
     add_gitignore_helper(local_path).map_err(|e| {
         FileError{
-            relative_path: get_absolute_path(local_path).ok(),
-            absolute_path: get_relative_path_to_wd(local_path).ok(),
+            relative_path: get_relative_path_to_wd(local_path).ok(),
+            absolute_path: get_absolute_path(local_path).ok(),
             error_type: FileErrorType::GitIgnoreNotAdded,
             error_message: Some(e.to_string())
         }

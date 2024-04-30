@@ -46,8 +46,8 @@ pub fn copy_impl(src_path: &PathBuf, dest_path: &PathBuf) -> Result<()> {
 pub fn copy(local_path: &PathBuf, storage_path: &PathBuf) -> std::result::Result<(), FileError> {
     Ok(copy_impl(local_path, storage_path).map_err(|e|
             FileError{
-                relative_path: get_absolute_path(local_path).ok(),
-                absolute_path: get_relative_path_to_wd(local_path).ok(),
+                relative_path: get_relative_path_to_wd(local_path).ok(),
+                absolute_path: get_absolute_path(local_path).ok(),
                 error_type: FileErrorType::FileNotCopied,
                 error_message: Some(e.to_string())
             }

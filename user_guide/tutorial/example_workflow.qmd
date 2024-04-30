@@ -17,7 +17,7 @@ write.csv(data, nature_csv_path)
 ```
 
 ```{r}
-# in general, you'll want your storage directory to be "/data/dvs/<project_name>"
+# in general, you'll name your storage directory "/data/dvs/<project_name>"
 my_storage_dir <- "/data/dvs/tutorial"
 dvs_init(my_storage_dir)
 
@@ -26,21 +26,41 @@ dvs_init(my_storage_dir)
 ```
 
 ```{r}
-added_files <- dvs_add(nature_csv_path)
+# now we'll add this data to dvs so it can be retrieved by others later
+dvs_add(nature_csv_path)
 
 # alternatively, add all files in data/derived with the below code (excludes .gitignore)
 # added_files <- dvs_add("data/derived/*") 
 ```
 
 ```{r}
-# there should be one row of added_files$successes with nature.csv 
-# if it was successfully added
-added_files$successes
+# let's experiment with adding a file that doesn't exist
+dvs_add("this/isnt/a/file/path")
+
 ```
 
 ```{r}
-# will be empty if all files were added without error
-added_files$errors
+# dvs will panic if you try to add or get a file that doesn't exist
+
+# For any other error, dvs will list it in the output
+# for example, let's try adding a directory instead of a file
+dvs_add("data")
+```
+
+```{r}
+# we can split up the output to give us a data frame for the successful files and error files
+# by setting one_df to false
+added_files <- dvs_add(c(nature_csv_path, "data"), one_df = FALSE)
+```
+
+```{r}
+# view the failures
+added_files$failures
+```
+
+```{r}
+# view the successes
+added_files$successes
 ```
 
 ```{r}
@@ -54,15 +74,9 @@ write.csv(data, nature_csv_path)
 ```
 
 ```{r}
+# I can update my file in dvs by just re-adding it
 added_files <- dvs_add(nature_csv_path)
-```
-
-```{r}
-added_files$successes
-```
-
-```{r}
-added_files$errors
+added_files
 ```
 
 If you push to github, you'll see that nature.csv isn't present! You no longer have to modify your .gitignore to exclude files added to devious (you can check the .gitignore in this directory to see the generated entry)
@@ -70,8 +84,8 @@ If you push to github, you'll see that nature.csv isn't present! You no longer h
 ### Role #2: the file retriever
 
 ```{r}
-# let's pretend you're a collaborator who pulled your code from github, in which case, nature.csv isn't present, 
-# so run this chunk to delete the file
+# let's pretend you're a collaborator who pulled your code from github, in which case, nature.csv isn't present. 
+# run this chunk to delete the file 
 file.remove(nature_csv_path)
 ```
 
