@@ -62,14 +62,14 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     // get storage data
     let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.hash);
 
-    // check if up-to-date file is already present locally
+    // check if most current file is already present locally
     let outcome = 
         if !local_path.exists() || metadata.hash == String::from("") || local_hash == String::from("") || local_hash != metadata.hash {
             copy::copy(&storage_path, &local_path)?;
-            Outcome::Success
-        }  // if file not present or not up-to-date
+            Outcome::Copied
+        }  // if file not present or not current
         else {
-            Outcome::AlreadyPresent
+            Outcome::Present
         };
 
     // now that the file exists again, get info for data frame

@@ -3,37 +3,38 @@
 // Outcome enum
 #[derive(Clone, PartialEq, Debug)]
 pub enum Outcome {
-    Success,
-    AlreadyPresent,
+    Copied,
+    Present,
+    Error,
+}
+
+// Outcome enum
+#[derive(Clone, PartialEq, Debug)]
+pub enum Status {
+    Absent,
+    Unsynced,
+    Current,
     Error,
 }
 
 impl Outcome {
     pub fn outcome_to_string(&self) -> String {
         match self {
-            Outcome::Success => String::from("Success"),
-            Outcome::AlreadyPresent => String::from("Already Present"),
-            Outcome::Error => String::from("Error")
+            Outcome::Copied => String::from("copied"),
+            Outcome::Present => String::from("present"),
+            Outcome::Error => String::from("error")
         }
     }
-}
-
-// Outcome enum
-#[derive(Clone, PartialEq, Debug)]
-pub enum Status {
-    Error,
-    NotPresent,
-    OutOfSync,
-    UpToDate,
 }
 
 impl Status {
     pub fn outcome_to_string(&self) -> String {
         match self {
+            
+            Status::Absent => String::from("absent"),
+            Status::Unsynced => String::from("unsynced"),
+            Status::Current => String::from("current"),
             Status::Error => String::from("error"),
-            Status::OutOfSync => String::from("out-of-sync"),
-            Status::NotPresent => String::from("not-present"),
-            Status::UpToDate => String::from("up-to-date")
 
         }
     }

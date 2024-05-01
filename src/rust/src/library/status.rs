@@ -59,20 +59,20 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
     // get file info
     let metadata = file::load(local_path)?;
             
-    // assign status: not-present by default
+    // assign status
     let status = 
         if !local_path.exists() {
-            Status::NotPresent
+            Status::Absent
         }
         else {
             match hash::get_file_hash(&local_path) {
                 Ok(current_hash) => {
                     if current_hash == metadata.hash {
-                        Status::UpToDate
+                        Status::Current
                     }
-                    else {Status::OutOfSync}
+                    else {Status::Unsynced}
                 }
-                Err(_) =>  Status::OutOfSync,
+                Err(_) =>  Status::Unsynced,
             }
         };
 

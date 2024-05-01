@@ -79,9 +79,9 @@ Notice that a `.gitignore` was also added to data/derived!\
 You no longer have to manually create or update a `.gitignore` for files added to devious.
 
 Get the file hash
+
 ```{r}
-assembly_hash <- added_files$hash
-assembly_hash
+added_files$hash
 ```
 
 ### Step 3: Update as needed
@@ -131,6 +131,7 @@ write.csv(pk_data, pk_data3_path)
 ```
 
 I could add them all by inputting in a vector of each explicit file like this:
+
 ```{r}
 dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
 ```
@@ -163,6 +164,7 @@ For any other error, devious will indicate such in the outcome column
 add_dir <- dvs_add("data")
 add_dir
 ```
+
 Some other error examples include not being able to get the size or hash for a file. The reason for an error is given in the `error_type` column. If an error message was returned, this will be in the `error_message` column.
 
 ```{r}
@@ -172,6 +174,7 @@ add_dir$error_message
 
 Suppose many files were added, and as such, a data frame with many rows was returned.\
 I can quickly check if any errors occurred by running:
+
 ```{r}
 # number of errors = sum of values in the error column that aren't NA
 paste("number of errors:", sum(!is.na(add_dir$error)))
@@ -184,6 +187,7 @@ Without devious, my workflow would be to hunt down the data assembly script and 
 ### Step 1: Pull from github
 
 Because the .gitignore excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
+
 ```{r}
 # I'll simulate this situation by running this chunk to delete the previously added files 
 file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
@@ -204,7 +208,7 @@ files in the `dvs_status` data frame will have one of the following `status` ent
     -   out-of-sync files may be ahead or behind current work
 
     -   if you know your work is behind the current version on devious, run `dvs_get` to retrieve it
-    
+
 -   error
 
     -   if there's an error getting the status of a file, for example if the file is a directory.
@@ -212,22 +216,29 @@ files in the `dvs_status` data frame will have one of the following `status` ent
 ```{r}
 dvs_status()
 ```
+
 I might also want to just get a status report of files in a particular directory,\
 in which case I can use the same file glob pattern I used before with `dvs_add`:
+
 ```{r}
 dvs_status(file.path(derDir, "*"))
 ```
+
 Or I can get the status of a single file.
+
 ```{r}
 status <- dvs_status(pk_data_path)
 status
 ```
+
 Check for errors getting status:
+
 ```{r}
 paste("number of errors:", sum(!is.na(status$error)))
 ```
 
 ### Step 3: Get
+
 Now I'll retrieve the files I want with `dvs_get`.
 
 This function copies files from the storage directory back into their respective directory within the git repo.\
@@ -244,9 +255,11 @@ get
 # check if there were any errors
 paste("number of errors:", sum(!is.na(get$error)))
 ```
+
 ### Piping Patterns
 
 Here are some ways to use status and get in conjunction:
+
 ```{r}
 # general piping pattern
 dvs_status() %>% # status all previously added files
@@ -265,6 +278,7 @@ dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
   pull(relative_path) %>%  # select their relative paths
   dvs_get() # copy files to the project repo
 ```
+
 ```{r}
 file.remove(pk_data_path)
 file.remove(pk_data2_path)

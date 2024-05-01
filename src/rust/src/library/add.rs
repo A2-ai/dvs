@@ -102,10 +102,10 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
                 }
                 return Err(e)
             };
-            Outcome::Success
+            Outcome::Copied
         }
         else {
-            Outcome::AlreadyPresent
+            Outcome::Present
         };
 
     Ok(AddedFile{
