@@ -161,13 +161,13 @@ For any other error, devious will indicate such in the outcome column
 
 ```{r}
 # for example, let's try adding a directory instead of a file
-add_dir <- dvs_add("data")
-add_dir
+dvs_add("data")
 ```
 
-Some other error examples include not being able to get the size or hash for a file. The reason for an error is given in the `error_type` column. If an error message was returned, this will be in the `error_message` column.
+Some other error examples include not being able to get the size or hash for a file. The reason for an error is given in the `error_type` column. If an error message was returned from a function, this will be in the `error_message` column.
 
 ```{r}
+# investigate the error
 add_dir$error
 add_dir$error_message
 ```

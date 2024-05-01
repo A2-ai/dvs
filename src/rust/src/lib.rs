@@ -167,7 +167,6 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
                 error: Some(e.error.file_error_to_string()),
                 error_message: e.error_message.clone()
             }
-
         })
         .collect::<Vec<RFile>>();
 
@@ -226,7 +225,6 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
             }
             
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
-            
     }
 } // dvs_get_impl
 

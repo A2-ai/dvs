@@ -40,7 +40,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Result<RetrievedFile, FileError> {
     // get temporary relative and absolute paths because they probably don't exist
-    let relative_path_temp: Option<PathBuf> = match repo::get_relative_path_to_wd(&local_path) {
+    let relative_path_temp = match repo::get_relative_path_to_wd(&local_path) {
         Ok(path) => Some(path),
         Err(_) => None,
     };
