@@ -80,7 +80,8 @@ You no longer have to manually create or update a `.gitignore` for files added t
 
 Get the file hash
 ```{r}
-added_files$hash
+assembly_hash <- added_files$hash
+original_hash
 ```
 
 ### Step 3: Update as needed
@@ -116,9 +117,7 @@ The `.gitignore` lists `pk_data.csv` to exclude it from files added to github.
 
 ![](gitignore.png){width="368"}
 
-### Other Scenarios
-
-#### Multiple Files
+### Multiple Files
 
 Suppose I have many files in data/derived and I want to add them all to devious,
 
@@ -147,7 +146,7 @@ dvs_add(file.path(derDir, "*"))
 
 In general, the `*` indicates every file/directory in a given directory, but devious manually filters out `.dvsmeta` and `.gitignore` files so these files aren't added.
 
-#### Errors
+### Errors
 
 Let's experiment with adding a file that doesn't exist
 
@@ -220,11 +219,11 @@ dvs_status(file.path(derDir, "*"))
 ```
 Or I can get the status of a single file.
 ```{r}
-dvs_status(pk_data_path)
+status <- dvs_status(pk_data_path)
+status
 ```
 Check for errors getting status:
 ```{r}
-status <- dvs_status()
 paste("number of errors:", sum(!is.na(status$error)))
 ```
 
@@ -240,11 +239,19 @@ Like `dvs_add`, `dvs_get` can also receive inputted file globs, vectors of files
 get <- dvs_get(pk_data_path)
 get
 ```
+```{r}
+current_hash <- get$hash
+current_hash
+
+original_hash == current_hash
+```
 
 ```{r}
 # check if there were any errors
 paste("number of errors:", sum(!is.na(get$error)))
 ```
+### Piping Patterns
+
 Here are some ways to use status and get in conjunction:
 ```{r}
 # general piping pattern
@@ -276,9 +283,13 @@ dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
   dvs_get() # copy to project repo
 ```
 
+## Role: the QCer
 
+```{r}
 
+```
 
+## Two Data Frame Output
 
 ```{r}
 # we can split up the output to give us a data frame for the successful files and error files
@@ -295,14 +306,6 @@ added_files$failures
 # view the successes
 added_files$successes
 ```
-
-## Role: the QCer
-
-```{r}
-
-```
-
-## Two Data Frame Output
 
 ```{r}
 # clean up
