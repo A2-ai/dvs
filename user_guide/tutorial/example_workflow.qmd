@@ -81,7 +81,7 @@ You no longer have to manually create or update a `.gitignore` for files added t
 Get the file hash
 ```{r}
 assembly_hash <- added_files$hash
-original_hash
+assembly_hash
 ```
 
 ### Step 3: Update as needed
@@ -239,12 +239,6 @@ Like `dvs_add`, `dvs_get` can also receive inputted file globs, vectors of files
 get <- dvs_get(pk_data_path)
 get
 ```
-```{r}
-current_hash <- get$hash
-current_hash
-
-original_hash == current_hash
-```
 
 ```{r}
 # check if there were any errors
@@ -286,7 +280,13 @@ dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
 ## Role: the QCer
 
 ```{r}
+get <- dvs_get(pk_data_path)
+qc_hash <- get$hash
 
+paste("Assembly hash:", assembly_hash)
+paste("QC hash:      ", qc_hash)
+
+paste("Assembly hash == QC hash:", assembly_hash == qc_hash)
 ```
 
 ## Two Data Frame Output
