@@ -23,7 +23,7 @@ pub enum FileErrorType {
 pub struct FileError {
     pub relative_path: Option<PathBuf>,
     pub absolute_path: Option<PathBuf>,
-    pub error_type: FileErrorType,
+    pub error: FileErrorType,
     pub error_message: Option<String>,
     pub input: PathBuf,
 }
@@ -44,7 +44,7 @@ impl fmt::Display for FileError {
 impl std::error::Error for FileError {}
 
 impl FileErrorType {
-    pub fn file_error_type_to_string(&self) -> String {
+    pub fn file_error_to_string(&self) -> String {
         match self {
             FileErrorType::RelativePathNotFound => String::from("relative path not found"),
             FileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
@@ -78,7 +78,7 @@ pub enum BatchErrorType {
 
 #[derive(Debug)]
 pub struct BatchError {
-    pub error_type: BatchErrorType,
+    pub error: BatchErrorType,
     pub error_message: String,
 }
 
@@ -91,7 +91,7 @@ impl fmt::Display for BatchError {
 impl std::error::Error for BatchError {}
 
 impl BatchErrorType {
-    pub fn batch_error_type_to_string(&self) -> String {
+    pub fn batch_error_to_string(&self) -> String {
         match self {
             BatchErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
             BatchErrorType::GitRepoNotFound => String::from("git repository not found"),
@@ -104,3 +104,45 @@ impl BatchErrorType {
     }
 }
 
+#[derive(Debug)]
+pub struct InitError {
+    pub error: InitErrorType,
+    pub error_message:String,
+}
+
+impl fmt::Display for InitError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.error.init_error_to_string(), self.error_message)
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum InitErrorType {
+    ProjAlreadyInited,
+    StorageDirNotCreated,
+    StorageDirNotADir,
+    StorageDirAbsPathNotFound,
+    GitRepoNotFound,
+    ConfigNotCreated,
+    GroupNotFound,
+    PermissionsInvalid,
+    DirEmptyNotChecked
+}
+
+impl InitErrorType {
+    pub fn init_error_to_string(&self) -> String {
+        match self {
+            InitErrorType::ProjAlreadyInited => String::from("project already initialized"),
+            InitErrorType::GitRepoNotFound => String::from("git repo not found"),
+            InitErrorType::StorageDirNotADir => String::from("storage directory input is not a directory"),
+            InitErrorType::StorageDirAbsPathNotFound => String::from("could not get absolute path for storage directory"),
+            InitErrorType::ConfigNotCreated => String::from("configuration file not found"),
+            InitErrorType::GroupNotFound => String::from("linux primary group not found"),
+            InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
+            InitErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
+            InitErrorType::DirEmptyNotChecked => String::from("could not check if storage directory is empty"),
+        }
+    }
+}
+
+impl std::error::Error for InitError {}

@@ -39,7 +39,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     queued_paths.iter().map(|file| {
        file.canonicalize().map_err(|e|
             BatchError{
-                error_type: BatchErrorType::AnyFilesDNE,
+                error: BatchErrorType::AnyFilesDNE,
                 error_message: format!("{} not found: {e}", file.display())
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, BatchError>>()?;

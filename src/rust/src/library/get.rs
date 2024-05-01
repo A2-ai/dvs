@@ -57,7 +57,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     let metadata = file::load(&local_path)?;
 
     // get local hash 
-    let local_hash = hash::get_file_hash(local_path)?;
+    let local_hash = hash::get_file_hash(local_path).unwrap_or_default();
 
     // get storage data
     let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.hash);
@@ -71,6 +71,8 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
         else {
             Outcome::AlreadyPresent
         };
+
+    // now that the file exists again, get info for data frame
 
     let absolute_path = 
         if absolute_path_temp.is_none() {
@@ -88,12 +90,16 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
             relative_path_temp.unwrap()
         };
 
+    let hash = hash::get_file_hash(local_path)?;
+
+    let size = file::get_file_size(local_path)?;
+
     Ok(RetrievedFile {
             relative_path,
             absolute_path,
-            hash: metadata.hash,
-            outcome: outcome,
-            size: metadata.size
+            hash,
+            outcome,
+            size
         }
     )
 }

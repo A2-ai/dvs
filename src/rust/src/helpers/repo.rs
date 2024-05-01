@@ -28,7 +28,7 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
         FileError{
             relative_path: None,
             absolute_path: file::get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::RelativePathNotFound,
+            error: FileErrorType::RelativePathNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -47,7 +47,7 @@ pub fn is_directory_empty(directory: &Path) -> Result<bool> {
 pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, BatchError> {
     let mut directory = dir.canonicalize().map_err(|e| {
         BatchError{ 
-            error_type: BatchErrorType::GitRepoNotFound,
+            error: BatchErrorType::GitRepoNotFound,
             error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
         }
     })?;
@@ -64,7 +64,7 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, Batch
                     directory
                     .parent()
                     .ok_or_else(|| BatchError{ 
-                        error_type: BatchErrorType::GitRepoNotFound,
+                        error: BatchErrorType::GitRepoNotFound,
                         error_message: format!("could not find git repo root; make sure you're in an active git repository")
                     })?
                     .to_path_buf()
@@ -75,7 +75,7 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, Batch
     }
     return Err(
         BatchError{ 
-            error_type: BatchErrorType::GitRepoNotFound,
+            error: BatchErrorType::GitRepoNotFound,
             error_message: format!("could not find git repo root; make sure you're in an active git repository")
         }
     );
@@ -87,7 +87,7 @@ pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf, relative_
         FileError{
             relative_path: Some(relative_path.clone()),
             absolute_path: Some(absolute_path.clone()),
-            error_type: FileErrorType::FileNotInGitRepo,
+            error: FileErrorType::FileNotInGitRepo,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -97,7 +97,7 @@ pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf, relative_
         FileError{
             relative_path: Some(relative_path.clone()),
             absolute_path: Some(absolute_path.clone()),
-            error_type: FileErrorType::FileNotInGitRepo,
+            error: FileErrorType::FileNotInGitRepo,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -112,7 +112,7 @@ pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf, relative_
             FileError{
                 relative_path: Some(relative_path.clone()),
                 absolute_path: Some(absolute_path.clone()),
-                error_type: FileErrorType::FileNotInGitRepo,
+                error: FileErrorType::FileNotInGitRepo,
                 error_message: None,
                 input: local_path.clone()
             }

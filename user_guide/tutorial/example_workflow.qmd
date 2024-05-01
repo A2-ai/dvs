@@ -1,4 +1,18 @@
-# Introduction to devious (the R package)
+---
+title: "Introduction to devious (the R package)"
+author: |
+    | Prepared by:
+    | Jenna Johnson
+    | (jenna@a2-ai.com)
+date: today
+date-format: long
+format:
+  html:
+    toc: true
+    number-sections: true
+    colorlinks: true
+editor: visual
+---
 
 Devious is now an R package inspired by the original devious command line tool.
 
@@ -57,11 +71,17 @@ Each metadata file acts as a map for devious locate a given copied file later.
 
 ```{r}
 # add the csv file to devious so it can be retrieved later
-dvs_add(pk_data_path, message = "finished pk data assembly") # adding a message is optional
+added_files <- dvs_add(pk_data_path, message = "finished pk data assembly") # adding a message is optional
+added_files
 ```
 
 Notice that a `.gitignore` was also added to data/derived!\
 You no longer have to manually create or update a `.gitignore` for files added to devious.
+
+Get the file hash
+```{r}
+added_files$hash
+```
 
 ### Step 3: Update as needed
 
@@ -111,13 +131,12 @@ pk_data3_path <- file.path(derDir, "pk_data3.csv")
 write.csv(pk_data, pk_data3_path)
 ```
 
-I don't want to list them all in a vector like this:
-
+I could add them all by inputting in a vector of each explicit file like this:
 ```{r}
-# dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
+dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
 ```
 
-So I'll save time by using a file glob:
+Or I can save time by using a file glob:
 
 ```{r}
 dvs_add(file.path(derDir, "*"))
@@ -135,55 +154,47 @@ Let's experiment with adding a file that doesn't exist
 ```{r}
 dvs_add("this/isnt/a/file/path") # should panic
 ```
+
 Devious will panic if you try to add a file that doesn't exist.
 
 For any other error, devious will indicate such in the outcome column
 
 ```{r}
 # for example, let's try adding a directory instead of a file
-dvs_add("data")
+add_dir <- dvs_add("data")
+add_dir
+```
+Some other error examples include not being able to get the size or hash for a file. The reason for an error is given in the `error_type` column. If an error message was returned, this will be in the `error_message` column.
+
+```{r}
+add_dir$error
+add_dir$error_message
+```
+
+Suppose many files were added, and as such, a data frame with many rows was returned.\
+I can quickly check if any errors occurred by running:
+```{r}
+# number of errors = sum of values in the error column that aren't NA
+paste("number of errors:", sum(!is.na(add_dir$error)))
 ```
 
 ## Role: the Analyst
 
+Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed devious workflow:
+
 ### Step 1: Pull from github
+
+Because the .gitignore excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
 ```{r}
-# because the .gitignore excludes it, a analyst pulling from github won't have pk_data.csv
-# I'll simulate this by running this chunk to delete the file 
-file.remove(pk_data_path)
+# I'll simulate this situation by running this chunk to delete the previously added files 
+file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
 ```
 
 ### Step 2: Status
 
-Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets.
+I start my workflow by running a status check to see which files have been added to devious.
 
-Suppose instead, I start my workflow by running a status check to see which files have been added to devious
-
-```{r}
-dvs_status()
-
-# if you want to status files a specific file, you can do that too
-# dvs_status(pk_data_path)
-```
-
-```{r}
-# check if there were any errors
-# number of errors = sum of values in the error column that aren't NA
-sum(!is.na(status$error))
-```
-
-```{r}
-# now we can get the file back
-get <- dvs_get(pk_data_path)
-get
-```
-
-```{r}
-# check if there were any errors
-sum(!is.na(get$error))
-```
-
-`dvs_status` will list files with one of the following statuses:
+files in the `dvs_status` data frame will have one of the following `status` entries:
 
 -   up-to-date
 
@@ -193,13 +204,81 @@ sum(!is.na(get$error))
 
     -   out-of-sync files may be ahead or behind current work
 
-    -   if you believe your work is behind the current version on devious, run `dvs_get` to retrieve it
+    -   if you know your work is behind the current version on devious, run `dvs_get` to retrieve it
+    
+-   error
+
+    -   if there's an error getting the status of a file, for example if the file is a directory.
+
+```{r}
+dvs_status()
+```
+I might also want to just get a status report of files in a particular directory,\
+in which case I can use the same file glob pattern I used before with `dvs_add`:
+```{r}
+dvs_status(file.path(derDir, "*"))
+```
+Or I can get the status of a single file.
+```{r}
+dvs_status(pk_data_path)
+```
+Check for errors getting status:
+```{r}
+status <- dvs_status()
+paste("number of errors:", sum(!is.na(status$error)))
+```
+
+### Step 3: Get
+Now I'll retrieve the files I want with `dvs_get`.
+
+This function copies files from the storage directory back into their respective directory within the git repo.\
+The input can be the file itself or its metadata file.\
+Like `dvs_add`, `dvs_get` can also receive inputted file globs, vectors of files, relative paths, and absolute paths.
+
+```{r}
+# copy pk_data.csv back into the project directory
+get <- dvs_get(pk_data_path)
+get
+```
+
+```{r}
+# check if there were any errors
+paste("number of errors:", sum(!is.na(get$error)))
+```
+Here are some ways to use status and get in conjunction:
+```{r}
+# general piping pattern
+dvs_status() %>% # status all previously added files
+  pull(relative_path) %>% # select their relative paths
+  dvs_get() # copy files to the project repo
+```
 
 ```{r}
 file.remove(pk_data_path)
-# here is an example piping pattern to get all not-present and out-of-sync files from data/derived
-dvs_status(file.path(derDir, "*")) %>% filter(status != "up-to-date") %>% pull(relative_path) %>% dvs_get()
+file.remove(pk_data2_path)
+file.remove(pk_data3_path)
+
+# piping pattern to get all not-present and out-of-sync files from data/derived
+dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
+  filter(status == "not-present" | status == "out-of-sync") %>% # filter files with status "not-present" or "out-of-sync"
+  pull(relative_path) %>%  # select their relative paths
+  dvs_get() # copy files to the project repo
 ```
+```{r}
+file.remove(pk_data_path)
+file.remove(pk_data2_path)
+file.remove(pk_data3_path)
+
+# piping pattern to get all files except for those up-to-date in data/derived
+dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
+  filter(status != "up-to-date") %>% # filter all files except for those up-to-date
+  pull(relative_path) %>% # pull the paths
+  dvs_get() # copy to project repo
+```
+
+
+
+
 
 ```{r}
 # we can split up the output to give us a data frame for the successful files and error files
@@ -220,11 +299,19 @@ added_files$successes
 ## Role: the QCer
 
 ```{r}
+
+```
+
+## Two Data Frame Output
+
+```{r}
 # clean up
 file.remove(pk_data_path)
 file.remove(pk_data2_path)
 file.remove(pk_data3_path)
 file.remove(paste0(pk_data_path, ".dvsmeta"))
+file.remove(paste0(pk_data2_path, ".dvsmeta"))
+file.remove(paste0(pk_data3_path, ".dvsmeta"))
 file.remove(file.path(derDir, ".gitignore"))
 file.remove("~/Projects/Rdevious/dvs.yaml")
 unlink(my_storage_dir, recursive=TRUE)

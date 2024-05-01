@@ -1,11 +1,11 @@
 
-use crate::helpers::{config, error::{BatchError, FileError}, file, hash, outcome::Outcome, parse, repo};
+use crate::helpers::{config, error::{BatchError, FileError}, file, hash, outcome::Status, parse, repo};
 use std::path::PathBuf;
 
 #[derive(PartialEq, Debug)]
 pub struct FileStatus {
     pub relative_path: Option<PathBuf>,
-    pub outcome: Outcome,
+    pub status: Status,
     pub size: u64,
     pub time_stamp: String,
     pub saved_by: String,
@@ -52,7 +52,7 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
     let relative_path = match repo::get_relative_path_to_wd(&metadata_path_abs) {
         Ok(path) => Some(file::path_without_metadata(&path)),
         Err(_) => None,
-    };    
+    };
 
     file::check_if_dir(local_path)?;
     
@@ -60,19 +60,19 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
     let metadata = file::load(local_path)?;
             
     // assign status: not-present by default
-    let outcome = 
+    let status = 
         if !local_path.exists() {
-            Outcome::NotPresent
+            Status::NotPresent
         }
         else {
             match hash::get_file_hash(&local_path) {
                 Ok(current_hash) => {
                     if current_hash == metadata.hash {
-                        Outcome::UpToDate
+                        Status::UpToDate
                     }
-                    else {Outcome::OutOfSync}
+                    else {Status::OutOfSync}
                 }
-                Err(_) =>  Outcome::OutOfSync,
+                Err(_) =>  Status::OutOfSync,
             }
         };
 
@@ -88,7 +88,7 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
     Ok(FileStatus{
             relative_path,
             absolute_path,
-            outcome,
+            status,
             size: metadata.size,
             hash: metadata.hash,
             time_stamp: metadata.time_stamp,

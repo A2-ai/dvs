@@ -24,7 +24,7 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::MetadataNotSaved,
+            error: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -33,7 +33,7 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::MetadataNotSaved,
+            error: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -42,7 +42,7 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::MetadataNotSaved,
+            error: FileErrorType::MetadataNotSaved,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -62,7 +62,7 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
             FileError{
                 relative_path: get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
-                error_type: FileErrorType::MetadataNotFound,
+                error: FileErrorType::MetadataNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
             }
@@ -91,7 +91,7 @@ pub fn get_user_name(local_path: &PathBuf) -> std::result::Result<String, FileEr
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::OwnerNotFound,
+            error: FileErrorType::OwnerNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -104,7 +104,7 @@ pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, F
             FileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
                 relative_path: None,
                 absolute_path: None,
-                error_type: FileErrorType::AbsolutePathNotFound,
+                error: FileErrorType::AbsolutePathNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
             }
@@ -116,7 +116,7 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
         FileError{
             relative_path: None,
             absolute_path: get_absolute_path(local_path).ok(),
-            error_type: FileErrorType::RelativePathNotFound,
+            error: FileErrorType::RelativePathNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
         }
@@ -130,7 +130,7 @@ pub fn check_if_dir(local_path: &PathBuf) -> std::result::Result<(), FileError> 
         Err(FileError{
                 relative_path: repo::get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
-                error_type: FileErrorType::PathIsDirectory,
+                error: FileErrorType::PathIsDirectory,
                 error_message: None,
                 input: local_path.clone()
             }
@@ -146,7 +146,7 @@ pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError
             FileError{
                 relative_path: repo::get_relative_path_to_wd(local_path).ok(), 
                 absolute_path: get_absolute_path(local_path).ok(),
-                error_type: FileErrorType::SizeNotFound,
+                error: FileErrorType::SizeNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
             }
@@ -160,7 +160,7 @@ pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Resul
         .find(|dvs_path| !metadata_path(dvs_path).exists())
     {
         return Err(BatchError {
-            error_type: BatchErrorType::AnyMetaFilesDNE,
+            error: BatchErrorType::AnyMetaFilesDNE,
             error_message: format!("missing for {}", path.display()),
         });
     }
