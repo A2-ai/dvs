@@ -1,5 +1,5 @@
 ---
-title: "Introduction to devious (the R package)"
+title: "Introduction to Devious (the R package)"
 author: |
     | Prepared by:
     | Jenna Johnson
@@ -22,30 +22,40 @@ We can use devious to version data files without tracking them directly on githu
 
 ```{r}
 # library(devious)
+library(dplyr)
+rextendr::document("~/Projects/Rdevious")
+devtools::load_all("~/Projects/Rdevious")
 ```
 
-## Role: the Data Assembler
+## The Data Assembler
 
-### Step 1: Initialize
+### 1: Initialize
 
 Suppose I created a new repo for a project.\
 I want to manage project data with devious, so I'll start with initialization.
 
 In the devious package, `dvs_init` sets up a project for versioning.
 
-I'll use `dvs_init` to create a storage directory for versioned files.\
-This command also creates a `dvs.yaml` in the project directory with the path of the storage directory for devious to use in future commands.
+`dvs_init` to creates
 
-In general, name the storage directory `/data/dvs/<project_name>`. Creating the directory in `/data/dvs/` ensures that it will be accessible company-wide and outside of the project directory.
+-   a **storage directory** to store versioned files.
+
+-   a `dvs.yaml` in the project directory containing the path of the storage directory
+
+In general, the storage directory should be named `/data/dvs/<project_name>`.
+
+Creating the storage directory in `/data/dvs` ensures that it will be outside of the project directory and thus accessible company-wide.
 
 ```{r}
-# for the purpose of this tutorial, replace {your name goes here} with your name 
+# for the purpose of this tutorial, use your name instead of the project name
 # to avoid conflicts with others using this script
-my_storage_dir <- "/data/dvs/tutorial_{your name goes here}"
+
+# replace <my_name> with your name 
+my_storage_dir <- "/data/dvs/<my_name>"
 dvs_init(my_storage_dir)
 ```
 
-### Step 2: Add
+### 2: Add
 
 Suppose I assembled a data set and saved it as a csv file.
 
@@ -67,31 +77,40 @@ This will copy `pk_data.csv` to the storage directory previously initialized wit
 
 This will also create a metadata file for `pk_data.csv` called `pk_data.csv.dvsmeta` in its respective directory: `data/derived`.
 
-In general, metadata file will be generated in the same directory as its associated file and be called `<file_name>.dvsmeta`.
+In general, a metadata file will be generated in the same directory as its associated file and be called `<file_name>.dvsmeta`.
 
-Each metadata file acts as a map for devious to locate the copied file later.
+Each metadata file acts as a map for devious to locate the copied file later and for future collaborators to consult for versioning.
 
 ```{r}
 # add the csv file to devious
-# the message is optional - if included, it will appear in the metadata file
 added_files <- dvs_add(pk_data_path, message = "finished pk data assembly")
+```
+
+The message parameter is optional - if included, it will be in:
+
+-   the metadata file (check it out in `data/derived`)
+
+-   the output of `dvs_status` (more on this later).
+
+```{r}
+# view the output from dvs_add
 added_files
 ```
 
-Some information about `pk_data.csv` is also returned in the data frame output, including the file hash in the `hash` column.
+Besides copying it to the storage_directory, some information about `pk_data.csv` is also returned, including the file hash in the `hash` column.
 
 ```{r}
 added_files$hash
 ```
 
-Notice that a `.gitignore` was also added to data/derived.
+Notice that a `.gitignore` was also generated in `data/derived`.
 
-The `.gitignore` contains an entry excluding `pk_data.csv,` so it isn't tracked by github.\
+The `.gitignore` contains an entry excluding `pk_data.csv,` so it isn't uploaded to github.\
 You no longer have to manually create or update a `.gitignore` for files added to devious.
 
-### Step 3: Update as needed
+### 3: Update
 
-Let's say I found a bug and want to update `pk_data.csv` file
+Let's say I found a bug and want to update `pk_data.csv`.
 
 ```{r}
 # say I want to update my data frame
@@ -111,9 +130,15 @@ To update a file I previously added to devious, I'll run `dvs_add` again with th
 dvs_add(pk_data_path, message = "updated pk data with new data sent by client") 
 ```
 
-Notice that when updating, the outcome is Success instead of Already Present.
+Notice that when updating, the `outcome` column says `copied`.
 
-### Step 4: Push to github
+If I add a version of a file that already exists on devious, the outcome is `present` For example, this happens when I add the updated version again:
+
+```{r}
+dvs_add(pk_data_path)
+```
+
+### 4: Push
 
 Now if you push to github, you'll see that `pk_data.csv` isn't present in `data/derived`, but its metadata file and the `.gitignore` are.
 
@@ -122,6 +147,8 @@ Now if you push to github, you'll see that `pk_data.csv` isn't present in `data/
 The `.gitignore` lists `pk_data.csv` to exclude it from files added to github.
 
 ![](gitignore.png){width="368"}
+
+The data file isn't on github, but the metadata file with directions to its location is!
 
 ### Multiple Files
 
@@ -136,7 +163,7 @@ pk_data3_path <- file.path(derDir, "pk_data3.csv")
 write.csv(pk_data, pk_data3_path)
 ```
 
-I could add them all by inputting in a vector of each explicit file like this:
+I could add them all by inputting a vector of the files like this:
 
 ```{r}
 dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
@@ -151,21 +178,21 @@ dvs_add(file.path(derDir, "*"))
 # dvs_add("data/derived/*")
 ```
 
-In general, the `*` indicates every file/directory in a given directory, but devious manually filters out `.dvsmeta` and `.gitignore` files so these files aren't added.
+In general, the `*` indicates every file/directory in a given directory, but devious manually filters out `.dvsmeta` and `.gitignore` files so these files can't be added.
 
 ### Errors
 
-Let's experiment with adding a file that doesn't exist
+What happens when a file that doesn't exist is added?
 
 ```{r}
-dvs_add("this/isnt/a/file/path") # should panic
+# dvs_add("this/isnt/a/file/path") # should panic
 ```
 
-Devious will panic if you try to add a file that doesn't exist.
+In this case, devious will panic.
 
 For any other error, devious will indicate such in the outcome column
 
-For example, devious may be unable to write to the .gitignore. The command will fail to perform its intended operation.
+For example, devious may be unable to write to the `.gitignore`. The command will fail to perform its intended operation.
 
 ```{r}
 # make the .gitignore un-writable 
@@ -193,20 +220,20 @@ I can quickly check if any errors occurred by running:
 paste("number of errors:", sum(!is.na(add_error$error))) # there should be 1 error
 ```
 
-## Role: the Analyst
+## The Analyst
 
 Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed alternative devious workflow:
 
-### Step 1: Pull from github
+### 1: Pull
 
-Because the .gitignore excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
+Because the `.gitignore` excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
 
 ```{r}
 # I'll simulate this situation by deleting the previously added files 
 file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
 ```
 
-### Step 2: Status
+### 2: Status
 
 I'll run a status check in the console to see which files have been added to devious.
 
@@ -250,7 +277,7 @@ Check for errors getting status:
 paste("number of errors:", sum(!is.na(status$error)))
 ```
 
-### Step 3: Get
+### 3: Get
 
 Now I'll retrieve the files I want with `dvs_get`.
 
@@ -304,28 +331,31 @@ dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
   dvs_get() # copy to project repo
 ```
 
-## Role: the QCer
+## The QCer
 
-Suppose I want to make sure that the current version of a file stored on devious is the same as the one generated by the script. 
-For example, I'll QC `pk_data.csv`:\
+Suppose I want to make sure that the current version of a file stored on devious is the same as the one generated by the script. For example, I'll QC `pk_data.csv`:\
 
 I'll simulate pulling from github by deleting pk_data.csv
+
 ```{r}
 file.remove(pk_data_path)
 ```
 
-### Step 1: Get stored hash
+### 1: Get hash
+
 I'll start by getting the hash of the file stored on devious with `dvs_status`
 
 paste the following code into the console
-``` 
+
+```         
 data <- "user_guide/tutorial/data/derived/pk_data.csv"
 original <- dvs_status(data)$hash
 ```
 
-### Step 2: Run the DA script
+### 2: Run script
 
 Now re-run the Data Assembly script (re-copied here for convenience)
+
 ```{r}
 pk_data <- data.frame(
   USUBJID = c(1, 1, 1),
@@ -336,23 +366,25 @@ pk_data <- data.frame(
 write.csv(pk_data, pk_data_path)
 ```
 
-### Step 3: Get current hash
-Now I'll get the hash of the file I just generated from running the script
+### 3: Make hash
+
+Now I'll generate the hash of the file I just created from running the script
 
 paste the following code into the console
-```
+
+```         
 current <- dvs_add(data)$hash
 ```
 
-### Step 4: Compare
+### 4: Compare
 
 paste the following code into the console
-```
+
+```         
 original == current
 ```
 
 If these hashes are equal, then the file stored on devious is the same as the file generated by DA the script.
-
 
 ## Two Data Frame Output
 
@@ -391,15 +423,12 @@ paste("no errors present:", !is.null(split$failures))
 ```
 
 If there are errors present, I can check how many with `nrow`:
+
 ```{r}
 paste("number of errors:", nrow(split$failures))
 ```
 
-
-
-Thank you for following this tutorial. If you have any questions or ideas, reach out to 
-Jenna Johnson
-jenna@a2-ai.com
+Thank you for following this tutorial. If you have any questions or ideas, reach out to Jenna Johnson jenna\@a2-ai.com
 
 ```{r}
 # clean up

@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2024-05-02">
+
+<title>Introduction to devious (the R package)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="example_workflow_files/libs/clipboard/clipboard.min.js"></script>
+<script src="example_workflow_files/libs/quarto-html/quarto.js"></script>
+<script src="example_workflow_files/libs/quarto-html/popper.min.js"></script>
+<script src="example_workflow_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="example_workflow_files/libs/quarto-html/anchor.min.js"></script>
+<link href="example_workflow_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="example_workflow_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="example_workflow_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="example_workflow_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="example_workflow_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-data-assembler" id="toc-the-data-assembler" class="nav-link active" data-scroll-target="#the-data-assembler"><span class="header-section-number">1</span> The Data Assembler</a>
+  <ul class="collapse">
+  <li><a href="#initialize" id="toc-initialize" class="nav-link" data-scroll-target="#initialize"><span class="header-section-number">1.1</span> 1: Initialize</a></li>
+  <li><a href="#add" id="toc-add" class="nav-link" data-scroll-target="#add"><span class="header-section-number">1.2</span> 2: Add</a></li>
+  <li><a href="#update" id="toc-update" class="nav-link" data-scroll-target="#update"><span class="header-section-number">1.3</span> 3: Update</a></li>
+  <li><a href="#push" id="toc-push" class="nav-link" data-scroll-target="#push"><span class="header-section-number">1.4</span> 4: Push</a></li>
+  <li><a href="#multiple-files" id="toc-multiple-files" class="nav-link" data-scroll-target="#multiple-files"><span class="header-section-number">1.5</span> Multiple Files</a></li>
+  <li><a href="#errors" id="toc-errors" class="nav-link" data-scroll-target="#errors"><span class="header-section-number">1.6</span> Errors</a></li>
+  </ul></li>
+  <li><a href="#the-analyst" id="toc-the-analyst" class="nav-link" data-scroll-target="#the-analyst"><span class="header-section-number">2</span> The Analyst</a>
+  <ul class="collapse">
+  <li><a href="#pull" id="toc-pull" class="nav-link" data-scroll-target="#pull"><span class="header-section-number">2.1</span> 1: Pull</a></li>
+  <li><a href="#status" id="toc-status" class="nav-link" data-scroll-target="#status"><span class="header-section-number">2.2</span> 2: Status</a></li>
+  <li><a href="#get" id="toc-get" class="nav-link" data-scroll-target="#get"><span class="header-section-number">2.3</span> 3: Get</a></li>
+  <li><a href="#piping-patterns" id="toc-piping-patterns" class="nav-link" data-scroll-target="#piping-patterns"><span class="header-section-number">2.4</span> Piping Patterns</a></li>
+  </ul></li>
+  <li><a href="#the-qcer" id="toc-the-qcer" class="nav-link" data-scroll-target="#the-qcer"><span class="header-section-number">3</span> The QCer</a>
+  <ul class="collapse">
+  <li><a href="#get-hash" id="toc-get-hash" class="nav-link" data-scroll-target="#get-hash"><span class="header-section-number">3.1</span> 1: Get hash</a></li>
+  <li><a href="#run-script" id="toc-run-script" class="nav-link" data-scroll-target="#run-script"><span class="header-section-number">3.2</span> 2: Run script</a></li>
+  <li><a href="#make-hash" id="toc-make-hash" class="nav-link" data-scroll-target="#make-hash"><span class="header-section-number">3.3</span> 3: Make hash</a></li>
+  <li><a href="#compare" id="toc-compare" class="nav-link" data-scroll-target="#compare"><span class="header-section-number">3.4</span> 4: Compare</a></li>
+  </ul></li>
+  <li><a href="#two-data-frame-output" id="toc-two-data-frame-output" class="nav-link" data-scroll-target="#two-data-frame-output"><span class="header-section-number">4</span> Two Data Frame Output</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Introduction to devious (the R package)</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p> </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 2, 2024</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+</header>
+
+<p>Devious is now an R package inspired by the original devious command line tool.</p>
+<p>While it implements the same base functionality, it has some new features, and output is organized into data frames.</p>
+<p>We can use devious to version data files without tracking them directly on github.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># library(devious)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>rextendr<span class="sc">::</span><span class="fu">document</span>(<span class="st">"~/Projects/Rdevious"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ Generating extendr wrapper functions for package: Rdevious.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ 'R/extendr-wrappers.R' is up-to-date. Skip generating wrapper functions.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ Updating Rdevious documentation
+ℹ Loading Rdevious</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"~/Projects/Rdevious"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ Loading Rdevious</code></pre>
+</div>
+</div>
+<section id="the-data-assembler" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="the-data-assembler"><span class="header-section-number">1</span> The Data Assembler</h2>
+<section id="initialize" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="initialize"><span class="header-section-number">1.1</span> 1: Initialize</h3>
+<p>Suppose I created a new repo for a project.<br>
+I want to manage project data with devious, so I’ll start with initialization.</p>
+<p>In the devious package, <code>dvs_init</code> sets up a project for versioning.</p>
+<p>I’ll use <code>dvs_init</code> to create a storage directory for versioned files.<br>
+This command also creates a <code>dvs.yaml</code> in the project directory with the path of the storage directory for devious to use in future commands.</p>
+<p>In general, name the storage directory <code>/data/dvs/&lt;project_name&gt;</code>. Creating the directory in <code>/data/dvs/</code> ensures that it will be accessible company-wide and outside of the project directory.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># for the purpose of this tutorial, replace {your name goes here} with your name </span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># to avoid conflicts with others using this script</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>my_storage_dir <span class="ot">&lt;-</span> <span class="st">"/data/dvs/tutorial_{your name goes here}"</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_init</span>(my_storage_dir)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="add" class="level3" data-number="1.2">
+<h3 data-number="1.2" class="anchored" data-anchor-id="add"><span class="header-section-number">1.2</span> 2: Add</h3>
+<p>Suppose I assembled a data set and saved it as a csv file.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>derDir <span class="ot">&lt;-</span> <span class="st">"data/derived"</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>pk_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">USUBJID =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">NTFD =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">2</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">DV =</span> <span class="fu">c</span>(<span class="fl">379.444</span>, <span class="fl">560.613</span>, <span class="dv">0</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>pk_data_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(derDir, <span class="st">"pk_data.csv"</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(pk_data, pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I’ll use <code>dvs_add</code> to version this file with devious.</p>
+<p>This will copy <code>pk_data.csv</code> to the storage directory previously initialized with <code>dvs_init</code>.</p>
+<p>This will also create a metadata file for <code>pk_data.csv</code> called <code>pk_data.csv.dvsmeta</code> in its respective directory: <code>data/derived</code>.</p>
+<p>In general, metadata file will be generated in the same directory as its associated file and be called <code>&lt;file_name&gt;.dvsmeta</code>.</p>
+<p>Each metadata file acts as a map for devious to locate the copied file later.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># add the csv file to devious</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the message is optional - if included, it will appear in the metadata file</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>added_files <span class="ot">&lt;-</span> <span class="fu">dvs_add</span>(pk_data_path, <span class="at">message =</span> <span class="st">"finished pk data assembly"</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>added_files</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size
+1 data/derived/pk_data.csv  copied   69
+                                                              hash
+1 2ce4e136263c7022f7ee7916a325d342ae09d867f17a5d684bb1e42c84f0e2c5
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>Some information about <code>pk_data.csv</code> is also returned in the data frame output, including the file hash in the <code>hash</code> column.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>added_files<span class="sc">$</span>hash</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "2ce4e136263c7022f7ee7916a325d342ae09d867f17a5d684bb1e42c84f0e2c5"</code></pre>
+</div>
+</div>
+<p>Notice that a <code>.gitignore</code> was also added to data/derived.</p>
+<p>The <code>.gitignore</code> contains an entry excluding <code>pk_data.csv,</code> so it isn’t tracked by github.<br>
+You no longer have to manually create or update a <code>.gitignore</code> for files added to devious.</p>
+</section>
+<section id="update" class="level3" data-number="1.3">
+<h3 data-number="1.3" class="anchored" data-anchor-id="update"><span class="header-section-number">1.3</span> 3: Update</h3>
+<p>Let’s say I found a bug and want to update <code>pk_data.csv</code> file</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># say I want to update my data frame</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>pk_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">USUBJID =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">NTFD =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">2</span>),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">DV =</span> <span class="fu">c</span>(<span class="fl">379.444</span>, <span class="fl">560.613</span>, <span class="fl">912.843</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(pk_data, pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To update a file I previously added to devious, I’ll run <code>dvs_add</code> again with the same file path.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the message is optional</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_add</span>(pk_data_path, <span class="at">message =</span> <span class="st">"updated pk data with new data sent by client"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size
+1 data/derived/pk_data.csv  copied   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>Notice that when updating, the outcome is Success instead of Already Present.</p>
+</section>
+<section id="push" class="level3" data-number="1.4">
+<h3 data-number="1.4" class="anchored" data-anchor-id="push"><span class="header-section-number">1.4</span> 4: Push</h3>
+<p>Now if you push to github, you’ll see that <code>pk_data.csv</code> isn’t present in <code>data/derived</code>, but its metadata file and the <code>.gitignore</code> are.</p>
+<p><img src="github.png" class="img-fluid" width="213"></p>
+<p>The <code>.gitignore</code> lists <code>pk_data.csv</code> to exclude it from files added to github.</p>
+<p><img src="gitignore.png" class="img-fluid" width="368"></p>
+</section>
+<section id="multiple-files" class="level3" data-number="1.5">
+<h3 data-number="1.5" class="anchored" data-anchor-id="multiple-files"><span class="header-section-number">1.5</span> Multiple Files</h3>
+<p>Suppose I have many files in data/derived and I want to add them all to devious,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create some copies to generate multiple files</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>pk_data2_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(derDir, <span class="st">"pk_data2.csv"</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(pk_data, pk_data2_path)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>pk_data3_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(derDir, <span class="st">"pk_data3.csv"</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(pk_data, pk_data3_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I could add them all by inputting in a vector of each explicit file like this:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_add</span>(<span class="fu">c</span>(pk_data_path, pk_data2_path, pk_data3_path))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path outcome size
+1  data/derived/pk_data.csv present   75
+2 data/derived/pk_data2.csv present   75
+3 data/derived/pk_data3.csv present   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+2  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+3  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>Or I can save time by using a file glob:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_add</span>(<span class="fu">file.path</span>(derDir, <span class="st">"*"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path outcome size
+1  data/derived/pk_data.csv present   75
+2 data/derived/pk_data2.csv present   75
+3 data/derived/pk_data3.csv present   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+2  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+3  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># which is equivalent to:</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co"># dvs_add("data/derived/*")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In general, the <code>*</code> indicates every file/directory in a given directory, but devious manually filters out <code>.dvsmeta</code> and <code>.gitignore</code> files so these files aren’t added.</p>
+</section>
+<section id="errors" class="level3" data-number="1.6">
+<h3 data-number="1.6" class="anchored" data-anchor-id="errors"><span class="header-section-number">1.6</span> Errors</h3>
+<p>Let’s experiment with adding a file that doesn’t exist</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># dvs_add("this/isnt/a/file/path") # should panic</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Devious will panic if you try to add a file that doesn’t exist.</p>
+<p>For any other error, devious will indicate such in the outcome column</p>
+<p>For example, devious may be unable to write to the .gitignore. The command will fail to perform its intended operation.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># make the .gitignore un-writable </span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">system</span>(<span class="st">'chmod 333 data/derived/.gitignore'</span>)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>add_error <span class="ot">&lt;-</span> <span class="fu">dvs_add</span>(pk_data_path)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>add_error</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size hash
+1 data/derived/pk_data.csv   error   NA &lt;NA&gt;
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+                     input                     error
+1 data/derived/pk_data.csv gitignore entry not added
+                    error_message
+1 Permission denied (os error 13)</code></pre>
+</div>
+</div>
+<p>The error is given in the <code>error</code> column, and if an error message was returned, this will be in the <code>error_message</code> column.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># investigate the error</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>add_error<span class="sc">$</span>error</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "gitignore entry not added"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>add_error<span class="sc">$</span>error_message</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Permission denied (os error 13)"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># make the .gitignore writable again</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">system</span>(<span class="st">'chmod 777 data/derived/.gitignore'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Suppose many files were added, and as such, a data frame with many rows was returned.<br>
+I can quickly check if any errors occurred by running:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># number of errors = sum of values in the error column that aren't NA</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="st">"number of errors:"</span>, <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(add_error<span class="sc">$</span>error))) <span class="co"># there should be 1 error</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "number of errors: 1"</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="the-analyst" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="the-analyst"><span class="header-section-number">2</span> The Analyst</h2>
+<p>Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed alternative devious workflow:</p>
+<section id="pull" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="pull"><span class="header-section-number">2.1</span> 1: Pull</h3>
+<p>Because the .gitignore excludes them, a analyst pulling from github won’t have any files added to devious by the assembler.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># I'll simulate this situation by deleting the previously added files </span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">c</span>(pk_data_path, pk_data2_path, pk_data3_path))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE TRUE TRUE</code></pre>
+</div>
+</div>
+</section>
+<section id="status" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="status"><span class="header-section-number">2.2</span> 2: Status</h3>
+<p>I’ll run a status check in the console to see which files have been added to devious.</p>
+<p>files in the <code>dvs_status</code> data frame will have one of the following <code>status</code> entries:</p>
+<ul>
+<li><p>up-to-date</p></li>
+<li><p>not-present</p></li>
+<li><p>out-of-sync</p>
+<ul>
+<li><p>out-of-sync files may be ahead or behind current work</p></li>
+<li><p>if you know your work is behind the current version on devious, run <code>dvs_get</code> to retrieve it</p></li>
+</ul></li>
+<li><p>error</p>
+<ul>
+<li>if there’s an error getting the status of a file, for example if the file is a directory.</li>
+</ul></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_status</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path status size
+1  data/derived/pk_data.csv absent   75
+2 data/derived/pk_data3.csv absent   75
+3 data/derived/pk_data2.csv absent   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                            time_stamp saved_by message
+1 2024-05-02 19:47:56.240489845 +00:00    jenna        
+2 2024-05-02 19:47:56.221745858 +00:00    jenna        
+3 2024-05-02 19:47:56.221513861 +00:00    jenna        
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+  error error_message input
+1  &lt;NA&gt;          &lt;NA&gt;  &lt;NA&gt;
+2  &lt;NA&gt;          &lt;NA&gt;  &lt;NA&gt;
+3  &lt;NA&gt;          &lt;NA&gt;  &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>I might also want to just get a status report of files in a particular directory,<br>
+in which case I can use the same file glob pattern I used before with <code>dvs_add</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_status</span>(<span class="fu">file.path</span>(derDir, <span class="st">"*"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path status size
+1  data/derived/pk_data.csv absent   75
+2 data/derived/pk_data2.csv absent   75
+3 data/derived/pk_data3.csv absent   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                            time_stamp saved_by message
+1 2024-05-02 19:47:56.240489845 +00:00    jenna        
+2 2024-05-02 19:47:56.221513861 +00:00    jenna        
+3 2024-05-02 19:47:56.221745858 +00:00    jenna        
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+  error error_message                     input
+1  &lt;NA&gt;          &lt;NA&gt;  data/derived/pk_data.csv
+2  &lt;NA&gt;          &lt;NA&gt; data/derived/pk_data2.csv
+3  &lt;NA&gt;          &lt;NA&gt; data/derived/pk_data3.csv</code></pre>
+</div>
+</div>
+<p>Or I can get the status of a single file.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>status <span class="ot">&lt;-</span> <span class="fu">dvs_status</span>(pk_data_path)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>status</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path status size
+1 data/derived/pk_data.csv absent   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                            time_stamp saved_by message
+1 2024-05-02 19:47:56.240489845 +00:00    jenna        
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+  error error_message                    input
+1  &lt;NA&gt;          &lt;NA&gt; data/derived/pk_data.csv</code></pre>
+</div>
+</div>
+<p>Check for errors getting status:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="st">"number of errors:"</span>, <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(status<span class="sc">$</span>error)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "number of errors: 0"</code></pre>
+</div>
+</div>
+</section>
+<section id="get" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="get"><span class="header-section-number">2.3</span> 3: Get</h3>
+<p>Now I’ll retrieve the files I want with <code>dvs_get</code>.</p>
+<p>This function copies files from the storage directory back into their respective directory within the git repo.<br>
+The input can be the file itself or its metadata file.<br>
+Like <code>dvs_add</code>, <code>dvs_get</code> can also receive inputted file globs, vectors of files, relative paths, and absolute paths.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># copy pk_data.csv back into the project directory</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>get <span class="ot">&lt;-</span> <span class="fu">dvs_get</span>(pk_data_path)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>get</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size
+1 data/derived/pk_data.csv  copied   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># check if there were any errors</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="st">"number of errors:"</span>, <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(get<span class="sc">$</span>error)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "number of errors: 0"</code></pre>
+</div>
+</div>
+</section>
+<section id="piping-patterns" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="piping-patterns"><span class="header-section-number">2.4</span> Piping Patterns</h3>
+<p>Here are some ways to use status and get in conjunction:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># general piping pattern</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_status</span>() <span class="sc">%&gt;%</span> <span class="co"># status all previously added files</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(relative_path) <span class="sc">%&gt;%</span> <span class="co"># select their relative paths</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dvs_get</span>() <span class="co"># copy files to the project repo</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path outcome size
+1  data/derived/pk_data.csv present   75
+2 data/derived/pk_data3.csv  copied   75
+3 data/derived/pk_data2.csv  copied   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+2  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+3  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data2_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data3_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># piping pattern to get all not-present and out-of-sync files from data/derived</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_status</span>(<span class="fu">file.path</span>(derDir, <span class="st">"*"</span>)) <span class="sc">%&gt;%</span> <span class="co"># status all files in data/derived</span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(status <span class="sc">==</span> <span class="st">"not-present"</span> <span class="sc">|</span> status <span class="sc">==</span> <span class="st">"out-of-sync"</span>) <span class="sc">%&gt;%</span> <span class="co"># filter files with status "not-present" or "out-of-sync"</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(relative_path) <span class="sc">%&gt;%</span>  <span class="co"># select their relative paths</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dvs_get</span>() <span class="co"># copy files to the project repo</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] relative_path outcome       size          hash          absolute_path
+[6] input         error         error_message
+&lt;0 rows&gt; (or 0-length row.names)</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in file.remove(pk_data_path): cannot remove file
+'data/derived/pk_data.csv', reason 'No such file or directory'</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data2_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in file.remove(pk_data2_path): cannot remove file
+'data/derived/pk_data2.csv', reason 'No such file or directory'</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data3_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in file.remove(pk_data3_path): cannot remove file
+'data/derived/pk_data3.csv', reason 'No such file or directory'</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="co"># piping pattern to get all files except for those up-to-date in data/derived</span></span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_status</span>(<span class="fu">file.path</span>(derDir, <span class="st">"*"</span>)) <span class="sc">%&gt;%</span> <span class="co"># status all files in data/derived</span></span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(status <span class="sc">!=</span> <span class="st">"up-to-date"</span>) <span class="sc">%&gt;%</span> <span class="co"># filter all files except for those up-to-date</span></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(relative_path) <span class="sc">%&gt;%</span> <span class="co"># pull the paths</span></span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dvs_get</span>() <span class="co"># copy to project repo</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              relative_path outcome size
+1  data/derived/pk_data.csv  copied   75
+2 data/derived/pk_data2.csv  copied   75
+3 data/derived/pk_data3.csv  copied   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+3 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                   absolute_path
+1  /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data2.csv
+3 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data3.csv
+  input error error_message
+1  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+2  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;
+3  &lt;NA&gt;  &lt;NA&gt;          &lt;NA&gt;</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="the-qcer" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="the-qcer"><span class="header-section-number">3</span> The QCer</h2>
+<p>Suppose I want to make sure that the current version of a file stored on devious is the same as the one generated by the script. For example, I’ll QC <code>pk_data.csv</code>:<br>
+</p>
+<p>I’ll simulate pulling from github by deleting pk_data.csv</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<section id="get-hash" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="get-hash"><span class="header-section-number">3.1</span> 1: Get hash</h3>
+<p>I’ll start by getting the hash of the file stored on devious with <code>dvs_status</code></p>
+<p>paste the following code into the console</p>
+<pre><code>data &lt;- "user_guide/tutorial/data/derived/pk_data.csv"
+original &lt;- dvs_status(data)$hash</code></pre>
+</section>
+<section id="run-script" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="run-script"><span class="header-section-number">3.2</span> 2: Run script</h3>
+<p>Now re-run the Data Assembly script (re-copied here for convenience)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>pk_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">USUBJID =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">NTFD =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">2</span>),</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">DV =</span> <span class="fu">c</span>(<span class="fl">379.444</span>, <span class="fl">560.613</span>, <span class="fl">912.843</span>)</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(pk_data, pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="make-hash" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="make-hash"><span class="header-section-number">3.3</span> 3: Make hash</h3>
+<p>Now I’ll generate the hash of the file I just created from running the script</p>
+<p>paste the following code into the console</p>
+<pre><code>current &lt;- dvs_add(data)$hash</code></pre>
+</section>
+<section id="compare" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="compare"><span class="header-section-number">3.4</span> 4: Compare</h3>
+<p>paste the following code into the console</p>
+<pre><code>original == current</code></pre>
+<p>If these hashes are equal, then the file stored on devious is the same as the file generated by DA the script.</p>
+</section>
+</section>
+<section id="two-data-frame-output" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="two-data-frame-output"><span class="header-section-number">4</span> Two Data Frame Output</h2>
+<p>Notice that files inputted to <code>dvs_add</code>, <code>dvs_get</code>, and <code>dvs_status</code> have NA in the <code>error</code> and <code>error_message</code> columns if the given operation was successful.<br>
+When the operation fails, the columns <code>size</code>, <code>hash</code>, <code>message</code>, etc. are NA.<br>
+In other words, there every row will have at least a couple NAs whether the file operation was successful or not.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># for example</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dvs_add</span>(<span class="fu">c</span>(pk_data_path, <span class="st">"data"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size
+1 data/derived/pk_data.csv present   75
+2                     data   error   NA
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+2                                                             &lt;NA&gt;
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv
+2                     /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data
+  input               error error_message
+1  &lt;NA&gt;                &lt;NA&gt;          &lt;NA&gt;
+2  data path is a directory          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<p>I can make the distinction between these outputs more clear with the <code>split_output</code> parameter, which returns two data frames: one with the files for which the operation was successful, and one with the those that failed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the same file input, now with the split_output parameter</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>split <span class="ot">&lt;-</span> <span class="fu">dvs_add</span>(<span class="fu">c</span>(pk_data_path, <span class="st">"data"</span>), <span class="at">split_output =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># view the failures</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>split<span class="sc">$</span>failures</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  input relative_path
+1  data          data
+                                                              absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data
+                error error_message
+1 path is a directory          &lt;NA&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="co"># view the successes</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>split<span class="sc">$</span>successes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             relative_path outcome size
+1 data/derived/pk_data.csv present   75
+                                                              hash
+1 0264db8b2c7f2c6b40f645f6041cc67decde80450f8c45bbdaaf0199c2510fe8
+                                                                                  absolute_path
+1 /cluster-data/user-homes/jenna/Projects/Rdevious/user_guide/tutorial/data/derived/pk_data.csv</code></pre>
+</div>
+</div>
+<p>The output is much cleaner.</p>
+<p>To quickly assess if any errors occurred, check if the <code>failures</code> data frame exists instead of checking for NAs:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="st">"no errors present:"</span>, <span class="sc">!</span><span class="fu">is.null</span>(split<span class="sc">$</span>failures))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "no errors present: TRUE"</code></pre>
+</div>
+</div>
+<p>If there are errors present, I can check how many with <code>nrow</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span>(<span class="st">"number of errors:"</span>, <span class="fu">nrow</span>(split<span class="sc">$</span>failures))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "number of errors: 1"</code></pre>
+</div>
+</div>
+<p>Thank you for following this tutorial. If you have any questions or ideas, reach out to Jenna Johnson jenna@a2-ai.com</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># clean up</span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data2_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(pk_data3_path)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">paste0</span>(pk_data_path, <span class="st">".dvsmeta"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">paste0</span>(pk_data2_path, <span class="st">".dvsmeta"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">paste0</span>(pk_data3_path, <span class="st">".dvsmeta"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">file.path</span>(derDir, <span class="st">".gitignore"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="st">"~/Projects/Rdevious/dvs.yaml"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unlink</span>(my_storage_dir, <span class="at">recursive=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
