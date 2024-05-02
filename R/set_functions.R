@@ -46,10 +46,10 @@ clean_paths <- function(files) {
 #' @return a data frame with the states of success of added files
 #'
 #' @export
-dvs_add <- function(files, message = "", one_df = TRUE) {
+dvs_add <- function(files, message = "", split_output = FALSE) {
   files <- clean_paths(files)
   strict = TRUE
-  dvs_add_impl(files, message, strict, one_df)
+  dvs_add_impl(files, message, strict, split_output)
 }
 
 #' get added files
@@ -77,9 +77,9 @@ dvs_add <- function(files, message = "", one_df = TRUE) {
 #' @import purrr
 #'
 #' @export
-dvs_get <- function(files, one_df = TRUE) {
+dvs_get <- function(files, split_output = FALSE) {
   files <- clean_paths(files)
-  dvs_get_impl(files, one_df)
+  dvs_get_impl(files, split_output)
 }
 
 #' status report for added files
@@ -106,13 +106,13 @@ dvs_get <- function(files, one_df = TRUE) {
 #' @import purrr
 #'
 #' @export
-dvs_status <- function(files = c(""), one_df = TRUE) {
+dvs_status <- function(files = c(""), split_output = FALSE) {
   files <- clean_paths(files)
-  dvs_status_impl(files, one_df)
+  dvs_status_impl(files, split_output)
 }
 
-dvs_info <- function(files, one_df = TRUE) {
-  #files <- clean_paths(files)
-  get_file_info_impl(files, one_df)
+dvs_info <- function(files, split_output = FALSE) {
+  files <- clean_paths(files)
+  get_file_info_impl(files, split_output)
 }
 

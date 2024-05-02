@@ -34,18 +34,20 @@ I want to manage project data with devious, so I'll start with initialization.
 In the devious package, `dvs_init` sets up a project for versioning.
 
 I'll use `dvs_init` to create a storage directory for versioned files.\
-This command also creates a `dvs.yaml` in the project directory with the path of the storage directory, which devious consults for future commands.
+This command also creates a `dvs.yaml` in the project directory with the path of the storage directory for devious to use in future commands.
+
+In general, name the storage directory `/data/dvs/<project_name>`. Creating the directory in `/data/dvs/` ensures that it will be accessible company-wide and outside of the project directory.
 
 ```{r}
-# in general, the storage directory should be named "/data/dvs/<project_name>"
-# this directory is outside of the project directory, in a directory accessible to everyone.
-my_storage_dir <- "/data/dvs/tutorial"
+# for the purpose of this tutorial, replace {your name goes here} with your name 
+# to avoid conflicts with others using this script
+my_storage_dir <- "/data/dvs/tutorial_{your name goes here}"
 dvs_init(my_storage_dir)
 ```
 
 ### Step 2: Add
 
-Suppose I assembled this data set and saved it as a csv file.
+Suppose I assembled a data set and saved it as a csv file.
 
 ```{r}
 derDir <- "data/derived"
@@ -65,24 +67,27 @@ This will copy `pk_data.csv` to the storage directory previously initialized wit
 
 This will also create a metadata file for `pk_data.csv` called `pk_data.csv.dvsmeta` in its respective directory: `data/derived`.
 
-In general, a generated metadata file will be called `<file_name>.dvsmeta`.
+In general, metadata file will be generated in the same directory as its associated file and be called `<file_name>.dvsmeta`.
 
-Each metadata file acts as a map for devious locate a given copied file later.
+Each metadata file acts as a map for devious to locate the copied file later.
 
 ```{r}
-# add the csv file to devious so it can be retrieved later
-added_files <- dvs_add(pk_data_path, message = "finished pk data assembly") # adding a message is optional
+# add the csv file to devious
+# the message is optional - if included, it will appear in the metadata file
+added_files <- dvs_add(pk_data_path, message = "finished pk data assembly")
 added_files
 ```
 
-Notice that a `.gitignore` was also added to data/derived!\
-You no longer have to manually create or update a `.gitignore` for files added to devious.
-
-Get the file hash
+Some information about `pk_data.csv` is also returned in the data frame output, including the file hash in the `hash` column.
 
 ```{r}
 added_files$hash
 ```
+
+Notice that a `.gitignore` was also added to data/derived.
+
+The `.gitignore` contains an entry excluding `pk_data.csv,` so it isn't tracked by github.\
+You no longer have to manually create or update a `.gitignore` for files added to devious.
 
 ### Step 3: Update as needed
 
@@ -93,7 +98,7 @@ Let's say I found a bug and want to update `pk_data.csv` file
 pk_data <- data.frame(
   USUBJID = c(1, 1, 1),
   NTFD = c(0.5, 1, 2),
-  DV = c(379.444, 560.613, 912.842)
+  DV = c(379.444, 560.613, 912.843)
 )
 
 write.csv(pk_data, pk_data_path)
@@ -102,7 +107,8 @@ write.csv(pk_data, pk_data_path)
 To update a file I previously added to devious, I'll run `dvs_add` again with the same file path.
 
 ```{r}
-dvs_add(pk_data_path) 
+# the message is optional
+dvs_add(pk_data_path, message = "updated pk data with new data sent by client") 
 ```
 
 Notice that when updating, the outcome is Success instead of Already Present.
@@ -159,17 +165,24 @@ Devious will panic if you try to add a file that doesn't exist.
 
 For any other error, devious will indicate such in the outcome column
 
+For example, devious may be unable to write to the .gitignore. The command will fail to perform its intended operation.
+
 ```{r}
-# for example, let's try adding a directory instead of a file
-dvs_add("data")
+# make the .gitignore un-writable 
+system('chmod 333 data/derived/.gitignore')
+add_error <- dvs_add(pk_data_path)
+add_error
 ```
 
-Some other error examples include not being able to get the size or hash for a file. The reason for an error is given in the `error_type` column. If an error message was returned from a function, this will be in the `error_message` column.
+The error is given in the `error` column, and if an error message was returned, this will be in the `error_message` column.
 
 ```{r}
 # investigate the error
-add_dir$error
-add_dir$error_message
+add_error$error
+add_error$error_message
+
+# make the .gitignore writable again
+system('chmod 777 data/derived/.gitignore')
 ```
 
 Suppose many files were added, and as such, a data frame with many rows was returned.\
@@ -177,25 +190,25 @@ I can quickly check if any errors occurred by running:
 
 ```{r}
 # number of errors = sum of values in the error column that aren't NA
-paste("number of errors:", sum(!is.na(add_dir$error)))
+paste("number of errors:", sum(!is.na(add_error$error))) # there should be 1 error
 ```
 
 ## Role: the Analyst
 
-Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed devious workflow:
+Without devious, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed alternative devious workflow:
 
 ### Step 1: Pull from github
 
 Because the .gitignore excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
 
 ```{r}
-# I'll simulate this situation by running this chunk to delete the previously added files 
+# I'll simulate this situation by deleting the previously added files 
 file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
 ```
 
 ### Step 2: Status
 
-I start my workflow by running a status check to see which files have been added to devious.
+I'll run a status check in the console to see which files have been added to devious.
 
 files in the `dvs_status` data frame will have one of the following `status` entries:
 
@@ -293,33 +306,100 @@ dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
 
 ## Role: the QCer
 
+Suppose I want to make sure that the current version of a file stored on devious is the same as the one generated by the script. 
+For example, I'll QC `pk_data.csv`:\
+
+I'll simulate pulling from github by deleting pk_data.csv
 ```{r}
-get <- dvs_get(pk_data_path)
-qc_hash <- get$hash
-
-paste("Assembly hash:", assembly_hash)
-paste("QC hash:      ", qc_hash)
-
-paste("Assembly hash == QC hash:", assembly_hash == qc_hash)
+file.remove(pk_data_path)
 ```
+
+### Step 1: Get stored hash
+I'll start by getting the hash of the file stored on devious with `dvs_status`
+
+paste the following code into the console
+``` 
+data <- "user_guide/tutorial/data/derived/pk_data.csv"
+original <- dvs_status(data)$hash
+```
+
+### Step 2: Run the DA script
+
+Now re-run the Data Assembly script (re-copied here for convenience)
+```{r}
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.843)
+)
+
+write.csv(pk_data, pk_data_path)
+```
+
+### Step 3: Get current hash
+Now I'll get the hash of the file I just generated from running the script
+
+paste the following code into the console
+```
+current <- dvs_add(data)$hash
+```
+
+### Step 4: Compare
+
+paste the following code into the console
+```
+original == current
+```
+
+If these hashes are equal, then the file stored on devious is the same as the file generated by DA the script.
+
 
 ## Two Data Frame Output
 
+Notice that files inputted to `dvs_add`, `dvs_get`, and `dvs_status` have NA in the `error` and `error_message` columns if the given operation was successful.\
+When the operation fails, the columns `size`, `hash`, `message`, etc. are NA.\
+In other words, there every row will have at least a couple NAs whether the file operation was successful or not.
+
 ```{r}
-# we can split up the output to give us a data frame for the successful files and error files
-# by setting one_df to false
-added_files <- dvs_add(c(pk_data_path, "data"), one_df = FALSE)
+# for example
+dvs_add(c(pk_data_path, "data"))
+```
+
+I can make the distinction between these outputs more clear with the `split_output` parameter, which returns two data frames: one with the files for which the operation was successful, and one with the those that failed.
+
+```{r}
+# the same file input, now with the split_output parameter
+split <- dvs_add(c(pk_data_path, "data"), split_output = TRUE)
 ```
 
 ```{r}
 # view the failures
-added_files$failures
+split$failures
 ```
 
 ```{r}
 # view the successes
-added_files$successes
+split$successes
 ```
+
+The output is much cleaner.
+
+To quickly assess if any errors occurred, check if the `failures` data frame exists instead of checking for NAs:
+
+```{r}
+paste("no errors present:", !is.null(split$failures))
+```
+
+If there are errors present, I can check how many with `nrow`:
+```{r}
+paste("number of errors:", nrow(split$failures))
+```
+
+
+
+Thank you for following this tutorial. If you have any questions or ideas, reach out to 
+Jenna Johnson
+jenna@a2-ai.com
 
 ```{r}
 # clean up

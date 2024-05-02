@@ -49,7 +49,7 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Resu
 
 
 #[extendr]
-fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -> Result<Robj> {
+fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, split_output: bool) -> Result<Robj> {
     let added_files = add::add(&globs, &String::from(message), strict).map_err(|e| {
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     })?;
@@ -80,7 +80,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
         })
         .collect::<Vec<RFile>>();
 
-    if one_df {
+    if !split_output {
         Ok(results
             .into_dataframe()
             .map_err(|e| Error::Other(format!("Error converting added files to data frame: {e}")))?
@@ -139,7 +139,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, one_df: bool) -
 }
 
 #[extendr]
-fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
+fn dvs_get_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
     let got_files = get::get(&globs).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
@@ -170,7 +170,7 @@ fn dvs_get_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
         })
         .collect::<Vec<RFile>>();
 
-    if one_df {
+    if !split_output {
         Ok(results
             .into_dataframe()
             .map_err(|e| Error::Other(format!("Error converting added files to data frame: {e}")))?
@@ -268,7 +268,7 @@ struct RStatusFileError {
 }
 
 #[extendr]
-fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
+fn dvs_status_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
     let status = status::status(&globs).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
@@ -305,7 +305,7 @@ fn dvs_status_impl(globs: Vec<String>, one_df: bool) -> Result<Robj> {
         })
         .collect::<Vec<RStatusFile>>();
 
-    if one_df {
+    if !split_output {
         Ok(results
             .into_dataframe()
             .map_err(|e| Error::Other(format!("Error converting added files to data frame: {e}")))?
@@ -401,7 +401,7 @@ struct RInfoFileError {
 }
 
 #[extendr]
-fn get_file_info_impl(paths: Vec<String>, one_df: bool) -> Robj {
+fn get_file_info_impl(paths: Vec<String>, split_output: bool) -> Robj {
     let file_info = info::info(&paths);
     let results = file_info
         .iter()
@@ -431,7 +431,7 @@ fn get_file_info_impl(paths: Vec<String>, one_df: bool) -> Robj {
             },
         })
         .collect::<Vec<RFileInfo>>();
-    if one_df {
+    if !split_output {
         match results.into_dataframe() {
             Ok(dataframe) => dataframe.as_robj().clone(),
             Err(err) => Robj::from(format!("error converint to dataframe: {}", err)),

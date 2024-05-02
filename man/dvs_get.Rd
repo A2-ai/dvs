@@ -4,7 +4,7 @@
 \alias{dvs_get}
 \title{get added files}
 \usage{
-dvs_get(files, one_df = TRUE)
+dvs_get(files, split_output = FALSE)
 }
 \arguments{
 \item{files}{file paths or glob patterns to get from the storage directory}

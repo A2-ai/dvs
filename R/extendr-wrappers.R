@@ -13,13 +13,13 @@ NULL
 
 dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)
 
-dvs_add_impl <- function(globs, message, strict, one_df) .Call(wrap__dvs_add_impl, globs, message, strict, one_df)
+dvs_add_impl <- function(globs, message, strict, split_output) .Call(wrap__dvs_add_impl, globs, message, strict, split_output)
 
-dvs_get_impl <- function(globs, one_df) .Call(wrap__dvs_get_impl, globs, one_df)
+dvs_get_impl <- function(globs, split_output) .Call(wrap__dvs_get_impl, globs, split_output)
 
-dvs_status_impl <- function(globs, one_df) .Call(wrap__dvs_status_impl, globs, one_df)
+dvs_status_impl <- function(globs, split_output) .Call(wrap__dvs_status_impl, globs, split_output)
 
-get_file_info_impl <- function(paths, one_df) .Call(wrap__get_file_info_impl, paths, one_df)
+get_file_info_impl <- function(paths, split_output) .Call(wrap__get_file_info_impl, paths, split_output)
 
 
 # nolint end
