@@ -38,14 +38,31 @@ struct RFileError {
     error_message: Option<String>,
 }
 
+#[derive(Debug, IntoDataFrameRow)]
+struct RInit {
+    storage_directory: String,
+    group: String,
+    file_permissions: i32
+}
+
 #[extendr]
-fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> std::result::Result<(), String> {
-    init::dvs_init(&PathBuf::from(storage_dir), &mode, group).map_err(|e|
+fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> Result<Robj> {
+    let init = init::dvs_init(&PathBuf::from(storage_dir), &mode, group).map_err(|e|
         Error::Other(format!("{}: {}", e.error.init_error_to_string(), e.error_message))
     )?;
 
-    Ok(())
-} // dvs_init_impl
+    let init_df = RInit{
+        storage_directory: init.storage_directory.display().to_string(),
+        group: init.group,
+        file_permissions: init.file_permissions,
+    };
+
+    Ok(vec![init_df]
+        .into_dataframe()
+        .map_err(|e|Error::Other(format!("Error converting initialization information to data frame: {e}")))?
+        .as_robj()
+        .clone())
+} 
 
 
 #[extendr]

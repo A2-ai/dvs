@@ -51,8 +51,9 @@ Creating the storage directory in `/data/dvs` ensures that it will be outside of
 # to avoid conflicts with others using this script
 
 # replace <my_name> with your name 
-my_storage_dir <- "/data/dvs/<my_name>"
-dvs_init(my_storage_dir)
+my_storage_dir <- "/data/dvs/jenna"
+init <- dvs_init(my_storage_dir, group = "datascience", permissions = 777)
+init
 ```
 
 ### 2: Add
@@ -428,6 +429,7 @@ paste("number of errors:", nrow(split$failures))
 
 Thank you for following this tutorial. If you have any questions or ideas, reach out to Jenna Johnson jenna\@a2-ai.com
 
+## Clean up
 ```{r}
 # clean up
 file.remove(pk_data_path)

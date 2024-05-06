@@ -4,7 +4,14 @@ use file_owner::Group;
 
 pub type Result<T> = core::result::Result<T, InitError>;
 
-pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<()> { 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Init {
+    pub storage_directory: PathBuf,
+    pub group: String,
+    pub file_permissions: i32
+}
+
+pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<Init> { 
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
         InitError{
@@ -116,5 +123,13 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         )?;
     
     println!("initialized storage directory: {}", storage_dir.display());
-    Ok(())
+    return Ok(
+        Init{
+            storage_directory: storage_dir_abs,
+            group: String::from(group_name),
+            file_permissions: octal_permissions.clone()
+        }
+    )
+    
+    
 }
