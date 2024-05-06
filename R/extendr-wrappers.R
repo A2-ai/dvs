@@ -4,11 +4,11 @@
 
 #
 # This file was created with the following call:
-#   .Call("wrap__make_Rdevious_wrappers", use_symbols = TRUE, package_name = "Rdevious")
+#   .Call("wrap__make_dvs_wrappers", use_symbols = TRUE, package_name = "dvs")
 
 #' @docType package
 #' @usage NULL
-#' @useDynLib Rdevious, .registration = TRUE
+#' @useDynLib dvs, .registration = TRUE
 NULL
 
 dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)

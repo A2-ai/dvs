@@ -133,7 +133,7 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, split_output: b
                     failures.into_dataframe().unwrap().as_robj().clone(),
                 );
             }
-            
+
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
     }
 }
@@ -223,7 +223,7 @@ fn dvs_get_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
                     failures.into_dataframe().unwrap().as_robj().clone(),
                 );
             }
-            
+
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
     }
 } // dvs_get_impl
@@ -361,7 +361,7 @@ fn dvs_status_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
                     failures.into_dataframe().unwrap().as_robj().clone(),
                 );
             }
-            
+
             Ok(List::from_hashmap(result).map_err(|e|Error::Other(format!("Error converting added files to data frame: {e}"))).into_robj())
         }
 }
@@ -490,7 +490,7 @@ fn get_file_info_impl(paths: Vec<String>, split_output: bool) -> Robj {
 }
 
 extendr_module! {
-    mod Rdevious;
+    mod dvs;
     fn dvs_init_impl;
     fn dvs_add_impl;
     fn dvs_get_impl;
@@ -501,4 +501,4 @@ extendr_module! {
 
 
 
- 
+

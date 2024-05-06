@@ -18,12 +18,21 @@
 #' @export
 dvs_init <- function(storage_directory, permissions = 664, group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
+  # REVIEW: this will not be able to deliniate between permissions explicitly set vs
+  # this set by default. Consideration should be taken whether explicit values
+  # are needed - eg the premissions 664 which is still an opinionated default,
+  # or sentinal values that should trigger default branching logic in the code later
+  # down.
+  # In this case this mix of explicit/implicit is awkward. At minimum should
+  # change the group permissions likely to an NA or NULL
   dvs_init_impl(storage_directory, permissions, group)
   return(invisible())
 }
 
 #' @import stringr
 clean_paths <- function(files) {
+  # REVIEW: this can be vectorized, and actually should likely be a separate R function
+  # that also expands globs
   for (i in seq_along(files)) {
     if (stringr::str_detect(files[i], "~")) {
       files[i] <- normalizePath(files[i], mustWork = FALSE)
