@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError}};
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, outcome::Outcome, parse, repo};
 
 #[derive(Debug)]
 pub struct RetrievedFile {
@@ -17,8 +17,20 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     // load the config
     let conf = config::read(&git_dir)?;
 
+    for glob in globs { // for each input in globs
+        let file_path = PathBuf::from(glob);
+        if file_path.extension().is_some() { // if the input is an explicit file path
+            if !file::metadata_path(&file_path).exists() { // and that file path doesn't have a corresponding metadata file
+                return Err(BatchError { // return error
+                    error: BatchErrorType::AnyMetaFilesDNE,
+                    error_message: format!("missing for {}", file_path.display()),
+                })
+            }
+        }
+    }
+        
     // collect queued paths
-    let queued_paths = parse::parse_files_from_globs(&globs);
+    let queued_paths = parse::parse_meta_files_from_globs(&globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
@@ -26,7 +38,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
      }
 
      // check that metadata file exists for all files
-     file::check_meta_files_exist(&queued_paths)?;
+     //file::check_meta_files_exist(&queued_paths)?;
     
      // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {

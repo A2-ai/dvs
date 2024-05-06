@@ -1,4 +1,4 @@
-use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, parse, repo};
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError, FileErrorType}, file, hash, ignore, outcome::Outcome, parse, repo};
 use std::{fs, path::PathBuf, u32};
 use file_owner::Group;
 
@@ -56,6 +56,29 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get relative path
     let relative_path = repo::get_relative_path_to_wd(local_path)?;
 
+    // if file already added, no-op
+    if file::metadata_path(local_path).exists() {
+        let meta = file::load(local_path).map_err(|e| {
+            FileError { 
+                relative_path: Some(relative_path.clone()),
+                 absolute_path: Some(absolute_path.clone()), 
+                 error: FileErrorType::FileAlreadyAddedMetadataNotLoaded, 
+                 error_message: Some(e.to_string()), 
+                 input: local_path.clone()
+                }
+        })?; 
+        return Ok(
+            AddedFile{
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                outcome: Outcome::Present,
+                size: meta.size,
+                hash: meta.hash
+            }
+        )
+    }
+    // else, file not added already
+
     // check if file in git repo
     repo::check_file_in_git_repo(local_path, &git_dir, &relative_path, &absolute_path)?;
 
@@ -75,8 +98,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let metadata = file::Metadata{
         hash: hash.clone(),
         size,
-        time_stamp: chrono::Local::now().to_string(),
-        //time_stamp: chrono::offset::Utc::now().to_string(),
+        time_stamp: chrono::offset::Utc::now().to_string(),
         message: message.clone(),
         saved_by: user_name
     };

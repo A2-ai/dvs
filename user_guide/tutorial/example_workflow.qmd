@@ -192,7 +192,7 @@ In this case, devious will panic.
 
 For any other error, devious will indicate such in the outcome column
 
-For example, devious may be unable to write to the `.gitignore`. The command will fail to perform its intended operation.
+For example, if devious is unable to write to the `.gitignore`, the `dvs_add` will fail to copy the file to the storage directory.
 
 ```{r}
 # make the .gitignore un-writable 
@@ -226,7 +226,7 @@ Without devious, my workflow would be to hunt down the data assembly script and 
 
 ### 1: Pull
 
-Because the `.gitignore` excludes them, a analyst pulling from github won't have any files added to devious by the assembler.
+Because the `.gitignore` excludes them, an analyst won't have any data files present when they pull from github.
 
 ```{r}
 # I'll simulate this situation by deleting the previously added files 
@@ -235,23 +235,21 @@ file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
 
 ### 2: Status
 
-I'll run a status check in the console to see which files have been added to devious.
+I'll run a status check with `dvs_status` in the console to see which files have been added to devious.
 
-files in the `dvs_status` data frame will have one of the following `status` entries:
+Files in the `dvs_status` data frame will have one of the following `status` entries:
 
--   up-to-date
+-   current
 
--   not-present
+-   absent
 
--   out-of-sync
+-   unsynced
 
-    -   out-of-sync files may be ahead or behind current work
-
-    -   if you know your work is behind the current version on devious, run `dvs_get` to retrieve it
+    -   unsynced files may be ahead of or behind current work
 
 -   error
 
-    -   if there's an error getting the status of a file, for example if the file is a directory.
+    -   if there's an error getting the status of a file, for example if the path is actually a directory.
 
 ```{r}
 dvs_status()

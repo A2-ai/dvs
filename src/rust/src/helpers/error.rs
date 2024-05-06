@@ -17,6 +17,7 @@ pub enum FileErrorType {
     GitIgnoreNotAdded,
     FileNotCopied,
     MetadataNotFound,
+    FileAlreadyAddedMetadataNotLoaded,
 }
 
 #[derive(Debug)]
@@ -59,6 +60,7 @@ impl FileErrorType {
             FileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not added"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
+            FileErrorType::FileAlreadyAddedMetadataNotLoaded => String::from("file already added, but metadata not parsed from metadata file (.dvsmeta)"),
         }
     }
 }
@@ -120,6 +122,7 @@ impl fmt::Display for InitError {
 pub enum InitErrorType {
     ProjAlreadyInited,
     StorageDirNotCreated,
+    StorageDirPermsNotSet,
     StorageDirNotADir,
     StorageDirAbsPathNotFound,
     GitRepoNotFound,
@@ -141,6 +144,7 @@ impl InitErrorType {
             InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
             InitErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
             InitErrorType::DirEmptyNotChecked => String::from("could not check if storage directory is empty"),
+            InitErrorType::StorageDirPermsNotSet => String::from("storage directory permissions not set"),
         }
     }
 }

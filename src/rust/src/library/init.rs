@@ -1,5 +1,5 @@
 use crate::helpers::{config, error::{InitError, InitErrorType}, repo};
-use std::{ffi::OsStr, fs::create_dir, path::PathBuf};
+use std::{ffi::OsStr, fs::{self, create_dir}, os::unix::fs::PermissionsExt, path::PathBuf};
 use file_owner::Group;
 
 pub type Result<T> = core::result::Result<T, InitError>;
@@ -66,8 +66,16 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         )? {
             println!("warning: storage directory not empty")
         }
+    } // else, storage directory exists
 
-    } // else
+    // set permissions for storage dir
+    let storage_dir_perms = fs::Permissions::from_mode(0o777);
+    fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
+        InitError{
+            error: InitErrorType::StorageDirPermsNotSet,
+            error_message: e.to_string()
+        }
+    })?;
 
     // warn if storage directory is in git repo
     if repo::dir_in_git_repo(&storage_dir_abs, &git_dir) {
