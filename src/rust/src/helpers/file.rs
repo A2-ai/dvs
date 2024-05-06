@@ -9,8 +9,8 @@ pub type Error = Box<dyn std::error::Error>;
 
 #[derive(Serialize, Deserialize)]
 pub struct Metadata {
-    pub hash: String,
-    pub size: u64,
+    pub blake3_checksum: String,
+    pub file_size_bytes: u64,
     pub time_stamp: String,
     pub message: String,
     pub saved_by: String
@@ -67,7 +67,6 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
                 input: local_path.clone()
             }
         })?)
-    
 }
 
 pub fn metadata_path(path: &PathBuf) -> PathBuf {

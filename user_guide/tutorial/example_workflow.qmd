@@ -52,8 +52,7 @@ Creating the storage directory in `/data/dvs` ensures that it will be outside of
 
 # replace <my_name> with your name 
 my_storage_dir <- "/data/dvs/jenna"
-init <- dvs_init(my_storage_dir, group = "datascience", permissions = 777)
-init
+dvs_init(my_storage_dir, group = "datascience", permissions = 777)
 ```
 
 ### 2: Add
