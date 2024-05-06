@@ -30,7 +30,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     }
         
     // collect queued paths
-    let queued_paths = parse::parse_meta_files_from_globs(&globs);
+    let queued_paths = parse::parse_meta_files_from_globs_get(&globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {

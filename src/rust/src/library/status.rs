@@ -31,7 +31,7 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
         } 
         else { // else, parse specifically inputted globs
             input_manually = true;
-            parse::parse_meta_files_from_globs(&globs)
+            parse::parse_meta_files_from_globs_status(&globs)
         };
 
     // get the status of each file and collect
