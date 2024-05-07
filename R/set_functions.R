@@ -36,6 +36,10 @@ clean_paths <- function(files) {
 #'
 #' @param files file paths or glob patterns to add to the storage directory
 #' @param message optional argument to add a message to future data frame rows associated with these files
+#' @param split_output when split_output is true, a list of two data frames - `successes` and `failures` - is returned.
+#' Rows in `successes` are files successfully added, and rows in `failures` are inputs that returned errors.
+#' When split_output is false, the output is a single data frame with all files attempted to add,
+#' and whose success or failure is indicated as such in the outcome column.
 #'
 #' @examples
 #' \dontrun{
@@ -59,6 +63,10 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
 #' will be indicated in the returned data frame.
 #'
 #' @param files file paths or glob patterns to get from the storage directory
+#' @param split_output when split_output is true, a list of two data frames - `successes` and `failures` - is returned.
+#' Rows in `successes` are files successfully retrieved, and rows in `failures` are inputs that returned errors.
+#' When split_output is false, the output is a single data frame with all files attempted to recopy to the project directory,
+#' and whose success or failure is indicated as such in the outcome column.
 #'
 #'@examples
 #' \dontrun{
@@ -91,6 +99,10 @@ dvs_get <- function(files, split_output = FALSE) {
 #'
 #'
 #' @param files optional: when specified, returns data frame with only these specified file paths or glob patterns.
+#' @param split_output when split_output is true, a list of two data frames - `successes` and `failures` - is returned.
+#' Rows in `successes` are files with successfully curated statuses, and rows in `failures` are inputs that returned errors.
+#' When split_output is false, the output is a single data frame with all attempted file status reports,
+#' and whose success or failure is indicated as such in the outcome column.
 #'
 #' @return a data frame with the statuses of previously added files
 #'

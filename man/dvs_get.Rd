@@ -8,6 +8,11 @@ dvs_get(files, split_output = FALSE)
 }
 \arguments{
 \item{files}{file paths or glob patterns to get from the storage directory}
+
+\item{split_output}{when split_output is true, a list of two data frames - \code{successes} and \code{failures} - is returned.
+Rows in \code{successes} are files successfully retrieved, and rows in \code{failures} are inputs that returned errors.
+When split_output is false, the output is a single data frame with all files attempted to recopy to the project directory,
+and whose success or failure is indicated as such in the outcome column.}
 }
 \value{
 a data frame with the states of success of retrieved files

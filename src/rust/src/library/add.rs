@@ -107,7 +107,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     file::save(&metadata, &local_path)?;
 
     // Add file to gitignore
-    ignore::add_gitignore_entry(local_path)?;
+    ignore::add_gitignore_entries(local_path, git_dir)?;
     
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &blake3_checksum);

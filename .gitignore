@@ -1,15 +1,6 @@
 .Rproj.user
 
-storage_dir
-jenna.txt.dvsmeta
-
-# Devious entry
-jenna.txt
-
-
-# Devious entry
-jenna2.txt
-
-
-# Devious entry
-dvs.yaml
+*
+!.gitignore
+!*/.gitignore
+!*.dvsmeta

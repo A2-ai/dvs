@@ -8,6 +8,11 @@ dvs_status(files = c(""), split_output = FALSE)
 }
 \arguments{
 \item{files}{optional: when specified, returns data frame with only these specified file paths or glob patterns.}
+
+\item{split_output}{when split_output is true, a list of two data frames - \code{successes} and \code{failures} - is returned.
+Rows in \code{successes} are files with successfully curated statuses, and rows in \code{failures} are inputs that returned errors.
+When split_output is false, the output is a single data frame with all attempted file status reports,
+and whose success or failure is indicated as such in the outcome column.}
 }
 \value{
 a data frame with the statuses of previously added files

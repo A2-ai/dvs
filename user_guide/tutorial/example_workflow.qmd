@@ -22,9 +22,9 @@ We can use devious to version data files without tracking them directly on githu
 
 ```{r}
 # library(devious)
-library(dplyr)
-rextendr::document("~/Projects/Rdevious")
-devtools::load_all("~/Projects/Rdevious")
+# library(dplyr)
+# rextendr::document("~/Projects/Rdevious")
+# devtools::load_all("~/Projects/Rdevious")
 ```
 
 ## The Data Assembler
@@ -100,7 +100,7 @@ added_files
 Besides copying it to the storage_directory, some information about `pk_data.csv` is also returned, including the file hash in the `hash` column.
 
 ```{r}
-added_files$hash
+added_files$blake3_checksum
 ```
 
 Notice that a `.gitignore` was also generated in `data/derived`.
