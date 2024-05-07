@@ -18,10 +18,9 @@ pub enum FileErrorType {
     ProjectGitIgnoreNotAdded,
     FileNotCopied,
     MetadataNotFound,
-    FileAlreadyAddedMetadataNotLoaded,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileError {
     pub relative_path: Option<PathBuf>,
     pub absolute_path: Option<PathBuf>,
@@ -62,7 +61,6 @@ impl FileErrorType {
             FileErrorType::ProjectGitIgnoreNotAdded => String::from("project level gitignore entry not added"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
-            FileErrorType::FileAlreadyAddedMetadataNotLoaded => String::from("file already added, but metadata not parsed from metadata file (.dvsmeta)"),
         }
     }
 }

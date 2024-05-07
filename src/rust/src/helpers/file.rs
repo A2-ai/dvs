@@ -3,11 +3,10 @@ use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
 use crate::helpers::{repo, error::{FileError, FileErrorType}};
 
-
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Metadata {
     pub blake3_checksum: String,
     pub file_size_bytes: u64,

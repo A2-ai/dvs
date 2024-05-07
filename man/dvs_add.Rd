@@ -9,12 +9,18 @@ dvs_add(files, message = "", split_output = FALSE)
 \arguments{
 \item{files}{file paths or glob patterns to add to the storage directory}
 
-\item{message}{optional argument to add a message to future data frame rows associated with these files}
+\item{message}{optional argument to add a message to future data frame rows
+associated with these files}
 
-\item{split_output}{when split_output is true, a list of two data frames - \code{successes} and \code{failures} - is returned.
-Rows in \code{successes} are files successfully added, and rows in \code{failures} are inputs that returned errors.
-When split_output is false, the output is a single data frame with all files attempted to add,
-and whose success or failure is indicated as such in the outcome column.}
+\item{split_output}{when split_output is true, a list of two data framesis returned:
+\code{successes} and \code{failures}.
+\itemize{
+\item rows in \code{successes} are files successfully added
+\item rows in \code{failures} are inputs that returned errors.
+When split_output is false, the output is a single data frame with all files
+attempted to add, and whose success or failure is indicated as such in the
+outcome column.
+}}
 }
 \value{
 a data frame with the states of success of added files
@@ -24,8 +30,12 @@ add files to the storage directory
 }
 \examples{
 \dontrun{
-dvs_add("data/derived/*.csv") # would add all csv files in data/derived to the initialized storage directory
-dvs_add(c("data/derived/*", "model/nonmem/1001/1001.ext")) would add all files in data/derived (excluding .dvsmeta and .gitignore files) and model/nonmem/1001/1001.ext to the initialized storage directory
+dvs_add("data/derived/*.csv") # would add all csv files in data/derived to
+the initialized storage directory
+
+dvs_add(c("data/derived/*", "model/nonmem/1001/1001.ext")) would add all
+files in data/derived (excluding .dvsmeta and .gitignore files) and
+model/nonmem/1001/1001.ext to the initialized storage directory
 }
 
 }

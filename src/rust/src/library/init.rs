@@ -76,7 +76,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     } // else, storage directory exists
 
     // set permissions for storage dir
-    let storage_dir_perms = fs::Permissions::from_mode(0o777);
+    let storage_dir_perms = fs::Permissions::from_mode(0o770);
     fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
         InitError{
             error: InitErrorType::StorageDirPermsNotSet,
