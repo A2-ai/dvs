@@ -60,10 +60,14 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let blake3_checksum = hash::get_file_hash(local_path)?;
 
     // if file already added and current, no-op
-    let metadata = file::load(&file::metadata_path(local_path));
+    let metadata = file::load(local_path);
+    // println!("metapath: {}", file::metadata_path(local_path).display());
     if metadata.is_ok() { // if metadata can be loaded
         let metadata_ok = metadata.clone().unwrap();
-        if blake3_checksum == metadata_ok.blake3_checksum { // if the current hash is the same as that in the metadata file
+        // println!("current hash: {blake3_checksum}");
+        // println!("metadata hash: {}", metadata_ok.blake3_checksum);
+        if blake3_checksum == metadata_ok.blake3_checksum { // if the curresnt hash is the same as that in the metadata file
+            println!("no op");
             return Ok(
                 AddedFile{
                     relative_path: relative_path.clone(),
