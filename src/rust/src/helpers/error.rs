@@ -60,7 +60,6 @@ impl FileErrorType {
             FileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
             FileErrorType::DirGitIgnoreNotAdded => String::from("file directory gitignore entry not added"),
             FileErrorType::ProjectGitIgnoreNotAdded => String::from("project level gitignore entry not added"),
-            FileErrorType::DirGitIgnoreNotAdded => String::from("gitignore entry not added"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
             FileErrorType::FileAlreadyAddedMetadataNotLoaded => String::from("file already added, but metadata not parsed from metadata file (.dvsmeta)"),

@@ -25,6 +25,7 @@ pub fn add_gitignore_dir_level(path: &PathBuf) -> Result<()> {
 
     let contents = std::fs::read_to_string(&ignore_file)?;
     
+     // add ignore entry if not already present
     if !contents.contains(&ignore_entry) {
         let mut file = OpenOptions::new()
         .write(true)
@@ -32,15 +33,14 @@ pub fn add_gitignore_dir_level(path: &PathBuf) -> Result<()> {
         .open(ignore_file)?;
 
         writeln!(file, "\n\n# Devious entry\n{ignore_entry}")?;
-
-    } // add ignore entry
+    }
     Ok(())
 }
 
-pub fn add_gitignore_proj_level(git_dir: &PathBuf) -> Result<()> {
+fn add_gitignore_proj_level(git_dir: &PathBuf) -> Result<()> {
     let ignore_entry = format!("*\n!.gitignore\n!*/.gitignore\n!*.dvsmeta");
 
-    // open the gitignore file, creating one if it doesn't exist
+    // open the gitignore file, erroring if it doesn't exist
     let ignore_file = git_dir.join(".gitignore");
     if !ignore_file.exists() {
         return Err("project level .gitignore does not exist".into())
@@ -48,6 +48,7 @@ pub fn add_gitignore_proj_level(git_dir: &PathBuf) -> Result<()> {
 
     let contents = std::fs::read_to_string(&ignore_file)?;
 
+    // add ignore entry if not already present
     if !contents.contains(&ignore_entry) {
         let mut file = OpenOptions::new()
         .write(true)
@@ -55,7 +56,7 @@ pub fn add_gitignore_proj_level(git_dir: &PathBuf) -> Result<()> {
         .open(ignore_file)?;
 
         writeln!(file, "\n{ignore_entry}")?;
-    } // add ignore entry
+    } 
     Ok(())
 }
 
