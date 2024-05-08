@@ -38,10 +38,11 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
     Ok(meta_paths.into_iter().map(|path| {
         status_file(&path, input_manually)
     }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
-} // dvs_status
+} 
 
 fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
     let metadata_path_abs = file::metadata_path(local_path);
+    println!("{}",  metadata_path_abs.display());
 
     // work around because while metadata file might exist, file itself may not
     let absolute_path = match file::get_absolute_path(&metadata_path_abs) {

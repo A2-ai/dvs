@@ -20,14 +20,14 @@ pub fn read(root_dir: &PathBuf) -> std::result::Result<Config, BatchError> {
     let yaml_contents = fs::read_to_string(root_dir.join(PathBuf::from(r"dvs.yaml"))).map_err(|e| {
         BatchError{
             error: BatchErrorType::ConfigNotFound,
-            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
+            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate dvs: {e}")
         }
     })?;
     // check if yaml is deserializable
     let conf: Config = serde_yaml::from_str(&yaml_contents).map_err(|e| {
         BatchError{
             error: BatchErrorType::ConfigNotFound,
-            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate devious: {e}")
+            error_message: format!("could not load configuration file, i.e. no dvs.yaml in directory; be sure to initiate dvs: {e}")
         }
     })?;
     Ok(conf)

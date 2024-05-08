@@ -14,8 +14,7 @@ pub enum FileErrorType {
     GroupNotSet,
     PermissionsNotSet,
     MetadataNotSaved,
-    DirGitIgnoreNotAdded,
-    ProjectGitIgnoreNotAdded,
+    GitIgnoreNotAdded,
     FileNotCopied,
     MetadataNotFound,
 }
@@ -57,8 +56,7 @@ impl FileErrorType {
             FileErrorType::GroupNotSet => String::from("group not set"),
             FileErrorType::PermissionsNotSet => String::from("group not set"),
             FileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
-            FileErrorType::DirGitIgnoreNotAdded => String::from("file directory gitignore entry not added"),
-            FileErrorType::ProjectGitIgnoreNotAdded => String::from("project level gitignore entry not added"),
+            FileErrorType::GitIgnoreNotAdded => String::from("file directory gitignore entry not added"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
         }

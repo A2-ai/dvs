@@ -16,7 +16,7 @@ pub struct Metadata {
 }
 
 pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<(), FileError> {
-    // compose path file/to/file.ext.dvsmeta
+    // compose path file/to/file.ext.dvs
     let metadata_file_path = metadata_path(local_path);
     // create file
     File::create(&metadata_file_path).map_err(|e| {
@@ -69,11 +69,11 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
 }
 
 pub fn metadata_path(path: &PathBuf) -> PathBuf {
-    PathBuf::from(path.display().to_string() + ".dvsmeta")
+    PathBuf::from(path.display().to_string() + ".dvs")
 }
 
 pub fn path_without_metadata(path: &PathBuf) -> PathBuf {
-    PathBuf::from(path.display().to_string().replace(".dvsmeta", ""))
+    PathBuf::from(path.display().to_string().replace(".dvs", ""))
 }
 
 pub fn get_user_helper(path: &PathBuf) -> Result<String> {
@@ -152,7 +152,7 @@ pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError
 }
 
 // pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
-//     // Find the first path that does not have a corresponding .dvsmeta file
+//     // Find the first path that does not have a corresponding .dvs file
 //     if let Some(path) = queued_paths
 //         .into_iter()
 //         .find(|dvs_path| !metadata_path(dvs_path).exists())
@@ -163,7 +163,7 @@ pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError
 //         });
 //     }
 
-//     Ok(()) // If all .dvsmeta files found, return Ok
+//     Ok(()) // If all .dvs files found, return Ok
 // }
 
 

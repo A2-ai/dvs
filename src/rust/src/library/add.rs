@@ -32,7 +32,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
-        println!("warning: no paths queued to add to devious")
+        println!("warning: no paths queued to add to dvs")
     }
 
     // return error if any files don't exist
@@ -104,7 +104,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     file::save(&metadata, &local_path)?;
 
     // Add file to gitignore
-    ignore::add_gitignore_entries(local_path, git_dir)?;
+    ignore::add_gitignore_entry(local_path)?;
     
     // get storage path
     let storage_path = hash::get_storage_path(&storage_dir, &blake3_checksum);

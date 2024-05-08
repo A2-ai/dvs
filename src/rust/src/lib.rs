@@ -41,8 +41,8 @@ struct RFileError {
 #[derive(Debug, IntoDataFrameRow)]
 struct RInit {
     storage_directory: String,
+    file_permissions: i32,
     group: String,
-    file_permissions: i32
 }
 
 #[extendr]

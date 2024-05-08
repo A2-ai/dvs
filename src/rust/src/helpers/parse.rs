@@ -8,7 +8,7 @@ pub fn get_all_meta_files(dir: &PathBuf) -> Vec<PathBuf> {
     WalkDir::new(&dir)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "dvsmeta"))
+        .filter(|e| e.path().extension().map_or(false, |ext| ext == "dvs"))
         .map(|e| {
             let string = file::path_without_metadata(&e.into_path());
             PathBuf::from(string)
