@@ -9,14 +9,14 @@ dvs_add(files, message = "", split_output = FALSE)
 \arguments{
 \item{files}{file paths or glob patterns to add to the storage directory}
 
-\item{message}{optional argument to add a message to future data frame rows
-associated with these files}
+\item{message}{optional: a message associated with the file(s) for versioning
+context to appear in dvs metadata files}
 
-\item{split_output}{when split_output is true, a list of two data framesis returned:
+\item{split_output}{when split_output is true, a list of two data frames is returned:
 \code{successes} and \code{failures}.
 \itemize{
-\item rows in \code{successes} are files successfully added
-\item rows in \code{failures} are inputs that returned errors.
+\item rows in \code{successes} are successfully added file inputs
+\item rows in \code{failures} are inputs that returned errors
 When split_output is false, the output is a single data frame with all files
 attempted to add, and whose success or failure is indicated as such in the
 outcome column.

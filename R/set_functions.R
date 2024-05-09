@@ -3,10 +3,10 @@
 
 #' initialize devious
 #'
-#' @param storage_directory path to the desired storage directory
-#' @param permissions optional: linux file permissions to automatically set
+#' @param storage_directory path to the desired storage directory for versioned files
+#' @param permissions optional: linux file permissions to set
 #' for files added to the storage directory (in octal format)
-#' @param group optional: group to automatically set for files added to the
+#' @param group optional: primary group to set for files added to the
 #' storage directory
 #'
 #' @examples
@@ -15,13 +15,12 @@
 #' dvs_init("/data/project_x")
 #'
 #' # would initialize the project's storage directory at /data/project_x and
-#' # configure the linux permissions "777" and group "project_x_group" for all
+#' # configure the linux permissions "777" and primary group "project_x_group" for all
 #' # files added to the storage directory
 #' dvs_init("/data/project_x", 777, "project_x_group")
 #' }
 #'
-#' @return nothing unless an initializing error occurs
-#'
+#' @return A data frame with the storage directory, permissions, and group
 #' @export
 dvs_init <- function(storage_directory,
                      permissions = 664,
@@ -44,12 +43,12 @@ clean_paths <- function(files) {
 #' add files to the storage directory
 #'
 #' @param files file paths or glob patterns to add to the storage directory
-#' @param message optional argument to add a message to future data frame rows
-#' associated with these files
-#' @param split_output when split_output is true, a list of two data framesis returned:
+#' @param message optional: a message associated with the file(s) for versioning
+#' context to appear in dvs metadata files
+#' @param split_output when split_output is true, a list of two data frames is returned:
 #' `successes` and `failures`.
-#' - rows in `successes` are files successfully added
-#' - rows in `failures` are inputs that returned errors.
+#' - rows in `successes` are successfully added file inputs
+#' - rows in `failures` are inputs that returned errors
 #' When split_output is false, the output is a single data frame with all files
 #' attempted to add, and whose success or failure is indicated as such in the
 #' outcome column.

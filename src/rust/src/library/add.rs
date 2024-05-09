@@ -1,5 +1,6 @@
 use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, parse, repo};
 use std::{fs, path::PathBuf, u32};
+use chrono:: Utc;
 use file_owner::Group;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -95,7 +96,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let metadata = file::Metadata{
         blake3_checksum: blake3_checksum.clone(),
         file_size_bytes,
-        time_stamp: chrono::offset::Utc::now().to_string(),
+        time_stamp: Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         message: message.clone(),
         saved_by: user_name
     };
@@ -136,4 +137,5 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
         }
     )
 }
+
 
