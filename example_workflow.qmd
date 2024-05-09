@@ -1,0 +1,493 @@
+---
+title: "Introduction to dvs (the R package)"
+author: |
+    | Prepared by:
+    | Jenna Johnson
+    | (jenna@a2-ai.com)
+date: today
+date-format: long
+format:
+  html:
+    toc: true
+    number-sections: true
+    colorlinks: true
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: "#>" 
+    R.options:
+      knitr.graphics.auto_pdf: true
+editor: visual
+---
+
+dvs (**d**ata **v**ersioning **s**ystem) versions data files without tracking them directly on github.
+
+dvs is now an R package inspired by the original dvs command line tool.
+
+While it implements the same base functionality, it has some new features, and its output is organized into data frames.
+
+```{r, warning = FALSE}
+#| include: false
+
+# renv::restore()
+library(Rdevious)
+# library(dvs)
+library(dplyr)
+
+# clean up 
+file.remove("../data/derived/pk_data.csv")
+file.remove("../data/derived/pk_data2.csv")
+file.remove("../data/derived/pk_data3.csv")
+file.remove("../data/derived/pk_data.csv.dvs")
+file.remove("../data/derived/pk_data2.csv.dvs")
+file.remove("../data/derived/pk_data3.csv.dvs")
+file.remove("../data/derived/.gitignore")
+file.remove("~/Projects/dvs_demo/dvs.yaml")
+unlink(storage_dir, recursive=TRUE)
+```
+
+## The Data Assembler
+
+### 1: Initialize
+
+Suppose I created a new repo for a project.\
+I want to manage project data with dvs, so I'll start with initialization.
+
+In the dvs package, `dvs_init` sets up a project for versioning.
+
+`dvs_init` to creates
+
+-   a **storage directory** to store versioned files.
+
+-   a `dvs.yaml` in the project directory containing the path of the storage directory
+
+In general, the storage directory should be named `/data/dvs/<project_name>`.
+
+Creating the storage directory in `/data/dvs` ensures that it will be outside of the project directory and thus accessible company-wide.
+
+```{r}
+# for the purpose of this tutorial, use your name instead of the project name
+# to avoid conflicts with others using this script
+
+# replace dvs_demo with your name 
+storage_dir <- "/data/dvs/dvs_demo"
+dvs_init(storage_dir)
+```
+
+To learn more about setting the explicit linux file permissions and group for storage directory files, run\
+`?dvs_init` in the console. But for the most part, these attributes are irrelevant for day-to-day use.
+
+### 2: Add
+
+Suppose I assembled a data set and saved it as a csv file.
+
+```{r}
+derDir <- "../data/derived"
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 0)
+)
+
+pk_data_path <- file.path(derDir, "pk_data.csv")
+write.csv(pk_data, pk_data_path)
+```
+
+I'll use `dvs_add` to version this file with dvs.
+
+This will copy `pk_data.csv` to the storage directory previously initialized with `dvs_init`.
+
+This will also create a metadata file for `pk_data.csv` called `pk_data.csv.dvs` in its respective directory: `data/derived`.
+
+In general, a metadata file will be generated in the same directory as its associated file and be called `<file_name>.dvs`.
+
+Each metadata file acts as a map for dvs to locate the copied file later and for future collaborators to consult for versioning.
+
+```{r}
+# add the csv file to dvs
+added_files <- dvs_add(pk_data_path, message = "finished pk data assembly")
+```
+
+The message parameter is optional - if included, it will be in:
+
+-   the metadata file (check it out in `data/derived`)
+
+-   the output of `dvs_status` (more on this later).
+
+```{r}
+# view the output from dvs_add
+added_files
+```
+
+Besides copying it to the storage_directory, some information about `pk_data.csv` is also returned, including the file hash in the `hash` column.
+
+```{r}
+added_files$blake3_checksum
+```
+
+Notice the `.gitignore` generated in `data/derived`.
+
+The `.gitignore` contains the entry `/pk_data.csv,` so the added file isn't uploaded to github.\
+`.gitignore`s no longer have to be manually created/updated for files added to dvs.
+
+### 3: Update
+
+Let's say I found a bug and want to update `pk_data.csv`.
+
+```{r}
+# say I want to update my data frame
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.842)
+)
+
+write.csv(pk_data, pk_data_path)
+```
+
+To update a file I previously added to dvs, I'll run `dvs_add` again with the same file path.
+
+Note the `Modified` time stamp for `pk_data.csv.dvs` in `data/derived`
+
+```{r}
+# the message is optional
+dvs_add(pk_data_path, message = "updated pk data with new data sent by client") 
+```
+
+Notice that when a file is updated, the `outcome` column says `copied`.
+
+If I try to add a version of a file that already exists on dvs, no file copying occurs, and same data frame is returned, except the `outcome` for the file is `present`.
+
+For example, when I add the updated version again:
+
+```{r}
+dvs_add(pk_data_path)
+```
+
+### 4: Push
+
+Now if I push to github, I'll see that `pk_data.csv` isn't present in `data/derived`, but its metadata file and the `.gitignore` are.
+
+![](github.png){width="213"}
+
+The `.gitignore` lists `/pk_data.csv` to exclude it from files added to github.
+
+![](gitignore.png){width="368"}
+
+The data file isn't on github, but the metadata file with directions to its location is!
+
+**Note**: these gitignore entries don't guarantee that `.dvs` files will be uploaded to github. If a higher-level `.gitignore` excludes it, it won't be tracked by github. For example, if a `.gitignore` exists in the `data` directory that excludes everything with `*`.
+
+### Multiple Files
+
+Suppose I have many files in data/derived and I want to add them all to dvs,
+
+```{r}
+# create some copies to generate multiple files
+pk_data2 <- data.frame(
+  USUBJID = c(2, 2, 2),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.843)
+)
+pk_data2_path <- file.path(derDir, "pk_data2.csv")
+write.csv(pk_data2, pk_data2_path)
+
+pk_data3 <- data.frame(
+  USUBJID = c(3, 3, 3),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.843)
+)
+pk_data3_path <- file.path(derDir, "pk_data3.csv")
+write.csv(pk_data3, pk_data3_path)
+```
+
+I could add them all by inputting a vector of the files like this:
+
+```{r}
+dvs_add(c(pk_data_path, pk_data2_path, pk_data3_path))
+```
+
+Or I can save time by using a file glob:
+
+```{r}
+dvs_add(file.path(derDir, "*"))
+
+# which is equivalent to:
+# dvs_add("data/derived/*")
+```
+
+In general, the `*` indicates every file/directory in a given directory, but dvs manually filters out `.dvs` and `.gitignore` files so these files can't be added.
+
+### Errors
+
+What happens when a file that doesn't exist is added?
+
+```{r}
+dvs_add("this/isnt/a/file/path") # should panic
+```
+
+In this case, dvs will panic.
+
+For any other error, dvs will indicate such in the outcome column
+
+For example, if dvs is unable to write to the `.gitignore`, then `dvs_add` will fail to copy the file to the storage directory.
+
+```{r}
+file.remove(paste0(pk_data_path, ".dvs"))  # remove the metadata file for pk_data.csv
+system('chmod 333 ../data/derived/.gitignore') # make the .gitignore un-writable 
+add_error <- dvs_add(pk_data_path)
+add_error
+```
+
+The error is given in the `error` column, and if an error message was returned, this will be in the `error_message` column.
+
+```{r}
+# investigate the error
+add_error$error
+add_error$error_message
+
+# make the .gitignore writable again
+system('chmod 777 ../data/derived/.gitignore')
+```
+
+Suppose many files were added, and as such, a data frame with many rows was returned.\
+I can quickly check if any errors occurred by running:
+
+```{r}
+# number of errors = sum of values in the error column that aren't NA
+paste("number of errors:", sum(!is.na(add_error$error))) # there should be 1 error
+```
+
+## The Analyst
+
+Without dvs, my workflow would be to hunt down the data assembly script and run it, which could take a long time for large data sets. Here is the proposed alternative dvs workflow:
+
+### 1: Pull
+
+Because the `.gitignore` excludes them, an analyst won't have any data files present when they pull from github.
+
+```{r}
+# I'll simulate this situation by deleting the previously added files 
+file.remove(c(pk_data_path, pk_data2_path, pk_data3_path))
+```
+
+### 2: Status
+
+I'll run a status check with `dvs_status` in the console to see which files have been added to dvs.
+
+Files in the `dvs_status` data frame will have one of the following `status` entries:
+
+-   current: the file is present in the project directory and matches the version on dvs
+
+-   absent: the file isn't present in the project directory
+
+-   unsynced: the file is present in the project directory, but doesn't match the version on dvs
+
+    -   unsynced files may be ahead or behind the most up-to-date work
+
+-   error: failure to get the status of a file, e.g. if a directory or non-existing file is inputted
+
+If no files are inputted in `dvs_status`, every file previously tracked by dvs in this project is reported.
+
+```{r}
+pk_data_status <- dvs_status()
+pk_data_status
+```
+
+```{r}
+dvs_status() %>% filter(status == "unsynced") %>% pull(relative_path) %>% dvs_get()
+```
+
+I can check the statuses of each file at a glance with `$status`
+
+```{r}
+pk_data_status$status
+```
+
+I might also want to just get a status report of files in a particular directory, like `data/derived`,\
+in which case I can use the same file glob pattern I used before with `dvs_add`:
+
+```{r}
+dvs_status(file.path(derDir, "*"))
+```
+
+Or I can get the status of a single file.
+
+```{r}
+pk_data_path_status <- dvs_status(pk_data_path)
+pk_data_path_status
+```
+
+Check for errors getting status:
+
+```{r}
+paste("number of errors:", sum(!is.na(pk_data_path_status$error)))
+```
+
+### 3: Get
+
+Now I'll retrieve the files I want with `dvs_get`.
+
+This function copies files from the storage directory back into their respective directory within the git repo.\
+The input can be the file itself or its metadata file.\
+Like `dvs_add`, `dvs_get` can also receive inputted file globs, vectors of files, relative paths, and absolute paths.
+
+```{r}
+# copy pk_data.csv back into the project directory
+get <- dvs_get(pk_data_path)
+get
+```
+
+```{r}
+# check if there were any errors
+paste("number of errors:", sum(!is.na(get$error)))
+```
+
+### Piping Patterns
+
+Here are some ways to use `dvs_status` and `dvs_get` in conjunction:
+
+```{r}
+# general piping pattern
+dvs_status() %>% # status all previously added files
+  pull(relative_path) %>% # select their relative paths
+  dvs_get() # copy files to the project repo
+```
+
+```{r}
+file.remove(pk_data_path)
+file.remove(pk_data2_path)
+file.remove(pk_data3_path)
+
+# piping pattern to get all not-present and out-of-sync files from data/derived
+dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
+  filter(status == "absent" | status == "unsynced") %>% # filter files with status "not-present" or "out-of-sync"
+  pull(relative_path) %>%  # select their relative paths
+  dvs_get() # copy files to the project repo
+```
+
+```{r}
+file.remove(pk_data_path)
+file.remove(pk_data2_path)
+file.remove(pk_data3_path)
+
+# piping pattern to get all files except for those up-to-date in data/derived
+dvs_status(file.path(derDir, "*")) %>% # status all files in data/derived
+  filter(status != "current") %>% # filter all files except for those up-to-date
+  pull(relative_path) %>% # pull the paths
+  dvs_get() # copy to project repo
+```
+
+## The QCer
+
+Suppose I want to make sure that the current version of a file stored on dvs is the same as the one generated by the script. For example, I'll QC `pk_data.csv`:\
+
+I'll simulate pulling from github by deleting pk_data.csv
+
+```{r}
+file.remove(pk_data_path)
+```
+
+### 1: Get hash
+
+I'll start by getting the hash of the file stored on dvs with `dvs_status`
+
+paste the following code into the console
+
+```         
+data <- "../data/derived/pk_data.csv"
+original <- dvs_status(data)$blake3_checksum
+```
+
+### 2: Run script
+
+Now re-run the Data Assembly script (re-copied here for convenience)
+
+```{r}
+pk_data <- data.frame(
+  USUBJID = c(1, 1, 1),
+  NTFD = c(0.5, 1, 2),
+  DV = c(379.444, 560.613, 912.843)
+)
+
+write.csv(pk_data, pk_data_path)
+```
+
+### 3: Make hash
+
+Now I'll generate the hash of the file I just created from running the script
+
+paste the following code into the console
+
+```         
+current <- dvs_add(data)$hash
+```
+
+### 4: Compare
+
+paste the following code into the console
+
+```         
+original == current
+```
+
+If these hashes are equal, then the file stored on dvs is the same as the file generated by DA the script.
+
+## Two Data Frame Output
+
+Notice that files inputted to `dvs_add`, `dvs_get`, and `dvs_status` have NA in the `error` and `error_message` columns if the given operation was successful.\
+When the operation fails, the columns `size`, `hash`, `message`, etc. are NA.\
+In other words, there every row will have at least a couple NAs whether the file operation was successful or not.
+
+```{r}
+# for example
+dvs_add(c(pk_data_path, "data"))
+```
+
+I can make the distinction between these outputs more clear with the `split_output` parameter, which returns two data frames: one with the files for which the operation was successful, and one with the those that failed.
+
+```{r}
+# the same file input, now with the split_output parameter
+split <- dvs_add(c(pk_data_path, "data"), split_output = TRUE)
+```
+
+```{r}
+# view the failures
+split$failures
+```
+
+```{r}
+# view the successes
+split$successes
+```
+
+The output is much cleaner.
+
+To quickly assess if any errors occurred, check if the `failures` data frame exists instead of checking for NAs:
+
+```{r}
+paste("no errors present:", !is.null(split$failures))
+```
+
+If there are errors present, I can check how many with `nrow`:
+
+```{r}
+paste("number of errors:", nrow(split$failures))
+```
+
+Thank you for following this tutorial. If you have any questions or ideas, reach out to Jenna Johnson jenna\@a2-ai.com
+
+## Clean up
+
+```{r}
+# clean up
+file.remove("../data/derived/pk_data.csv")
+file.remove("../data/derived/pk_data2.csv")
+file.remove("../data/derived/pk_data3.csv")
+file.remove("../data/derived/pk_data.csv.dvs")
+file.remove("../data/derived/pk_data2.csv.dvs")
+file.remove("../data/derived/pk_data3.csv.dvs")
+file.remove("../data/derived/.gitignore")
+file.remove("~/Projects/dvs_demo/dvs.yaml")
+unlink(storage_dir, recursive=TRUE)
+```
