@@ -44,6 +44,11 @@ clean_paths <- function(files) {
 #'
 #' @details after initializing the storage directory with [dvs_init], this command
 #' copies files to storage directory for other collaborators to version and retrieve with [dvs_get]
+#' If an explicitly inputted file doesn't exist, the command returns an error .
+#'
+#' For any other error retrieving a particular file, the function itself will
+#' indicate the error type and message in the data frame output; the function
+#' itself will not return an error.
 #'
 #' @param files file paths or glob patterns to add to the storage directory
 #' @param message optional: a message associated with the file(s) for versioning
@@ -76,13 +81,16 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
   dvs_add_impl(files, message, strict, split_output)
 }
 
-#' copy added files to the project directory
+#' copy files back to the project directory
 #'
 #' @details retrieves files previously added with [dvs_add] to the storage
 #' directory (initialized by [dvs_init]).
-#' If there's an error retrieving a particular file, the function itself will
-#' not return an error, rather the error
-#' will be indicated in the returned data frame.
+#' If a file is explicitly inputted without a corresponding dvs metadata file i.e.
+#' hasn't been added yet with [dvs_add], the command returns an error.
+#'
+#' For any other error retrieving a particular file, the function itself will
+#' indicate the error type and message in the data frame output; the function
+#' itself will not return an error.
 #'
 #' @param files file paths or glob patterns to get from the storage directory
 #' @param split_output when split_output is true, a list of two data frames -
