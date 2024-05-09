@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_get}
 \alias{dvs_get}
-\title{get added files}
+\title{copy added files to the project directory}
 \usage{
 dvs_get(files, split_output = FALSE)
 }
@@ -18,10 +18,10 @@ attempted to recopy to the project directory,
 and whose success or failure is indicated as such in the outcome column.}
 }
 \value{
-a data frame with the states of success of retrieved files
+one or two data frames whose rows are the files attempted to get in the given operation.
 }
 \description{
-get added files
+copy added files to the project directory
 }
 \details{
 retrieves files previously added with \link{dvs_add} to the storage
