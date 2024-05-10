@@ -29,3 +29,23 @@ create_project_and_initialize_dvs <- function(proj_name, env) {
   list(proj_dir = proj_dir, stor_dir = stor_dir)
 }
 
+# real git repo
+create_project_and_initialize_real_repo <- function(proj_name, env) {
+  proj_dir <- file.path(tempdir(), proj_name)
+  withr::defer(print(sprintf("Cleaning up %s...", tempdir())), envir = env)
+  withr::defer(fs::dir_delete(tempdir()), envir = env)
+
+  fs::dir_create(proj_dir)
+
+  withr::with_dir(proj_dir, {
+    system("git init")
+  })
+
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  withr::with_dir(proj_dir, {
+    dvs_init(stor_dir)
+  })
+
+  list(proj_dir = proj_dir, stor_dir = stor_dir)
+}
+
