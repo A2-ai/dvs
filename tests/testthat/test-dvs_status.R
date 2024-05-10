@@ -12,8 +12,6 @@ test_that("dvs status shows ....", {
     expect_equal(nrow(status), 0)
   })
 
-  # TODO: check dvs.yaml contents
-  #deserialized <- yaml::read_yaml(yaml)
 
 })
 

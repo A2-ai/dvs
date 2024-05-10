@@ -4,13 +4,28 @@ create_fake_git_repo <- function(dir, env) {
   fs::dir_create(git_dir)
 }
 
-create_dvs_project <- function(dir, proj_name, env) {
-  proj_directory <- file.path(tempdir(), proj_name)
-  storage_dir <- file.path(tempdir(), sprintf("%s_storage_dir", proj_name))
-  create_fake_git_repo(proj_directory)
-  withr::defer(print(sprintf("cleaning up dir: %s", proj_directory)), envir = env)
-  withr::defer(unlink(proj_directory, recursive = TRUE), environ = env)
-  withr::with_dir(proj_directory, {
-    dvs_init(storage_dir)
-  })
+# input: project name
+# function: creates fake git repo
+# output: project directory
+create_project <- function(proj_name) {
+  proj_dir <- file.path(tempdir(), proj_name)
+  create_fake_git_repo(proj_dir)
+  proj_dir
 }
+
+# input: project name
+# function: creates project and initializes dvs
+# output: project directory and storage directory
+create_project_and_initialize_dvs <- function(proj_name, env) {
+  proj_dir <- create_project(proj_name)
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  withr::defer(print(sprintf("cleaning up dir: %s", proj_dir)), envir = env)
+  withr::defer(fs::dir_delete(proj_dir), envir = env)
+  withr::with_dir(proj_dir, {
+    dvs_init(stor_dir)
+    withr::defer(fs::dir_delete(stor_dir), envir = env)
+  })
+
+  list(proj_dir = proj_dir, stor_dir = stor_dir)
+}
+
