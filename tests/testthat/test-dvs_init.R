@@ -1,46 +1,32 @@
-test_that("dvs_init writes files", {
+test_that("init works first run", {
+  proj_directory <- file.path(tempdir(), "test_init")
+  storage_dir <- file.path(tempdir(), "test_init_storage_dir")
+  create_fake_git_repo(proj_directory)
+  withr::defer(print(sprintf("cleaning up dir: %s", proj_directory)))
+  withr::defer(unlink(proj_directory, recursive = TRUE))
+  # run init
 
-  # Temporary directory for testing
-  dir.create("temp")
-  setwd("temp")
+  withr::with_dir(proj_directory, {
+    expect_false(dir.exists(storage_dir))
+    actual_df <- dvs_init(storage_dir)
+    withr::defer(fs::dir_delete(storage_dir))
+    # check storage_dir created
+    expect_true(dir.exists(storage_dir))
 
-  temp_dir <- getwd()
+    # check yaml created
+    expect_true(file.exists("dvs.yaml"))
 
-  dir.create(".git")
+    # Check dvs_init output
+    default_perms <- 664
+    expected_df <- data.frame(storage_directory = storage_dir,
+                              file_permissions = default_perms,
+                              group = "")
 
-  dvs_init("dvs")
+    expect_equal(actual_df, expected_df)
+  })
 
-  dvs_yaml <- yaml::read_yaml("dvs.yaml")
+  # TODO: check dvs.yaml contents
+  #deserialized <- yaml::read_yaml(yaml)
 
-  expected_yaml <- list(
-    storage_dir = normalizePath("dvs"),
-    permissions = 664,
-    group = ""
-  )
-
-  expect_equal(dvs_yaml, expected_yaml)
-
-  expect_true(dir.exists("dvs"))
-
-  setwd("../")
-
-  unlink(temp_dir, recursive = TRUE)
 })
 
-test_that("init doesn't work second run", {
-  dir.create("temp")
-  setwd("temp")
-  temp_dir <- getwd()
-  dir.create(".git")
-  dir.create("dvs")
-
-  yaml::write_yaml(list(), "dvs.yaml")
-
-  expect_error(dvs_init("dvs"))
-
-  setwd("..")
-
-  unlink(temp_dir, recursive = TRUE)
-})
-
-#test_that("dvs_init error 1", )
