@@ -1,5 +1,5 @@
 test_that("status works base case", {
-  temp_dir <- "temp"
+  temp_dir <- tempdir()
   dir.create(temp_dir)
 
   yaml::write_yaml(data.frame(
@@ -9,26 +9,26 @@ test_that("status works base case", {
     ),
     file.path(temp_dir, "dvs.yaml"))
 
-  dir.create("temp/.git")
+  # fake making look like git proj
+  dir.create(file.path(temp_dir, ".git"))
+
+
+  expected <- setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("relative_path", "status", "file_size_bytes",
+                                                                     "blake3_checksum", "time_stamp", "saved_by",
+                                                                     "message", "absolute_path", "error",
+                                                                     "error_message", "input"
+                                                                     )) %>%
+    dplyr::mutate_if(is.logical, as.character)
+
+
+  expected$file_size_bytes <- as.numeric(expected$file_size_bytes)
+  dir.create(file.path(temp_dir, ".git"))
+  actual <- dvs_status()
+  expect_equal(actual, expected)
 
 
 
-
-  # expected <- setNames(data.frame(matrix(ncol = 11, nrow = 0)), c("relative_path", "status", "file_size_bytes",
-  #                                                                    "blake3_checksum", "time_stamp", "saved_by",
-  #                                                                    "message", "absolute_path", "error",
-  #                                                                    "error_message", "input"
-  #                                                                    )) %>%
-  #   dplyr::mutate_if(is.logical, as.character)
-  #
-  # expected$file_size_bytes <- as.numeric(expected$file_size_bytes)
-  # dir.create(file.path(temp_dir, ".git"))
-  # actual <- dvs_status()
-  # expect_equal(actual, expected)
-  #
-  #
-  #
-  # unlink(temp_dir, recursive = TRUE)
+  unlink(temp_dir, recursive = TRUE)
 })
 
 test_that("status doesn't work when uninitialized", {
