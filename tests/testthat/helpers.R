@@ -19,7 +19,7 @@ create_project <- function(proj_name) {
 create_project_and_initialize_dvs <- function(proj_name, env) {
   proj_dir <- create_project(proj_name)
   stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
-  withr::defer(print(sprintf("cleaning up dir: %s", proj_dir)), envir = env)
+  withr::defer(print(sprintf("cleaning up proj_dir: %s", proj_dir)), envir = env)
   withr::defer(fs::dir_delete(proj_dir), envir = env)
   withr::with_dir(proj_dir, {
     dvs_init(stor_dir)
