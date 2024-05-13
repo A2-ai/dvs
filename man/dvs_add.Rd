@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_add}
 \alias{dvs_add}
-\title{add files to the storage directory}
+\title{copy files to the storage directory}
 \usage{
 dvs_add(files, message = "", split_output = FALSE)
 }
@@ -12,7 +12,7 @@ dvs_add(files, message = "", split_output = FALSE)
 \item{message}{optional: a message associated with the file(s) for versioning
 context to appear in dvs metadata files}
 
-\item{split_output}{optional: when is \code{TRUE}, a list of two data frames is returned:
+\item{split_output}{optional: when \code{TRUE}, a list of two data frames is returned:
 \code{successes} and \code{failures}.
 \itemize{
 \item rows in \code{successes} are successfully added file inputs
@@ -27,7 +27,7 @@ attempted to add in the given operation, the successes or failures of which are 
 one or two data frames whose rows are the files attempted to add in the given operation.
 }
 \description{
-add files to the storage directory
+copy files to the storage directory
 }
 \details{
 after initializing the storage directory with \link{dvs_init}, this command
