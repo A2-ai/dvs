@@ -143,7 +143,7 @@ test_that("status can input multiple files - explicit", {
 
     # status
     status <- dvs_status(c(file1, file2, file3))
-
+    print(status)
     expect_equal(nrow(status), 3)
     expect_equal(sum(status$status == "current"), 2)
     expect_equal(sum(status$status == "error"), 1)
@@ -155,8 +155,7 @@ test_that("status can input multiple files - implicit via file glob", {
   dvs <- create_project_and_initialize_dvs("multiple-files-glob", parent.frame())
 
   withr::with_dir(dvs$proj_dir, {
-    # add file
-    print(paste0("proj_dir: ", dvs$proj_dir))
+    # add files
     file1 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
     file2 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
     file3 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")

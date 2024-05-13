@@ -58,12 +58,12 @@ test_that("add fn updates a file", {
 })
 
 test_that("helper works when true", {
-  time <- as.character(char_to_zulu(Sys.time()))
+  time <- Sys.time()
   expect_true(near_system_time(time))
 })
 
 test_that("helper works when false", {
-  time <- as.character(char_to_zulu(Sys.time()))
+  time <- Sys.time()
   Sys.sleep(5)
   expect_false(near_system_time(time))
 })
