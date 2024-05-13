@@ -37,6 +37,9 @@ test_that("can add a single file", {
   # check that it was added recently (not necessary?)
   expect_true(is_near_time(dvs_json$time_stamp))
 
+  #check that git ingore is created
+  expect_true(file.exists(file.path(dvs$proj_dir, "data/derived/.gitignore")))
+
   # check that a file was added in the stor_dir, but no equality check
 
   first_two_of_hash <- substring(dvs_json$blake3_checksum, 1, 2)
@@ -44,9 +47,9 @@ test_that("can add a single file", {
 
   expect_true(file.exists(file.path(dvs$stor_dir, first_two_of_hash, rest_of_hash)))
 
-  # withr::with_dir(tempdir(), {
-  #   fs::dir_tree(all = TRUE)
-  # })
+  withr::with_dir(tempdir(), {
+    fs::dir_tree(all = TRUE)
+  })
 
 
   # print("")
