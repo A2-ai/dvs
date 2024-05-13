@@ -34,7 +34,7 @@ will be indicated in the returned data frame.
 \dontrun{
 # would get all previously added files in data/derived from
 # the initialized storage directory
-dvs_get("data/derived/*.dvsmeta")
+dvs_get("data/derived/*.dvs")
 
 # would get all files in data/derived (excluding
 # .gitignore files) and ~Projects/project_x/large_file.pdf

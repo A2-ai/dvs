@@ -128,6 +128,49 @@ test_that("status errors for a file that doesn't exist", {
   })
 })
 
+test_that("status can input multiple files - explicit", {
+  # initialize
+  dvs <- create_project_and_initialize_dvs("multiple-files", parent.frame())
+
+  withr::with_dir(dvs$proj_dir, {
+    # add file
+    print(paste0("proj_dir: ", dvs$proj_dir))
+    file1 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    file2 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    file3 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    fs::file_create(c(file1, file2, file3))
+    dvs_add(c(file1, file2))
+
+    # status
+    status <- dvs_status(c(file1, file2, file3))
+
+    expect_equal(nrow(status), 3)
+    expect_equal(sum(status$status == "current"), 2)
+    expect_equal(sum(status$status == "error"), 1)
+  })
+})
+
+test_that("status can input multiple files - implicit via file glob", {
+  # initialize
+  dvs <- create_project_and_initialize_dvs("multiple-files-glob", parent.frame())
+
+  withr::with_dir(dvs$proj_dir, {
+    # add file
+    print(paste0("proj_dir: ", dvs$proj_dir))
+    file1 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    file2 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    file3 <- tempfile(tmpdir = dvs$proj_dir, fileext = ".txt")
+    fs::file_create(c(file1, file2, file3))
+    dvs_add(c(file1, file2))
+
+    # status with glob
+    status <- dvs_status(file.path(dvs$proj_dir, "*"))
+
+    expect_equal(nrow(status), 2)
+    expect_equal(sum(status$status == "current"), 2)
+  })
+})
+
 
 
 

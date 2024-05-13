@@ -27,7 +27,6 @@ dvs_init <- function(storage_directory,
                      group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
   dvs_init_impl(storage_directory, permissions, group)
-
 }
 
 #' @import stringr
@@ -107,8 +106,6 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
 #'
 #' @return one or two data frames whose rows are the files attempted to get in the given operation.
 #'
-#' @import purrr
-#'
 #' @export
 dvs_get <- function(files, split_output = FALSE) {
   files <- clean_paths(files)
@@ -148,8 +145,6 @@ dvs_get <- function(files, split_output = FALSE) {
 #'   # (except for .gitignore files)
 #'   dvs_status("data/derived/*")
 #' }
-#'
-#' @import purrr
 #'
 #' @export
 dvs_status <- function(files = c(""), split_output = FALSE) {

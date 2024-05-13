@@ -29,14 +29,6 @@ create_project_and_initialize_dvs <- function(proj_name, env) {
   list(proj_dir = proj_dir, stor_dir = stor_dir)
 }
 
-char_to_zulu <- function(char_time) {
-  # Parse character string into POSIXct object
-  posix_time <- strptime(char_time, "%Y-%m-%d %H:%M:%S")
-
-  # Format POSIXct object in ISO 8601 with Zulu timezone
-  format(posix_time, "%Y-%m-%dT%H:%M:%SZ")
-}
-
 # input: character of ISO8601
 near_system_time <- function(time_string) {
   # Convert the ISO8601 string to a POSIXct date-time object
