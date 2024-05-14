@@ -193,7 +193,7 @@ test_that("can add two files in different directories", {
   # })
 })
 
-test_that("add using glob in presence of .gitignore and .dvs file", {
+test_that("dvs_add filters .dvs and .gitignore files", {
   dvs <- create_project_and_initialize_real_repo("add_single_file", parent.frame())
 
   # check that directories exist after dvs_init
@@ -246,4 +246,30 @@ test_that("add using glob in presence of .gitignore and .dvs file", {
   # withr::with_dir(tempdir(), {
   #   fs::dir_tree(all = TRUE)
   # })
+})
+
+test_that("errors when file DNE", {
+
+  dvs <- create_project_and_initialize_real_repo("add_single_file", parent.frame())
+
+  # check that directories exist after dvs_init
+  expect_true(dir.exists(dvs$proj_dir))
+  expect_true(dir.exists(dvs$stor_dir))
+  expect_true(dir.exists(file.path(dvs$proj_dir, ".git")))
+
+  data_derived_dir <- file.path(tempdir(), "projects/add_single_file/data/derived")
+  fs::dir_create(data_derived_dir)
+
+  #check data directory exists
+  expect_true(dir.exists(data_derived_dir))
+
+  # try to add a file that doesn't exist
+  withr::with_dir(dvs$proj_dir, {
+    expect_error(dvs_add(file.path(data_derived_dir, "no_such_file.csv"), message = "finished pk data assembly"))
+  })
+
+  # withr::with_dir(tempdir(), {
+  #   fs::dir_tree(all = TRUE)
+  # })
+
 })
