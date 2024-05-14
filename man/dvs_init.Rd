@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_init}
 \alias{dvs_init}
-\title{initialize devious}
+\title{initialize devious to add/get versioned files from the storage directory}
 \usage{
 dvs_init(storage_directory, permissions = 664, group = "")
 }
@@ -19,7 +19,7 @@ storage directory}
 A data frame with the storage directory, permissions, and group
 }
 \description{
-initialize devious
+initialize devious to add/get versioned files from the storage directory
 }
 \examples{
 \dontrun{
