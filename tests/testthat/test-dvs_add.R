@@ -192,4 +192,3 @@ test_that("can add two files in different directories", {
     fs::dir_tree(all = TRUE)
   })
 })
-
