@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(Rdevious)
+library(dvs)
 
-test_check("Rdevious")
+test_check("dvs")
