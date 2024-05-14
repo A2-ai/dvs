@@ -60,7 +60,9 @@ test_that("get doesn't error for a non-added file in a glob", {
 })
 
 test_that("get errors when dvs not inited", {
+  withr::with_dir(tempdir(), {
   expect_error(dvs_get("random_input"), "user function panicked")
+  })
 })
 
 test_that("get can input multiple files - explicit", {

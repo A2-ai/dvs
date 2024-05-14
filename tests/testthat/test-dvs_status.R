@@ -90,7 +90,9 @@ test_that("status works with *.txt glob", {
 })
 
 test_that("status errors when dvs not inited", {
+  withr::with_dir(tempdir(), {
   expect_error(dvs_status(), "user function panicked")
+  })
 })
 
 test_that("status errors when not in a git repo", {
