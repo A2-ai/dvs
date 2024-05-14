@@ -119,9 +119,9 @@ test_that("can add multiple files - same directory", {
   expect_true(file.exists(file.path(dvs$stor_dir, first_two_of_hash_1, rest_of_hash_1)))
   expect_true(file.exists(file.path(dvs$stor_dir, first_two_of_hash_2, rest_of_hash_2)))
 
-  withr::with_dir(tempdir(), {
-    fs::dir_tree(all = TRUE)
-  })
+  # withr::with_dir(tempdir(), {
+  #   fs::dir_tree(all = TRUE)
+  # })
 })
 
 test_that("can add two files in different directories", {
@@ -188,7 +188,62 @@ test_that("can add two files in different directories", {
   expect_true(file.exists(file.path(dvs$stor_dir, first_two_of_hash_1, rest_of_hash_1)))
   expect_true(file.exists(file.path(dvs$stor_dir, first_two_of_hash_2, rest_of_hash_2)))
 
-  withr::with_dir(tempdir(), {
-    fs::dir_tree(all = TRUE)
+  # withr::with_dir(tempdir(), {
+  #   fs::dir_tree(all = TRUE)
+  # })
+})
+
+test_that("add using glob in presence of .gitignore and .dvs file", {
+  dvs <- create_project_and_initialize_real_repo("add_single_file", parent.frame())
+
+  # check that directories exist after dvs_init
+  expect_true(dir.exists(dvs$proj_dir))
+  expect_true(dir.exists(dvs$stor_dir))
+  expect_true(dir.exists(file.path(dvs$proj_dir, ".git")))
+
+  data_derived_dir <- file.path(tempdir(), "projects/add_single_file/data/derived")
+  fs::dir_create(data_derived_dir)
+
+  #check data directory exists
+  expect_true(dir.exists(data_derived_dir))
+
+  # create two data files for testing
+  pk_data_1 <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  pk_data_2 <- data.frame(
+    USUBJID = c(2, 2, 2),
+    NTFD = c(0.4, 2, 3),
+    DV = c(359.44, 540.213, 1)
+  )
+
+  pk_data_path_1 <- file.path(data_derived_dir, "pk_data_1.csv")
+  pk_data_path_2 <- file.path(data_derived_dir, "pk_data_2.csv")
+  write.csv(pk_data_1, pk_data_path_1)
+  write.csv(pk_data_2, pk_data_path_2)
+
+  # create artificial metadata files and a .gitignore before adding
+  file.create(file.path(data_derived_dir, "pk_data_1.csv.dvs"))
+  file.create(file.path(data_derived_dir, ".gitignore"))
+
+  withr::with_dir(data_derived_dir, {
+    expect_true(file.exists("pk_data_1.csv.dvs"))
+    expect_true(file.exists(".gitignore"))
   })
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    added_files <- dvs_add("data/derived/*", message = "finished pk data assembly")
+  })
+
+  # check that only two subdirectories were created in the storage directory
+  subdirectories <- list.dirs(dvs$stor_dir, full.names = TRUE, recursive = FALSE)
+  expect_equal(length(subdirectories), 2)
+
+  # withr::with_dir(tempdir(), {
+  #   fs::dir_tree(all = TRUE)
+  # })
 })
