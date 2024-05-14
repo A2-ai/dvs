@@ -32,6 +32,11 @@ copy files to the storage directory
 \details{
 after initializing the storage directory with \link{dvs_init}, this command
 copies files to storage directory for other collaborators to version and retrieve with \link{dvs_get}
+If an explicitly inputted file doesn't exist, the command returns an error .
+
+For any other error retrieving a particular file, the function itself will
+indicate the error type and message in the data frame output; the function
+itself will not return an error.
 }
 \examples{
 \dontrun{

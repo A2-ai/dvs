@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_get}
 \alias{dvs_get}
-\title{copy added files to the project directory}
+\title{copy files back to the project directory}
 \usage{
 dvs_get(files, split_output = FALSE)
 }
@@ -21,14 +21,17 @@ and whose success or failure is indicated as such in the outcome column.}
 one or two data frames whose rows are the files attempted to get in the given operation.
 }
 \description{
-copy added files to the project directory
+copy files back to the project directory
 }
 \details{
 retrieves files previously added with \link{dvs_add} to the storage
 directory (initialized by \link{dvs_init}).
-If there's an error retrieving a particular file, the function itself will
-not return an error, rather the error
-will be indicated in the returned data frame.
+If a file is explicitly inputted without a corresponding dvs metadata file i.e.
+hasn't been added yet with \link{dvs_add}, the command returns an error.
+
+For any other error retrieving a particular file, the function itself will
+indicate the error type and message in the data frame output; the function
+itself will not return an error.
 }
 \examples{
 \dontrun{

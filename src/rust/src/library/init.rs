@@ -25,7 +25,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         return Err(
             InitError{
                 error: InitErrorType::ProjAlreadyInited,
-                error_message: format!("already initialized project with dvs. to change initialization settings, manually update dvs.yaml in project root")
+                error_message: format!("to change initialization settings, manually update dvs.yaml in project root")
             }
         )
     }
