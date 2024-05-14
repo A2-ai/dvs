@@ -84,8 +84,6 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // error if file is a directory
     file::check_if_dir(local_path)?;
 
-    
-
     // get file size
     let file_size_bytes = file::get_file_size(local_path)?;
 
