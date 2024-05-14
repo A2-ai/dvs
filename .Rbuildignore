@@ -1,6 +1,6 @@
 ^renv$
 ^renv\.lock$
-^Rdevious\.Rproj$
+^dvs\.Rproj$
 ^\.Rproj\.user$
 ^src/\.cargo$
 ^LICENSE\.md$
