@@ -34,8 +34,6 @@ create_project_and_initialize_real_repo <- function(proj_name, env) {
 
   proj_dir <- file.path(tempdir(), "projects", proj_name)
   stor_dir <- file.path(tempdir(), "data/dvs", proj_name)
-  print(proj_dir)
-  print(stor_dir)
   withr::defer(print(sprintf("Cleaning up %s...", tempdir())), envir = env)
   withr::defer(fs::dir_delete(tempdir()), envir = env)
 
@@ -49,11 +47,25 @@ create_project_and_initialize_real_repo <- function(proj_name, env) {
 
 
   withr::with_dir(proj_dir, {
-    print(getwd())
     dvs_init(stor_dir)
   })
 
   list(proj_dir = proj_dir, stor_dir = stor_dir)
+}
+
+create_project_no_dvs_init <- function(proj_name, env) {
+
+  proj_dir <- file.path(tempdir(), "projects", proj_name)
+  withr::defer(print(sprintf("Cleaning up %s...", tempdir())), envir = env)
+  withr::defer(fs::dir_delete(tempdir()), envir = env)
+
+  fs::dir_create(proj_dir)
+
+  withr::with_dir(proj_dir, {
+    system("git init")
+  })
+
+  proj_dir
 }
 
 is_near_time <- function(iso_time_string, threshold = 0.1) {
