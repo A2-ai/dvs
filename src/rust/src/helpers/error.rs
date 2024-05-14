@@ -19,7 +19,7 @@ pub enum FileErrorType {
     MetadataNotFound,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileError {
     pub relative_path: Option<PathBuf>,
     pub absolute_path: Option<PathBuf>,
@@ -56,7 +56,7 @@ impl FileErrorType {
             FileErrorType::GroupNotSet => String::from("group not set"),
             FileErrorType::PermissionsNotSet => String::from("group not set"),
             FileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
-            FileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not added"),
+            FileErrorType::GitIgnoreNotAdded => String::from("file directory gitignore entry not added"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
         }
@@ -120,6 +120,7 @@ impl fmt::Display for InitError {
 pub enum InitErrorType {
     ProjAlreadyInited,
     StorageDirNotCreated,
+    StorageDirPermsNotSet,
     StorageDirNotADir,
     StorageDirAbsPathNotFound,
     GitRepoNotFound,
@@ -141,6 +142,7 @@ impl InitErrorType {
             InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
             InitErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
             InitErrorType::DirEmptyNotChecked => String::from("could not check if storage directory is empty"),
+            InitErrorType::StorageDirPermsNotSet => String::from("storage directory permissions not set"),
         }
     }
 }

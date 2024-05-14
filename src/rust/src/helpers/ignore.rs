@@ -6,7 +6,7 @@ use crate::helpers::{error::{FileError, FileErrorType}, file::{get_absolute_path
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
-pub fn add_gitignore_helper(path: &PathBuf) -> Result<()> {
+pub fn add_gitignore_entry_helper(path: &PathBuf) -> Result<()> {
     let abs_path = path.canonicalize()?;
 
     let dir = abs_path
@@ -14,11 +14,9 @@ pub fn add_gitignore_helper(path: &PathBuf) -> Result<()> {
         .ok_or_else(|| format!("could not get parent of {}: ", abs_path.display()))?
         .to_path_buf();
 
-    // get relative path
-    let ignore_entry_temp = repo::get_relative_path(&dir, path)?;
-    
-    // Add leading slash
-    let ignore_entry = ignore_entry_temp.display().to_string();
+    // get relative path with leading slash
+    let ignore_entry1 = format!("/{}", repo::get_relative_path(&dir, path)?.display());
+    let ignore_entry2 = format!("!/{}.dvs", repo::get_relative_path(&dir, path)?.display());
 
     // open the gitignore file, creating one if it doesn't exist
     let ignore_file = dir.join(".gitignore");
@@ -28,27 +26,31 @@ pub fn add_gitignore_helper(path: &PathBuf) -> Result<()> {
 
     let contents = std::fs::read_to_string(&ignore_file)?;
     
-    if !contents.contains(&ignore_entry) {
+     // add ignore entry if not already present
+    if !contents.contains(&ignore_entry1) || !contents.contains(&ignore_entry2) {
         let mut file = OpenOptions::new()
         .write(true)
         .append(true)
         .open(ignore_file)?;
 
-        writeln!(file, "\n\n# Devious entry\n{ignore_entry}")?;
-
-    } // add ignore entry
+        writeln!(file, "\n\n# dvs entry\n{ignore_entry1}\n{ignore_entry2}")?;
+    }
     Ok(())
 }
 
 pub fn add_gitignore_entry(local_path: &PathBuf) -> std::result::Result<(), FileError> {
-    add_gitignore_helper(local_path).map_err(|e| {
+    
+    add_gitignore_entry_helper(local_path).map_err(|e| {
+        let err_mess = match local_path.parent() {
+            Some(parent) => format!("could not create entry for {}/.gitignore", parent.display()),
+            None => format!("could not create entry for .gitignore"),
+        };
         FileError{
             relative_path: get_relative_path_to_wd(local_path).ok(),
             absolute_path: get_absolute_path(local_path).ok(),
             error: FileErrorType::GitIgnoreNotAdded,
-            error_message: Some(e.to_string()),
+            error_message: Some(format!("{err_mess}: {e}")),
             input: local_path.clone()
         }
     })
-    
 }

@@ -6,12 +6,12 @@ use std::path::PathBuf;
 pub struct FileStatus {
     pub relative_path: Option<PathBuf>,
     pub status: Status,
-    pub size: u64,
+    pub file_size_bytes: u64,
     pub time_stamp: String,
     pub saved_by: String,
     pub message: String,
     pub absolute_path: Option<PathBuf>,
-    pub hash: String,
+    pub blake3_checksum: String,
     pub input: Option<PathBuf>
 }
 
@@ -31,14 +31,14 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
         } 
         else { // else, parse specifically inputted globs
             input_manually = true;
-            parse::parse_files_from_globs(&globs)
+            parse::parse_meta_files_from_globs_status(&globs)
         };
 
     // get the status of each file and collect
     Ok(meta_paths.into_iter().map(|path| {
         status_file(&path, input_manually)
     }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
-} // dvs_status
+} 
 
 fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
     let metadata_path_abs = file::metadata_path(local_path);
@@ -67,7 +67,7 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
         else {
             match hash::get_file_hash(&local_path) {
                 Ok(current_hash) => {
-                    if current_hash == metadata.hash {
+                    if current_hash == metadata.blake3_checksum {
                         Status::Current
                     }
                     else {Status::Unsynced}
@@ -89,8 +89,8 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
             relative_path,
             absolute_path,
             status,
-            size: metadata.size,
-            hash: metadata.hash,
+            file_size_bytes: metadata.file_size_bytes,
+            blake3_checksum: metadata.blake3_checksum,
             time_stamp: metadata.time_stamp,
             saved_by: metadata.saved_by,
             message: metadata.message,

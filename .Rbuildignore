@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 ^Rdevious\.Rproj$
 ^\.Rproj\.user$
 ^src/\.cargo$

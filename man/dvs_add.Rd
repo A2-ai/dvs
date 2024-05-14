@@ -2,25 +2,50 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_add}
 \alias{dvs_add}
-\title{add files to the storage directory}
+\title{copy files to the storage directory}
 \usage{
 dvs_add(files, message = "", split_output = FALSE)
 }
 \arguments{
 \item{files}{file paths or glob patterns to add to the storage directory}
 
-\item{message}{optional argument to add a message to future data frame rows associated with these files}
+\item{message}{optional: a message associated with the file(s) for versioning
+context to appear in dvs metadata files}
+
+\item{split_output}{optional: when \code{TRUE}, a list of two data frames is returned:
+\code{successes} and \code{failures}.
+\itemize{
+\item rows in \code{successes} are successfully added file inputs
+\item rows in \code{failures} are inputs that returned errors
+}
+
+when \code{FALSE}, the output is a single data frame whose rows are the files
+attempted to add in the given operation, the successes or failures of which are indicated in the
+\code{outcome} column}
 }
 \value{
-a data frame with the states of success of added files
+one or two data frames whose rows are the files attempted to add in the given operation.
 }
 \description{
-add files to the storage directory
+copy files to the storage directory
+}
+\details{
+after initializing the storage directory with \link{dvs_init}, this command
+copies files to storage directory for other collaborators to version and retrieve with \link{dvs_get}
+If an explicitly inputted file doesn't exist, the command returns an error .
+
+For any other error retrieving a particular file, the function itself will
+indicate the error type and message in the data frame output; the function
+itself will not return an error.
 }
 \examples{
 \dontrun{
-dvs_add("data/derived/*.csv") # would add all csv files in data/derived to the initialized storage directory
-dvs_add(c("data/derived/*", "model/nonmem/1001/1001.ext")) would add all files in data/derived (excluding .dvsmeta and .gitignore files) and model/nonmem/1001/1001.ext to the initialized storage directory
+# would add all csv files in data/derived to the initialized storage directory
+dvs_add("data/derived/*.csv")
+
+# would add model/nonmem/1001/1001.ext and all files in data/derived
+# to the initialized storage directory (excluding dvs metadata and .gitignore files)
+dvs_add(c("model/nonmem/1001/1001.ext", "data/derived/*"))
 }
 
 }

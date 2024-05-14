@@ -16,11 +16,14 @@ pub fn absolutize_result(path: &PathBuf) -> Result<PathBuf> {
 }
 
 pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<PathBuf> {
-    let abs_file_path = absolutize_result(&file_path)?;
-
     let abs_root_dir = root_dir.canonicalize()?;
+    // //println!("{}", abs_root_dir.display());
+   let abs_file_path = absolutize_result(&file_path)?;
+    // //println!("{}", abs_file_path.display());
+    // Ok(abs_file_path.strip_prefix(abs_root_dir)?.to_path_buf())
 
-    Ok(abs_file_path.strip_prefix(abs_root_dir)?.to_path_buf())
+    let rel = pathdiff::diff_paths(abs_file_path, abs_root_dir).ok_or("relative path not found".into());
+    rel
 }
 
 pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {

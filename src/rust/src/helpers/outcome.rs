@@ -30,12 +30,10 @@ impl Outcome {
 impl Status {
     pub fn outcome_to_string(&self) -> String {
         match self {
-            
             Status::Absent => String::from("absent"),
             Status::Unsynced => String::from("unsynced"),
             Status::Current => String::from("current"),
             Status::Error => String::from("error"),
-
         }
     }
 }

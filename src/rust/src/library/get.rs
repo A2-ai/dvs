@@ -1,13 +1,13 @@
 use std::path::PathBuf;
-use crate::helpers::{config, copy, hash, file, repo, parse, outcome::Outcome, error::{BatchError, FileError}};
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, outcome::Outcome, parse, repo};
 
 #[derive(Debug)]
 pub struct RetrievedFile {
     pub relative_path: PathBuf,
     pub outcome: Outcome,
-    pub size: u64,
+    pub file_size_bytes: u64,
     pub absolute_path: PathBuf,
-    pub hash: String,
+    pub blake3_checksum: String,
 }
 
 pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<RetrievedFile, FileError>>, BatchError> {
@@ -17,18 +17,30 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     // load the config
     let conf = config::read(&git_dir)?;
 
+    for glob in globs { // for each input in globs
+        let file_path = PathBuf::from(glob);
+        if file_path.extension().is_some() { // if the input is an explicit file path
+            if !file::metadata_path(&file_path).exists() { // and that file path doesn't have a corresponding metadata file
+                return Err(BatchError { // return error
+                    error: BatchErrorType::AnyMetaFilesDNE,
+                    error_message: format!("missing for {}", file_path.display()),
+                })
+            }
+        }
+    }
+        
     // collect queued paths
-    let queued_paths = parse::parse_files_from_globs(&globs);
+    let queued_paths = parse::parse_meta_files_from_globs_get(&globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
         println!("warning: no files were queued")
-     }
+    }
 
-     // check that metadata file exists for all files
-     file::check_meta_files_exist(&queued_paths)?;
+    // check that metadata file exists for all files
+    file::check_meta_files_exist(&queued_paths)?;
     
-     // get each file in queued_paths
+    // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
         get_file(&file, &conf)
     }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();
@@ -60,11 +72,11 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     let local_hash = hash::get_file_hash(local_path).unwrap_or_default();
 
     // get storage data
-    let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.hash);
+    let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.blake3_checksum);
 
     // check if most current file is already present locally
     let outcome = 
-        if !local_path.exists() || metadata.hash == String::from("") || local_hash == String::from("") || local_hash != metadata.hash {
+        if !local_path.exists() || metadata.blake3_checksum == String::from("") || local_hash == String::from("") || local_hash != metadata.blake3_checksum {
             copy::copy(&storage_path, &local_path)?;
             Outcome::Copied
         }  // if file not present or not current
@@ -90,16 +102,16 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
             relative_path_temp.unwrap()
         };
 
-    let hash = hash::get_file_hash(local_path)?;
+    let blake3_checksum = hash::get_file_hash(local_path)?;
 
-    let size = file::get_file_size(local_path)?;
+    let file_size_bytes = file::get_file_size(local_path)?;
 
     Ok(RetrievedFile {
             relative_path,
             absolute_path,
-            hash,
+            blake3_checksum,
             outcome,
-            size
+            file_size_bytes
         }
     )
 }

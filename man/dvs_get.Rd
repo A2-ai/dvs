@@ -2,29 +2,42 @@
 % Please edit documentation in R/set_functions.R
 \name{dvs_get}
 \alias{dvs_get}
-\title{get added files}
+\title{copy files back to the project directory}
 \usage{
 dvs_get(files, split_output = FALSE)
 }
 \arguments{
 \item{files}{file paths or glob patterns to get from the storage directory}
+
+\item{split_output}{when split_output is true, a list of two data frames -
+\code{successes} and \code{failures} - is returned.
+Rows in \code{successes} are files successfully retrieved, and rows in \code{failures}
+are inputs that returned errors.
+When split_output is false, the output is a single data frame with all files
+attempted to recopy to the project directory,
+and whose success or failure is indicated as such in the outcome column.}
 }
 \value{
-a data frame with the states of success of retrieved files
+one or two data frames whose rows are the files attempted to get in the given operation.
 }
 \description{
-get added files
+copy files back to the project directory
 }
 \details{
-retrieves files previously added with \link{dvs_add} to the storage directory (initialized by \link{dvs_init}).
-If there's an error retrieving a particular file, the function itself will not return an error, rather the error
-will be indicated in the returned data frame.
+retrieves files previously added with \link{dvs_add} to the storage
+directory (initialized by \link{dvs_init}).
+If a file is explicitly inputted without a corresponding dvs metadata file i.e.
+hasn't been added yet with \link{dvs_add}, the command returns an error.
+
+For any other error retrieving a particular file, the function itself will
+indicate the error type and message in the data frame output; the function
+itself will not return an error.
 }
 \examples{
 \dontrun{
 # would get all previously added files in data/derived from
 # the initialized storage directory
-dvs_get("data/derived/*.dvsmeta")
+dvs_get("data/derived/*.dvs")
 
 # would get all files in data/derived (excluding
 # .gitignore files) and ~Projects/project_x/large_file.pdf

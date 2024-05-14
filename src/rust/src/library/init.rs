@@ -1,10 +1,17 @@
 use crate::helpers::{config, error::{InitError, InitErrorType}, repo};
-use std::{ffi::OsStr, fs::create_dir, path::PathBuf};
+use std::{ffi::OsStr, fs::{self, create_dir}, os::unix::fs::PermissionsExt, path::PathBuf};
 use file_owner::Group;
 
 pub type Result<T> = core::result::Result<T, InitError>;
 
-pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<()> { 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Init {
+    pub storage_directory: PathBuf,
+    pub group: String,
+    pub file_permissions: i32
+}
+
+pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<Init> { 
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
         InitError{
@@ -18,7 +25,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         return Err(
             InitError{
                 error: InitErrorType::ProjAlreadyInited,
-                error_message: format!("already initialized project with dvs. to change initialization settings, manually update dvs.yaml in project root")
+                error_message: format!("to change initialization settings, manually update dvs.yaml in project root")
             }
         )
     }
@@ -66,8 +73,16 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         )? {
             println!("warning: storage directory not empty")
         }
+    } // else, storage directory exists
 
-    } // else
+    // set permissions for storage dir
+    let storage_dir_perms = fs::Permissions::from_mode(0o770);
+    fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
+        InitError{
+            error: InitErrorType::StorageDirPermsNotSet,
+            error_message: e.to_string()
+        }
+    })?;
 
     // warn if storage directory is in git repo
     if repo::dir_in_git_repo(&storage_dir_abs, &git_dir) {
@@ -108,5 +123,13 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         )?;
     
     println!("initialized storage directory: {}", storage_dir.display());
-    Ok(())
+    return Ok(
+        Init{
+            storage_directory: storage_dir_abs,
+            group: String::from(group_name),
+            file_permissions: octal_permissions.clone()
+        }
+    )
+    
+    
 }
