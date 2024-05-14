@@ -35,12 +35,12 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
         println!("warning: no files were queued")
-        }
+    }
 
-     // check that metadata file exists for all files
-     //file::check_meta_files_exist(&queued_paths)?;
+    // check that metadata file exists for all files
+    file::check_meta_files_exist(&queued_paths)?;
     
-     // get each file in queued_paths
+    // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
         get_file(&file, &conf)
     }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();

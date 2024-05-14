@@ -73,6 +73,13 @@ pub fn parse_meta_files_from_globs_status(globs: &Vec<String>) -> Vec<PathBuf> {
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in globs {
+        // if a file that exists is explicitly added, push to queued paths
+        if PathBuf::from(entry).is_file() {
+            queued_paths.push(PathBuf::from(entry));
+            continue;
+        }
+
+        // else, is something else: file that dne or glob
         let glob = match glob(&entry) {
             Ok(paths) => paths,
             Err(_) => {
@@ -111,6 +118,7 @@ pub fn parse_meta_files_from_globs_status(globs: &Vec<String>) -> Vec<PathBuf> {
 fn filter_meta_path(path: &PathBuf, queued_paths: &Vec<PathBuf>) -> Option<PathBuf> {
     let path_clean = file::path_without_metadata(path);
 
+    // if metadata path doesn't exist
     if !file::metadata_path(&path_clean).exists() {
         return None
     }
@@ -153,10 +161,7 @@ pub fn parse_meta_files_from_globs_get(globs: &Vec<String>) -> Vec<PathBuf> {
 
         // if no files parsed from glob, add to queued_paths anyway
         if !entered_loop {
-            if file::metadata_path(&PathBuf::from(entry)).exists() {
-                queued_paths.push(PathBuf::from(entry));
-            }
-            
+            queued_paths.push(PathBuf::from(entry));
         }
     } // for entry in files
 

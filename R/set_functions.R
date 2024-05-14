@@ -27,7 +27,6 @@ dvs_init <- function(storage_directory,
                      group = "") {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
   dvs_init_impl(storage_directory, permissions, group)
-
 }
 
 #' @import stringr
@@ -105,7 +104,7 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
 #' \dontrun{
 #' # would get all previously added files in data/derived from
 #' # the initialized storage directory
-#' dvs_get("data/derived/*.dvsmeta")
+#' dvs_get("data/derived/*.dvs")
 #'
 #' # would get all files in data/derived (excluding
 #' # .gitignore files) and ~Projects/project_x/large_file.pdf
@@ -114,8 +113,6 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
 #'}
 #'
 #' @return one or two data frames whose rows are the files attempted to get in the given operation.
-#'
-#' @import purrr
 #'
 #' @export
 dvs_get <- function(files, split_output = FALSE) {
@@ -156,8 +153,6 @@ dvs_get <- function(files, split_output = FALSE) {
 #'   # (except for .gitignore files)
 #'   dvs_status("data/derived/*")
 #' }
-#'
-#' @import purrr
 #'
 #' @export
 dvs_status <- function(files = c(""), split_output = FALSE) {

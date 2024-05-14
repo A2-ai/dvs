@@ -1,7 +1,7 @@
 use std::{fs::{self, File}, path::PathBuf};
 use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
-use crate::helpers::{repo, error::{FileError, FileErrorType}};
+use crate::helpers::{repo, error::{FileError, FileErrorType, BatchError, BatchErrorType}};
 
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
@@ -151,20 +151,20 @@ pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError
         )?.len())
 }
 
-// pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
-//     // Find the first path that does not have a corresponding .dvs file
-//     if let Some(path) = queued_paths
-//         .into_iter()
-//         .find(|dvs_path| !metadata_path(dvs_path).exists())
-//     {
-//         return Err(BatchError {
-//             error: BatchErrorType::AnyMetaFilesDNE,
-//             error_message: format!("missing for {}", path.display()),
-//         });
-//     }
+pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Result<(), BatchError> {
+    // Find the first path that does not have a corresponding .dvs file
+    if let Some(path) = queued_paths
+        .into_iter()
+        .find(|dvs_path| !metadata_path(dvs_path).exists())
+    {
+        return Err(BatchError {
+            error: BatchErrorType::AnyMetaFilesDNE,
+            error_message: format!("missing for {}", path.display()),
+        });
+    }
 
-//     Ok(()) // If all .dvs files found, return Ok
-// }
+    Ok(()) // If all .dvs files found, return Ok
+}
 
 
 
