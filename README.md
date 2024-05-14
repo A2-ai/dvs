@@ -18,7 +18,7 @@ This hash is used to
 -    track the most current version of the file
 
 ## Tutorial
-See a detailed tutorial here.
+See a detailed tutorial [here](https://github.com/A2-ai/dvs_demo/tree/main).
 
 ## Example Workflow
 ### To add files to dvs:
