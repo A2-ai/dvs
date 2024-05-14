@@ -1,8 +1,5 @@
 test_that("get doesn't work outside a git repo", {
-  proj_name <- "no-git-repo-get"
-  proj_dir <- fs::dir_create(file.path(tempdir(), proj_name))
-  withr::defer(fs::dir_delete(proj_dir), envir = parent.frame())
-  withr::with_dir(proj_dir, {
+  withr::with_dir(tempdir(), {
     expect_error(dvs_get("file"), "user function panicked")
   })
 })
@@ -60,8 +57,14 @@ test_that("get doesn't error for a non-added file in a glob", {
 })
 
 test_that("get errors when dvs not inited", {
-  withr::with_dir(tempdir(), {
-  expect_error(dvs_get("random_input"), "user function panicked")
+  # create git repo
+  proj_dir <- create_project("status-init")
+  # run get without initializing
+  withr::with_dir(proj_dir, {
+    # should be in git repo
+    expect_true(file.exists(file.path(proj_dir, ".git")))
+    # panic because not initialized
+    expect_error(dvs_get("file"), "user function panicked")
   })
 })
 
