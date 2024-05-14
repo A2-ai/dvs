@@ -243,6 +243,7 @@ dependencies = [
  "glob",
  "memmap2",
  "path-absolutize",
+ "pathdiff",
  "rayon",
  "serde",
  "serde_json",
