@@ -102,7 +102,9 @@ test_that("status errors when dvs not inited", {
 })
 
 test_that("status errors when not in a git repo", {
-  withr::with_dir(tempdir(), {
+  temp_dir <- fs::dir_create(tempdir())
+  withr::defer(fs::dir_delete(temp_dir), parent.frame())
+  withr::with_dir(temp_dir, {
     expect_error(dvs_status(), "user function panicked")
   })
 })

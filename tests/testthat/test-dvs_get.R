@@ -1,5 +1,7 @@
 test_that("get doesn't work outside a git repo", {
-  withr::with_dir(tempdir(), {
+  temp_dir <- fs::dir_create(tempdir())
+  withr::defer(fs::dir_delete(temp_dir), parent.frame())
+  withr::with_dir(temp_dir, {
     expect_error(dvs_get("file"), "user function panicked")
   })
 })
