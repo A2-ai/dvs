@@ -57,32 +57,28 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // get relative path
     let relative_path = repo::get_relative_path_to_wd(local_path)?;
 
+    // error if file is a directory
+    file::check_if_dir(local_path)?;
+
     // get file hash
     let blake3_checksum = hash::get_file_hash(local_path)?;
 
     // if file already added and current, no-op
-    let metadata = file::load(local_path);
-    if metadata.is_ok() { // if metadata can be loaded
-        let metadata_ok = metadata.clone().unwrap();
-        if blake3_checksum == metadata_ok.blake3_checksum { // if the curresnt hash is the same as that in the metadata file
-            return Ok( // no op
-                AddedFile{
-                    relative_path: relative_path.clone(),
-                    absolute_path: absolute_path.clone(),
-                    outcome: Outcome::Present,
-                    file_size_bytes: metadata_ok.file_size_bytes,
-                    blake3_checksum: metadata_ok.blake3_checksum
-                }
-            )
+    if let Ok(metadata) = file::load(local_path) { // check if already added
+        if blake3_checksum == metadata.blake3_checksum { // check if current
+            return Ok(AddedFile { // no-op
+                relative_path: relative_path.clone(),
+                absolute_path: absolute_path.clone(),
+                outcome: Outcome::Present,
+                file_size_bytes: metadata.file_size_bytes,
+                blake3_checksum: metadata.blake3_checksum,
+            });
         }
     }
     // else, file not added already
 
     // check if file in git repo
     repo::check_file_in_git_repo(local_path, &git_dir, &relative_path, &absolute_path)?;
-
-    // error if file is a directory
-    file::check_if_dir(local_path)?;
 
     // get file size
     let file_size_bytes = file::get_file_size(local_path)?;
