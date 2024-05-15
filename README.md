@@ -1,7 +1,7 @@
 ## Use 
 `dvs` (data versioning system) is a file linker that allows teams to version files under Git without directly tracking them.
 
-This R package is a solution for teams who wish to collaborate without uploading large or sensitive files to Git.
+This R package allows teams to collaborate without uploading large or sensitive files to Git.
 
 ## How it works
 Instead of uploading data files to Git, a user can employ `dvs` to copy them to a shared storage directory and generate metadata files to be uploaded to Git instead. 
