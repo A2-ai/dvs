@@ -4,18 +4,17 @@
 This R package allows teams to collaborate without uploading large or sensitive files to Git.
 
 ## How it works
-Instead of uploading data files to Git, a user can employ `dvs` to copy them to a shared storage directory and generate metadata files to be uploaded to Git instead. 
+Instead of uploading data files to Git, a user can employ `dvs`, which copies the files to a shared storage directory and generates metadata files. The user can upload these metadata files to Git to make the versioned files accessible to collaborators.\
+`dvs` will generate a `.gitignore` in the immediate directory of each versioned file excluding the versioned file and including its corresponding metadata file.
 
-When collaborators pull these metadata files from Git, they can employ `dvs` to parse them, locate their corresponding data file copies in the storage directory,
+When collaborators pull from Git, they can employ `dvs` to parse the metadata files to locate each corresponding data file copy in the storage directory
 and copy them back to the project directory.
 
 A `dvs.yaml` file is generated upon initialization in the project directory from which `dvs` parses the storage directory.
 
 A `.dvs` metadata file is generated for each versioned file in its given directory.\
-A versioned file's corresponding metadata file contains a hash of the versioned file's contents via the blake3 algorithm. \
-This hash is used to
--    create the path for a versioned file's stored copy in the storage directory.
--    track the most current version of the file
+A versioned file's metadata file contains a hash of the versioned file's contents via the blake3 algorithm. \
+This hash is used to both track the most current version of the file and create the path for a versioned file's stored copy in the storage directory.
 
 ## Tutorial
 See a detailed tutorial [here](https://github.com/A2-ai/dvs_demo/tree/main).
