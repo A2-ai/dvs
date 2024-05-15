@@ -29,7 +29,7 @@ Output data frame:\
 <img width="526" alt="Screenshot 2024-05-14 at 3 25 53 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/4c974fc1-9b26-43e6-b5ac-fa5a51cd99c9">
 
 
-**Step 2**: Add files with `dvs_add` to copy files to the storage directory. 
+**Step 2**: Add files to the storage directory with `dvs_add`. 
 ```
 dvs_add("data.csv")
 ```
@@ -43,14 +43,14 @@ Output data frame:\
 ### To get files from dvs:
 **Step 1**: Pull from Git.
 
-**Step 2**: Generate a report with `dvs_status` to see versioned files.
+**Step 2**: Generate a report with `dvs_status` to view versioned files.
 ```
 dvs_status()
 ```
 Output data frame:\
 <img width="799" alt="Screenshot 2024-05-14 at 3 29 05 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/c655002b-c756-4d6f-bfc2-eb5280557579">
 
-**Step 3**: Get files with `dvs_get` to copy files back from the storage directory.
+**Step 3**: Get files from the storage directory with `dvs_get`.
 ```
 dvs_get("data.csv")
 ```
