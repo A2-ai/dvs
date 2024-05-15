@@ -29,7 +29,7 @@ Output data frame:\
 <img width="526" alt="Screenshot 2024-05-14 at 3 25 53 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/4c974fc1-9b26-43e6-b5ac-fa5a51cd99c9">
 
 
-**Step 2**: Add with `dvs_add` to copy files to the storage directory. 
+**Step 2**: Add files with `dvs_add` to copy files to the storage directory. 
 ```
 dvs_add("data.csv")
 ```
