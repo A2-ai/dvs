@@ -32,10 +32,10 @@ struct RFileSuccess {
 #[derive(Debug, IntoDataFrameRow)]
 struct RFileError {
     input: String,
-    relative_path: Option<String>,
-    absolute_path: Option<String>,
     error: String,
     error_message: Option<String>,
+    relative_path: Option<String>,
+    absolute_path: Option<String>,
 }
 
 #[derive(Debug, IntoDataFrameRow)]
@@ -278,10 +278,10 @@ struct RStatusFileSuccess {
 #[derive(Debug, IntoDataFrameRow)]
 struct RStatusFileError {
     input: String,
-    relative_path: Option<String>,
-    absolute_path: Option<String>,
     error: String,
     error_message: Option<String>,
+    relative_path: Option<String>,
+    absolute_path: Option<String>,
 }
 
 #[extendr]
