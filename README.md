@@ -14,7 +14,7 @@ A `dvs.yaml` file is generated upon initialization in the project directory from
 
 A `.dvs` metadata file is generated for each versioned file in its given directory.\
 A versioned file's metadata file contains a hash of the versioned file's contents via the blake3 algorithm. \
-This hash is used to both track the most current version of the file and create the path for a versioned file's stored copy in the storage directory.
+This hash is used to both track the most current version of the file and create the path for a versioned file's copy in the storage directory.
 
 ## Tutorial
 See a detailed tutorial [here](https://github.com/A2-ai/dvs_demo/tree/main).
