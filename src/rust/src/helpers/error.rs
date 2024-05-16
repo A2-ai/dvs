@@ -47,16 +47,16 @@ impl FileErrorType {
     pub fn file_error_to_string(&self) -> String {
         match self {
             FileErrorType::RelativePathNotFound => String::from("relative path not found"),
-            FileErrorType::FileNotInGitRepo => String::from("file not in git repo"),
+            FileErrorType::FileNotInGitRepo => String::from("file not in git repository"),
             FileErrorType::AbsolutePathNotFound => String::from("file not found"),
             FileErrorType::PathIsDirectory => String::from("path is a directory"),
-            FileErrorType::HashNotFound => String::from("hash not found"),
-            FileErrorType::SizeNotFound => String::from("size not found"),
-            FileErrorType::OwnerNotFound => String::from("owner not found"),
-            FileErrorType::GroupNotSet => String::from("group not set"),
-            FileErrorType::PermissionsNotSet => String::from("group not set"),
+            FileErrorType::HashNotFound => String::from("file hash not found"),
+            FileErrorType::SizeNotFound => String::from("file size not found"),
+            FileErrorType::OwnerNotFound => String::from("file owner not found"),
+            FileErrorType::GroupNotSet => String::from("linux primary group not set"),
+            FileErrorType::PermissionsNotSet => String::from("linux file permissions not set"),
             FileErrorType::MetadataNotSaved => String::from("metadata file not saved"),
-            FileErrorType::GitIgnoreNotAdded => String::from("file directory gitignore entry not added"),
+            FileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not saved"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotFound => String::from("metadata file not found"),
         }
@@ -95,7 +95,7 @@ impl BatchErrorType {
         match self {
             BatchErrorType::AnyFilesDNE => String::from("at least one inputted file not found"),
             BatchErrorType::GitRepoNotFound => String::from("git repository not found"),
-            BatchErrorType::ConfigNotFound => String::from("configuration file not found"),
+            BatchErrorType::ConfigNotFound => String::from("configuration file not found (dvs.yaml)"),
             BatchErrorType::GroupNotFound => String::from("linux primary group not found"),
             BatchErrorType::StorageDirNotFound => String::from("storage directory not found"),
             BatchErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
@@ -134,10 +134,10 @@ impl InitErrorType {
     pub fn init_error_to_string(&self) -> String {
         match self {
             InitErrorType::ProjAlreadyInited => String::from("project already initialized"),
-            InitErrorType::GitRepoNotFound => String::from("git repo not found"),
+            InitErrorType::GitRepoNotFound => String::from("git repository not found"),
             InitErrorType::StorageDirNotADir => String::from("storage directory input is not a directory"),
-            InitErrorType::StorageDirAbsPathNotFound => String::from("could not get absolute path for storage directory"),
-            InitErrorType::ConfigNotCreated => String::from("configuration file not found"),
+            InitErrorType::StorageDirAbsPathNotFound => String::from("storage directory absolute path not found"),
+            InitErrorType::ConfigNotCreated => String::from("configuration file not created (dvs.yaml)"),
             InitErrorType::GroupNotFound => String::from("linux primary group not found"),
             InitErrorType::StorageDirNotCreated => String::from("storage directory not created"),
             InitErrorType::PermissionsInvalid => String::from("linux file permissions invalid"),
