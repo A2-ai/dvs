@@ -48,7 +48,7 @@ impl FileErrorType {
         match self {
             FileErrorType::RelativePathNotFound => String::from("relative path not found"),
             FileErrorType::FileNotInGitRepo => String::from("file not in git repository"),
-            FileErrorType::AbsolutePathNotFound => String::from("file not found"),
+            FileErrorType::AbsolutePathNotFound => String::from("absolute path not found"),
             FileErrorType::PathIsDirectory => String::from("path is a directory"),
             FileErrorType::HashNotFound => String::from("file hash not found"),
             FileErrorType::SizeNotFound => String::from("file size not found"),
