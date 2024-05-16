@@ -15,37 +15,29 @@ pub struct Metadata {
     pub saved_by: String
 }
 
+fn save_error(local_path: &PathBuf, e: impl std::error::Error) -> FileError {
+    FileError {
+        relative_path: get_relative_path_to_wd(local_path).ok(),
+        absolute_path: get_absolute_path(local_path).ok(),
+        error: FileErrorType::MetadataNotSaved,
+        error_message: Some(e.to_string()),
+        input: local_path.clone(),
+    }
+}
+
 pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<(), FileError> {
-    // compose path file/to/file.ext.dvs
+    // compose path: <file_name>.dvs
     let metadata_file_path = metadata_path(local_path);
+
     // create file
-    File::create(&metadata_file_path).map_err(|e| {
-        FileError{
-            relative_path: get_relative_path_to_wd(local_path).ok(),
-            absolute_path: get_absolute_path(local_path).ok(),
-            error: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string()),
-            input: local_path.clone()
-        }
-    })?;
-    let contents = serde_json::to_string_pretty(&metadata).map_err(|e| {
-        FileError{
-            relative_path: get_relative_path_to_wd(local_path).ok(),
-            absolute_path: get_absolute_path(local_path).ok(),
-            error: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string()),
-            input: local_path.clone()
-        }
-    })?;
-    fs::write(&metadata_file_path, contents).map_err(|e| {
-        FileError{
-            relative_path: get_relative_path_to_wd(local_path).ok(),
-            absolute_path: get_absolute_path(local_path).ok(),
-            error: FileErrorType::MetadataNotSaved,
-            error_message: Some(e.to_string()),
-            input: local_path.clone()
-        }
-    })?;
+    File::create(&metadata_file_path).map_err(|e| save_error(local_path, e))?;
+
+    // serialize metadata as contents
+    let contents = serde_json::to_string_pretty(&metadata).map_err(|e| save_error(local_path, e))?;
+    
+    // write to file
+    fs::write(&metadata_file_path, contents).map_err(|e| save_error(local_path, e))?;
+
     Ok(())
 }
 
