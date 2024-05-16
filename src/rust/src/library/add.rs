@@ -78,7 +78,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // else, file not added already
 
     // check if file in git repo
-    repo::check_file_in_git_repo(local_path, git_dir, &relative_path, &absolute_path)?;
+    repo::check_file_in_git_repo(local_path, git_dir)?;
 
     // get file size
     let file_size_bytes = file::get_file_size(local_path)?;

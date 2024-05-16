@@ -128,8 +128,8 @@ test_that("status errors for a file that doesn't exist", {
     expect_equal(nrow(status), 1)
     # status is error
     expect_equal(status$status, "error")
-    # error is "metadata file not found"
-    expect_equal(status$error, "metadata file not found")
+    # error is "metadata file not loaded"
+    expect_equal(status$error, "metadata file not loaded")
     # error message exists
     expect_equal(sum(!is.na(status$error_message)), 1)
   })

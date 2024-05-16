@@ -47,13 +47,15 @@ pub fn is_directory_empty(directory: &Path) -> Result<bool> {
     Ok(entries.next().is_none())
 }
 
+fn nearest_repo_error(dir: &PathBuf) -> BatchError {
+    BatchError{ 
+        error: BatchErrorType::GitRepoNotFound,
+        error_message: format!("could not find git repo root; make sure you're in an active git repository: {}", dir.display())
+    }
+}
+
 pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, BatchError> {
-    let mut directory = dir.canonicalize().map_err(|e| {
-        BatchError{ 
-            error: BatchErrorType::GitRepoNotFound,
-            error_message: format!("could not find git repo root; make sure you're in an active git repository: {e}")
-        }
-    })?;
+    let mut directory = dir.canonicalize().map_err(|_e| nearest_repo_error(dir))?;
 
     if is_git_repo(&dir) {return Ok(directory)}
 
@@ -66,60 +68,37 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, Batch
                 else {
                     directory
                     .parent()
-                    .ok_or_else(|| BatchError{ 
-                        error: BatchErrorType::GitRepoNotFound,
-                        error_message: format!("could not find git repo root; make sure you're in an active git repository")
-                    })?
+                    .ok_or_else(|| nearest_repo_error(dir))?
                     .to_path_buf()
                 }
             }
             None => directory,
         };
     }
-    return Err(
-        BatchError{ 
-            error: BatchErrorType::GitRepoNotFound,
-            error_message: format!("could not find git repo root; make sure you're in an active git repository")
-        }
-    );
-   
+    return Err(nearest_repo_error(dir));
 }
 
-pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf, relative_path: &PathBuf, absolute_path: &PathBuf) -> std::result::Result<(), FileError> {
-    let canonical_path = local_path.canonicalize().map_err(|e| {
-        FileError{
-            relative_path: Some(relative_path.clone()),
-            absolute_path: Some(absolute_path.clone()),
-            error: FileErrorType::FileNotInGitRepo,
-            error_message: Some(e.to_string()),
-            input: local_path.clone()
-        }
-    })?;
+fn in_repo_error(local_path: &PathBuf, e: Option<String>) -> FileError {
+    FileError {
+        relative_path: get_relative_path_to_wd(local_path).ok(),
+        absolute_path: file::get_absolute_path(local_path).ok(),
+        error: FileErrorType::FileNotInGitRepo,
+        error_message: e,
+        input: local_path.clone(),
+    }
+}
 
-    let stripped = canonical_path.strip_prefix(git_dir).map_err(|e| {
-        FileError{
-            relative_path: Some(relative_path.clone()),
-            absolute_path: Some(absolute_path.clone()),
-            error: FileErrorType::FileNotInGitRepo,
-            error_message: Some(e.to_string()),
-            input: local_path.clone()
-        }
-    })?;
+pub fn check_file_in_git_repo(local_path: &PathBuf, git_dir: &PathBuf) -> std::result::Result<(), FileError> {
+    let canonical_path = local_path.canonicalize().map_err(|e| in_repo_error(local_path, Some(e.to_string())))?;
+
+    let stripped = canonical_path.strip_prefix(git_dir).map_err(|e| in_repo_error(local_path, Some(e.to_string())))?;
 
     // if the stripped prefix is different from the original, it's inside the repo
     if stripped != canonical_path {
         return Ok(())
     }
     else {
-        return Err(
-            FileError{
-                relative_path: Some(relative_path.clone()),
-                absolute_path: Some(absolute_path.clone()),
-                error: FileErrorType::FileNotInGitRepo,
-                error_message: None,
-                input: local_path.clone()
-            }
-        );
+        return Err(in_repo_error(local_path, None));
     }
 }
 
