@@ -95,22 +95,16 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
 
     // now that the file exists again, get info for data frame
 
-    let absolute_path = 
-        if absolute_path_temp.is_none() {
-            file::get_absolute_path(local_path)?
-        }
-        else {
-            absolute_path_temp.unwrap()
-        };
-   
-    let relative_path = 
-        if relative_path_temp.is_none() {
-            repo::get_relative_path_to_wd(local_path)?
-        }
-        else {
-            relative_path_temp.unwrap()
-        };
+    let absolute_path = match absolute_path_temp {
+        Some(path) => path,
+        None => file::get_absolute_path(local_path)?
+    };
 
+    let relative_path = match relative_path_temp {
+        Some(path) => path,
+        None => repo::get_relative_path_to_wd(local_path)?
+    };
+   
     let blake3_checksum = hash::get_file_hash(local_path)?;
 
     let file_size_bytes = file::get_file_size(local_path)?;
