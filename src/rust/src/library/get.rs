@@ -45,7 +45,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     
     // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get_file(&file, &storage_dir)
+        get_file(&file, &storage_dir, &git_dir)
     }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();
 
     Ok(retrieved_files)
@@ -53,7 +53,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 
 
 // gets a file from storage
-pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
+pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
     // get temporary relative and absolute paths because they probably don't exist
     let relative_path_temp = match repo::get_relative_path_to_wd(local_path) {
         Ok(path) => Some(path),
@@ -66,7 +66,11 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Res
     };
 
     // return if is dir
-    file::check_if_dir(local_path)?; // shouldn't error because metadata file has already been confirmed
+    // shouldn't error because metadata file exists has already been confirmed in batch function
+    // file::check_if_dir(local_path)?; 
+
+    // check if file in git repo
+    repo::check_file_in_git_repo(local_path, git_dir)?;
 
     // get metadata
     let metadata = file::load(local_path)?;
