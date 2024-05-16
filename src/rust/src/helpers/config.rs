@@ -66,7 +66,7 @@ pub fn get_storage_dir(storage_dir: &PathBuf) -> std::result::Result<PathBuf, Ba
     Ok(storage_dir.canonicalize().map_err(|e|
             BatchError{
                 error: BatchErrorType::StorageDirNotFound,
-                error_message: format!("change storage_dir: {} in dvs.yaml, {e}", storage_dir.display())
+                error_message: format!("storage_dir: {} in dvs.yaml, {e}", storage_dir.display())
             }
         )?)
 }
