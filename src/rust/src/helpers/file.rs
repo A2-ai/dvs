@@ -34,7 +34,7 @@ pub fn save(metadata: &Metadata, local_path: &PathBuf) -> std::result::Result<()
 
     // serialize metadata as contents
     let contents = serde_json::to_string_pretty(&metadata).map_err(|e| save_error(local_path, e))?;
-    
+
     // write to file
     fs::write(&metadata_file_path, contents).map_err(|e| save_error(local_path, e))?;
 
@@ -53,7 +53,7 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
             FileError{
                 relative_path: get_relative_path_to_wd(local_path).ok(),
                 absolute_path: get_absolute_path(local_path).ok(),
-                error: FileErrorType::MetadataNotFound,
+                error: FileErrorType::MetadataNotLoaded,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
             }

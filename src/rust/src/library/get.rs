@@ -66,7 +66,7 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Res
     };
 
     // return if is dir
-    file::check_if_dir(local_path)?;
+    file::check_if_dir(local_path)?; // shouldn't error because metadata file has already been confirmed
 
     // get metadata
     let metadata = file::load(local_path)?;
