@@ -65,15 +65,10 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
             Status::Absent
         }
         else {
-            match hash::get_file_hash(local_path) {
-                Ok(current_hash) => {
-                    if current_hash == metadata.blake3_checksum {
-                        Status::Current
-                    }
-                    else {Status::Unsynced}
-                }
-                Err(_) =>  Status::Unsynced,
-            }
+            let current_hash = hash::get_file_hash(local_path)?;
+
+            if current_hash == metadata.blake3_checksum {Status::Current}
+            else {Status::Unsynced}
         };
 
     let input = 
