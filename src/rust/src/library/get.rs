@@ -33,7 +33,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     }
         
     // collect queued paths
-    let queued_paths = parse::parse_meta_files_from_globs_get(&globs);
+    let queued_paths = parse::parse_meta_files_from_globs_get(globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
     if queued_paths.is_empty() {
@@ -55,12 +55,12 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
     // get temporary relative and absolute paths because they probably don't exist
-    let relative_path_temp = match repo::get_relative_path_to_wd(&local_path) {
+    let relative_path_temp = match repo::get_relative_path_to_wd(local_path) {
         Ok(path) => Some(path),
         Err(_) => None,
     };
 
-    let absolute_path_temp = match repo::absolutize_result(&local_path) {
+    let absolute_path_temp = match repo::absolutize_result(local_path) {
         Ok(path) => Some(path),
         Err(_) => None
     };
@@ -69,7 +69,7 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Res
     file::check_if_dir(local_path)?;
 
     // get metadata
-    let metadata = file::load(&local_path)?;
+    let metadata = file::load(local_path)?;
 
     // get local hash 
     let local_hash = hash::get_file_hash(local_path).unwrap_or_default();
@@ -82,7 +82,7 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Res
     // check if most current file is already present locally
     let outcome = 
         if !local_path.exists() || meta_hash == String::from("") || local_hash == String::from("") || local_hash != meta_hash {
-            copy::copy(&storage_path, &local_path)?;
+            copy::copy(&storage_path, local_path)?;
             Outcome::Copied
         }  // if file not present or not current
         else {
