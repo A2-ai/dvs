@@ -17,6 +17,9 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     // load the config
     let conf = config::read(&git_dir)?;
 
+    // check storage directory exists
+    let storage_dir = config::get_storage_dir(&conf.storage_dir)?;
+
     for glob in globs { // for each input in globs
         let file_path = PathBuf::from(glob);
         if file_path.extension().is_some() { // if the input is an explicit file path
@@ -42,7 +45,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     
     // get each file in queued_paths
     let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get_file(&file, &conf)
+        get_file(&file, &storage_dir)
     }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();
 
     Ok(retrieved_files)
@@ -50,7 +53,7 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 
 
 // gets a file from storage
-pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Result<RetrievedFile, FileError> {
+pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
     // get temporary relative and absolute paths because they probably don't exist
     let relative_path_temp = match repo::get_relative_path_to_wd(&local_path) {
         Ok(path) => Some(path),
@@ -72,7 +75,7 @@ pub fn get_file(local_path: &PathBuf, conf: &config::Config) -> std::result::Res
     let local_hash = hash::get_file_hash(local_path).unwrap_or_default();
 
     // get storage data
-    let storage_path = hash::get_storage_path(&conf.storage_dir, &metadata.blake3_checksum);
+    let storage_path = hash::get_storage_path(storage_dir, &metadata.blake3_checksum);
 
     // check if most current file is already present locally
     let outcome = 
