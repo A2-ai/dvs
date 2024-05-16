@@ -73,13 +73,15 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf) -> std::result::Res
 
     // get local hash 
     let local_hash = hash::get_file_hash(local_path).unwrap_or_default();
+    // get hash from metadata
+    let meta_hash = metadata.blake3_checksum;
 
     // get storage data
-    let storage_path = hash::get_storage_path(storage_dir, &metadata.blake3_checksum);
+    let storage_path = hash::get_storage_path(storage_dir, &meta_hash);
 
     // check if most current file is already present locally
     let outcome = 
-        if !local_path.exists() || metadata.blake3_checksum == String::from("") || local_hash == String::from("") || local_hash != metadata.blake3_checksum {
+        if !local_path.exists() || meta_hash == String::from("") || local_hash == String::from("") || local_hash != meta_hash {
             copy::copy(&storage_path, &local_path)?;
             Outcome::Copied
         }  // if file not present or not current
