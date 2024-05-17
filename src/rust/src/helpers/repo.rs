@@ -17,20 +17,16 @@ pub fn absolutize_result(path: &PathBuf) -> Result<PathBuf> {
 
 pub fn get_relative_path(root_dir: &PathBuf, file_path: &PathBuf) -> Result<PathBuf> {
     let abs_root_dir = root_dir.canonicalize()?;
-    // //println!("{}", abs_root_dir.display());
-   let abs_file_path = absolutize_result(&file_path)?;
-    // //println!("{}", abs_file_path.display());
-    // Ok(abs_file_path.strip_prefix(abs_root_dir)?.to_path_buf())
+    let abs_file_path = absolutize_result(&file_path)?;
 
-    let rel = pathdiff::diff_paths(abs_file_path, abs_root_dir).ok_or("relative path not found".into());
-    rel
+    pathdiff::diff_paths(abs_file_path, abs_root_dir).ok_or("relative path not found".into())
 }
 
 pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
     Ok(get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
         FileError{
             relative_path: None,
-            absolute_path: file::get_absolute_path(local_path).ok(),
+            absolute_path: file::try_to_get_abs_path(local_path),
             error: FileErrorType::RelativePathNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
@@ -78,6 +74,7 @@ pub fn get_nearest_repo_dir(dir: &PathBuf) -> std::result::Result<PathBuf, Batch
     return Err(nearest_repo_error(dir));
 }
 
+// LOOKUP relative_path: get_relative_path_to_wd(local_path).ok(),
 fn in_repo_error(local_path: &PathBuf, e: Option<String>) -> FileError {
     FileError {
         relative_path: get_relative_path_to_wd(local_path).ok(),

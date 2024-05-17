@@ -41,24 +41,16 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
 } 
 
 fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
-    let metadata_path = file::metadata_path(local_path);
+    // info function, so just try to get abs path
+    let absolute_path = file::try_to_get_abs_path(local_path);
 
-    // work around because while metadata file might exist, file itself may not
-    // get abs path of metadata file, then take of .dvs extension
-    let absolute_path = match file::get_absolute_path(&metadata_path) {
-        Ok(path) => Some(file::path_without_metadata(&path)),
-        Err(_) => None,
-    };
-
-    let relative_path = match repo::get_relative_path_to_wd(&metadata_path) {
-        Ok(path) => Some(file::path_without_metadata(&path)),
-        Err(_) => None,
-    };
+    // info fn, so just try to get rel path
+    let relative_path = file::try_to_get_rel_path(local_path);
 
     file::check_if_dir(local_path)?;
 
     // check if metadata file exists
-    if !metadata_path.exists() {
+    if !file::metadata_path(local_path).exists() {
         return Err(FileError{
             relative_path,
             absolute_path,

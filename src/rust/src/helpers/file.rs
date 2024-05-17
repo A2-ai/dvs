@@ -3,6 +3,8 @@ use file_owner::PathExt;
 use serde::{Deserialize, Serialize};
 use crate::helpers::{repo, error::{FileError, FileErrorType, BatchError, BatchErrorType}};
 
+use super::repo::absolutize_result;
+
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
@@ -17,8 +19,8 @@ pub struct Metadata {
 
 fn save_error(local_path: &PathBuf, e: impl std::error::Error) -> FileError {
     FileError {
-        relative_path: get_relative_path_to_wd(local_path).ok(),
-        absolute_path: get_absolute_path(local_path).ok(),
+        relative_path: try_to_get_rel_path(local_path),
+        absolute_path: try_to_get_abs_path(local_path),
         error: FileErrorType::MetadataNotSaved,
         error_message: Some(e.to_string()),
         input: local_path.clone(),
@@ -51,8 +53,8 @@ pub fn load_helper(path: &PathBuf) -> Result<Metadata> {
 pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
     Ok(load_helper(local_path).map_err(|e| {
             FileError{
-                relative_path: get_relative_path_to_wd(local_path).ok(),
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: try_to_get_rel_path(local_path),
+                absolute_path: try_to_get_abs_path(local_path),
                 error: FileErrorType::MetadataNotLoaded,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
@@ -79,8 +81,8 @@ pub fn get_user_helper(path: &PathBuf) -> Result<String> {
 pub fn get_user_name(local_path: &PathBuf) -> std::result::Result<String, FileError> {
     Ok(get_user_helper(local_path).map_err(|e| {
         FileError{
-            relative_path: get_relative_path_to_wd(local_path).ok(),
-            absolute_path: get_absolute_path(local_path).ok(),
+            relative_path: try_to_get_rel_path(local_path),
+            absolute_path: try_to_get_abs_path(local_path),
             error: FileErrorType::OwnerNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
@@ -91,8 +93,8 @@ pub fn get_user_name(local_path: &PathBuf) -> std::result::Result<String, FileEr
 
 pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, FileError> {
     Ok(local_path.canonicalize().map_err(|e|
-            FileError{ // this should never error because if any paths aren't canonicalizable in the batch add fn, the fn returns
-                relative_path: None,
+            FileError{
+                relative_path: try_to_get_rel_path(local_path),
                 absolute_path: None,
                 error: FileErrorType::AbsolutePathNotFound,
                 error_message: Some(e.to_string()),
@@ -105,7 +107,7 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
     Ok(repo::get_relative_path(&PathBuf::from("."), &local_path).map_err(|e|
         FileError{
             relative_path: None,
-            absolute_path: get_absolute_path(local_path).ok(),
+            absolute_path: try_to_get_abs_path(local_path),
             error: FileErrorType::RelativePathNotFound,
             error_message: Some(e.to_string()),
             input: local_path.clone()
@@ -118,8 +120,8 @@ pub fn get_relative_path_to_wd(local_path: &PathBuf) -> std::result::Result<Path
 pub fn check_if_dir(local_path: &PathBuf) -> std::result::Result<(), FileError> {
     if local_path.is_dir() {
         Err(FileError{
-                relative_path: repo::get_relative_path_to_wd(local_path).ok(),
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: try_to_get_rel_path(local_path),
+                absolute_path: try_to_get_abs_path(local_path),
                 error: FileErrorType::PathIsDirectory,
                 error_message: None,
                 input: local_path.clone()
@@ -134,8 +136,8 @@ pub fn check_if_dir(local_path: &PathBuf) -> std::result::Result<(), FileError> 
 pub fn get_file_size(local_path: &PathBuf) -> std::result::Result<u64, FileError> {
     Ok(local_path.metadata().map_err(|e|
             FileError{
-                relative_path: repo::get_relative_path_to_wd(local_path).ok(), 
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: try_to_get_rel_path(local_path),
+                absolute_path: try_to_get_abs_path(local_path),
                 error: FileErrorType::SizeNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
@@ -156,6 +158,33 @@ pub fn check_meta_files_exist(queued_paths: &Vec<PathBuf>) -> std::result::Resul
     }
 
     Ok(()) // If all .dvs files found, return Ok
+}
+
+pub fn try_to_get_abs_path(local_path: &PathBuf) -> Option<PathBuf> {
+    let metadata_path = metadata_path(local_path);
+
+    // try to get abs path of metadata file
+    get_absolute_path(&metadata_path) 
+         // strip .dvs extension to get abs path of file
+        .map(|path| path_without_metadata(&path)).ok() 
+        // if that doesn't work, i.e. the metadata file dne, try to get the abs path of the file
+        .or_else(|| get_absolute_path(local_path).ok())
+        // if that doesn't work, try to absolutize local_path
+        // .or_else(|| absolutize_result(local_path).ok())
+        // if that doesn't work, try to absolutize metadata file
+        .or_else(|| absolutize_result(&metadata_path)
+        // strip .dvs extension to get absolutized path of file
+        .map(|path| path_without_metadata(&path)).ok())
+}
+
+pub fn try_to_get_rel_path(local_path: &PathBuf) -> Option<PathBuf> {
+    let metadata_path = metadata_path(local_path);
+
+    repo::get_relative_path_to_wd(&metadata_path) 
+        // strip .dvs extension to get rel path of file itself
+        .map(|path| path_without_metadata(&path)).ok() 
+        // if that doesn't work, i.e. the metadata file dne, get the rel path of the file itself, None if it dne
+        .or_else(|| repo::get_relative_path_to_wd(local_path).ok())
 }
 
 

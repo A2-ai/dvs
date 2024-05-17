@@ -2,6 +2,8 @@ use std::{fs::{self, File}, path::PathBuf, os::unix::fs::PermissionsExt};
 use crate::helpers::{error::{FileError, FileErrorType}, file::{get_absolute_path, get_relative_path_to_wd}};
 use file_owner::{Group, PathExt};
 
+use super::file;
+
 pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
@@ -46,8 +48,8 @@ pub fn copy_impl(src_path: &PathBuf, dest_path: &PathBuf) -> Result<()> {
 pub fn copy(local_path: &PathBuf, storage_path: &PathBuf) -> std::result::Result<(), FileError> {
     Ok(copy_impl(local_path, storage_path).map_err(|e|
             FileError{
-                relative_path: get_relative_path_to_wd(local_path).ok(),
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: file::try_to_get_rel_path(local_path),
+                absolute_path: file::try_to_get_abs_path(local_path),
                 error: FileErrorType::FileNotCopied,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
@@ -74,8 +76,8 @@ pub fn set_group(group: &Option<Group>, local_path: &PathBuf) -> std::result::Re
         let group_name = group.unwrap(); // group.is_some() so can safely unwrap
         local_path.set_group(group_name).map_err(|e|
             FileError{
-                relative_path: get_absolute_path(local_path).ok(),
-                absolute_path: get_relative_path_to_wd(local_path).ok(),
+                relative_path: file::try_to_get_rel_path(local_path),
+                absolute_path: file::try_to_get_abs_path(local_path),
                 error: FileErrorType::GroupNotSet,
                 error_message: Some(format!("{group_name} {e}")),
                 input: local_path.clone()

@@ -54,21 +54,6 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
 
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
-    // get temporary relative and absolute paths because they probably don't exist
-    let relative_path_temp = match repo::get_relative_path_to_wd(local_path) {
-        Ok(path) => Some(path),
-        Err(_) => None,
-    };
-
-    let absolute_path_temp = match repo::absolutize_result(local_path) {
-        Ok(path) => Some(path),
-        Err(_) => None
-    };
-
-    // return if is dir
-    // shouldn't error because metadata file exists has already been confirmed in batch function
-    // file::check_if_dir(local_path)?; 
-
     // check if file in git repo
     repo::check_file_in_git_repo(local_path, git_dir)?;
 
@@ -95,15 +80,11 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
 
     // now that the file exists again, get info for data frame
 
-    let absolute_path = match absolute_path_temp {
-        Some(path) => path,
-        None => file::get_absolute_path(local_path)?
-    };
-
-    let relative_path = match relative_path_temp {
-        Some(path) => path,
-        None => repo::get_relative_path_to_wd(local_path)?
-    };
+    // absolute path of the file itself should exist now
+    let absolute_path = file::get_absolute_path(local_path)?;
+   
+    // relative path of file itself should exist now
+    let relative_path = repo::get_relative_path_to_wd(local_path)?;
    
     let blake3_checksum = hash::get_file_hash(local_path)?;
 

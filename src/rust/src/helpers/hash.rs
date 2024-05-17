@@ -1,7 +1,7 @@
 use std::{fs::File, path::PathBuf, io::{self, Read, Result}};
 use crate::helpers::cache;
 use blake3::Hasher;
-use crate::helpers::{error::{FileError, FileErrorType}, file::{get_absolute_path, get_relative_path_to_wd}};
+use crate::helpers::{error::{FileError, FileErrorType}, file};
 
 
 pub fn hash_file_with_blake3(file_path: &PathBuf) -> io::Result<Option<String>> {
@@ -86,8 +86,8 @@ pub fn get_file_hash(local_path: &PathBuf) -> std::result::Result<String, FileEr
         },
         Ok(None) => {
             Err(FileError{
-                relative_path: get_relative_path_to_wd(local_path).ok(), 
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: file::try_to_get_rel_path(local_path),
+                absolute_path: file::try_to_get_abs_path(local_path),
                 error: FileErrorType::HashNotFound,
                 error_message: None,
                 input: local_path.clone()
@@ -96,8 +96,8 @@ pub fn get_file_hash(local_path: &PathBuf) -> std::result::Result<String, FileEr
         Err(e) => {
             // if there's no hash or an error, return None
             Err(FileError{
-                relative_path: get_relative_path_to_wd(local_path).ok(),
-                absolute_path: get_absolute_path(local_path).ok(),
+                relative_path: file::try_to_get_rel_path(local_path),
+                absolute_path: file::try_to_get_abs_path(local_path),
                 error: FileErrorType::HashNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
