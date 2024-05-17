@@ -17,6 +17,7 @@ pub enum FileErrorType {
     GitIgnoreNotAdded,
     FileNotCopied,
     MetadataNotLoaded,
+    FileNotAdded,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +60,7 @@ impl FileErrorType {
             FileErrorType::GitIgnoreNotAdded => String::from("gitignore entry not saved"),
             FileErrorType::FileNotCopied => String::from("file not copied"),
             FileErrorType::MetadataNotLoaded => String::from("metadata file not loaded"),
+            FileErrorType::FileNotAdded => String::from("file not added"),
         }
     }
 }

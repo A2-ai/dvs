@@ -1,5 +1,5 @@
 
-use crate::helpers::{config, error::{BatchError, FileError}, file, hash, outcome::Status, parse, repo};
+use crate::helpers::{config, error::{BatchError, FileError, FileErrorType}, file, hash, outcome::Status, parse, repo};
 use std::path::PathBuf;
 
 #[derive(PartialEq, Debug)]
@@ -41,22 +41,34 @@ pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
 } 
 
 fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
-    let metadata_path_abs = file::metadata_path(local_path);
+    let metadata_path = file::metadata_path(local_path);
 
     // work around because while metadata file might exist, file itself may not
-    let absolute_path = match file::get_absolute_path(&metadata_path_abs) {
+    // get abs path of metadata file, then take of .dvs extension
+    let absolute_path = match file::get_absolute_path(&metadata_path) {
         Ok(path) => Some(file::path_without_metadata(&path)),
         Err(_) => None,
     };
 
-    let relative_path = match repo::get_relative_path_to_wd(&metadata_path_abs) {
+    let relative_path = match repo::get_relative_path_to_wd(&metadata_path) {
         Ok(path) => Some(file::path_without_metadata(&path)),
         Err(_) => None,
     };
 
     file::check_if_dir(local_path)?;
+
+    // check if metadata file exists
+    if !metadata_path.exists() {
+        return Err(FileError{
+            relative_path,
+            absolute_path,
+            error: FileErrorType::FileNotAdded,
+            error_message: Some(format!("metadata file not found - add the file to dvs to get status")),
+            input: local_path.clone()
+        })
+    }
     
-    // get file info
+    // load metadata
     let metadata = file::load(local_path)?;
             
     // assign status
