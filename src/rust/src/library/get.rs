@@ -78,24 +78,13 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
             Outcome::Present
         };
 
-    // now that the file exists again, get info for data frame
-
-    // absolute path of the file itself should exist now
-    let absolute_path = file::get_absolute_path(local_path)?;
-   
-    // relative path of file itself should exist now
-    let relative_path = repo::get_relative_path_to_wd(local_path)?;
-   
-    let blake3_checksum = hash::get_file_hash(local_path)?;
-
-    let file_size_bytes = file::get_file_size(local_path)?;
-
+    // now that the file exists again, so info should be retrivable for data frame
     Ok(RetrievedFile {
-            relative_path,
-            absolute_path,
-            blake3_checksum,
+            relative_path: repo::get_relative_path_to_wd(local_path)?,
+            absolute_path: file::get_absolute_path(local_path)?,
+            blake3_checksum: hash::get_file_hash(local_path)?,
             outcome,
-            file_size_bytes
+            file_size_bytes: file::get_file_size(local_path)?
         }
     )
 }
