@@ -95,7 +95,7 @@ pub fn get_absolute_path(local_path: &PathBuf) -> std::result::Result<PathBuf, F
     Ok(local_path.canonicalize().map_err(|e|
             FileError{
                 relative_path: try_to_get_rel_path(local_path),
-                absolute_path: None,
+                absolute_path: absolutize_result(local_path).ok(),
                 error: FileErrorType::AbsolutePathNotFound,
                 error_message: Some(e.to_string()),
                 input: local_path.clone()
@@ -170,7 +170,7 @@ pub fn try_to_get_abs_path(local_path: &PathBuf) -> Option<PathBuf> {
         // if that doesn't work, i.e. the metadata file dne, try to get the abs path of the file
         .or_else(|| get_absolute_path(local_path).ok())
         // if that doesn't work, try to absolutize local_path
-        // .or_else(|| absolutize_result(local_path).ok())
+        .or_else(|| absolutize_result(local_path).ok())
         // if that doesn't work, try to absolutize metadata file
         .or_else(|| absolutize_result(&metadata_path)
         // strip .dvs extension to get absolutized path of file
