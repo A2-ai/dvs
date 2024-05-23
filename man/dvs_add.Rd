@@ -4,7 +4,7 @@
 \alias{dvs_add}
 \title{copy files to the storage directory}
 \usage{
-dvs_add(files, message = "", split_output = FALSE)
+dvs_add(files, message = NULL, split_output = FALSE)
 }
 \arguments{
 \item{files}{file paths or glob patterns to add to the storage directory}

@@ -41,21 +41,22 @@ struct RFileError {
 #[derive(Debug, IntoDataFrameRow)]
 struct RInit {
     storage_directory: String,
-    file_permissions: i32,
+    permissions: i32,
     group: String,
 }
 
 #[extendr]
-fn dvs_init_impl(storage_dir: &str, mode: i32, group: Nullable<&str>) -> Result<Robj> {
+fn dvs_init_impl(storage_dir: &str, mode: Nullable<i32>, group: Nullable<&str>) -> Result<Robj> {
     let group_in = <Option<&str>>::from(group);
-    let init = init::dvs_init(&PathBuf::from(storage_dir), &mode, group_in).map_err(|e|
+    let mode_in = <Option<i32>>::from(mode);
+    let init = init::dvs_init(&PathBuf::from(storage_dir), mode_in, group_in).map_err(|e|
         Error::Other(format!("{}: {}", e.error.init_error_to_string(), e.error_message))
     )?;
 
     let init_df = RInit{
         storage_directory: init.storage_directory.display().to_string(),
         group: init.group,
-        file_permissions: init.file_permissions,
+        permissions: init.permissions,
     };
 
     Ok(vec![init_df]
@@ -67,10 +68,11 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: Nullable<&str>) -> Result<
 
 
 #[extendr]
-fn dvs_add_impl(files_string: Vec<String>, message: &str, strict: bool, split_output: bool) -> Result<Robj> {
-    let files_pathbuf: Vec<PathBuf> = files_string.into_iter().map(PathBuf::from).collect();
+fn dvs_add_impl(files_string: Vec<String>, message: Nullable<&str>, strict: bool, split_output: bool) -> Result<Robj> {
+    let files_in: Vec<PathBuf> = files_string.into_iter().map(PathBuf::from).collect();
+    let message_in = <Option<&str>>::from(message);
 
-    let added_files = add::add(&files_pathbuf, &String::from(message), strict).map_err(|e| {
+    let added_files = add::add(&files_in, message_in, strict).map_err(|e| {
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     })?;
 
@@ -290,12 +292,10 @@ struct RStatusFileError {
 }
 
 #[extendr]
-fn dvs_status_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
-    // let globs_in = <Nullable<Vec<String>>>::try_from(&globs)?;
-    // if globs == r!(NULL) {
+fn dvs_status_impl(files: Vec<String>, split_output: bool) -> Result<Robj> {
 
     // }
-    let status = status::status(&globs).map_err(|e|
+    let status = status::status(&files).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
 

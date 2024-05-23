@@ -4,7 +4,7 @@
 \alias{dvs_init}
 \title{initialize devious to add/get versioned files from the storage directory}
 \usage{
-dvs_init(storage_directory, permissions = 664, group = NULL)
+dvs_init(storage_directory, permissions = NULL, group = NULL)
 }
 \arguments{
 \item{storage_directory}{path to the desired storage directory for versioned files}

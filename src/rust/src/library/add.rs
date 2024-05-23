@@ -12,7 +12,7 @@ pub struct AddedFile {
     pub absolute_path: PathBuf,
 }
 
-pub fn add(files: &Vec<PathBuf>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
+pub fn add(files: &Vec<PathBuf>, message_in: Option<&str>, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
@@ -44,6 +44,13 @@ pub fn add(files: &Vec<PathBuf>, message: &String, strict: bool) -> std::result:
                 error_message: format!("{} not found: {e}", file.display())
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, BatchError>>()?;
+
+    let message = {
+        if let Some(message_some) = message_in {
+            String::from(message_some)
+        }
+        else {String::from("")}
+    };
 
     Ok(files.into_iter().map(|file| {
         add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict)

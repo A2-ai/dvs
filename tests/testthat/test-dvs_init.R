@@ -24,7 +24,7 @@ test_that("init works first run", {
     # Check dvs_init output
     default_perms <- 664
     expected_df <- data.frame(storage_directory = stor_dir,
-                              file_permissions = default_perms,
+                              permissions = default_perms,
                               group = "")
 
     expect_equal(actual_df, expected_df)
@@ -76,7 +76,7 @@ test_that("init works no defaults", {
 
     # Check dvs_init output
     expected_df <- data.frame(storage_directory = stor_dir,
-                              file_permissions = perms,
+                              permissions = perms,
                               group = group)
 
     expect_equal(actual_df, expected_df)
