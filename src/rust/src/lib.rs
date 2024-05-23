@@ -1,6 +1,6 @@
 mod helpers;
 mod library;
-use helpers::outcome::{Outcome, Status};
+use helpers::{outcome::{Outcome, Status}, parse};
 use library::{init, add, get, status, info};
 use extendr_api::{prelude::*, robj::Robj};
 use std::path::PathBuf;
@@ -66,8 +66,10 @@ fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> Result<Robj> {
 
 
 #[extendr]
-fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, split_output: bool) -> Result<Robj> {
-    let added_files = add::add(&globs, &String::from(message), strict).map_err(|e| {
+fn dvs_add_impl(files_string: Vec<String>, message: &str, strict: bool, split_output: bool) -> Result<Robj> {
+    let files_pathbuf: Vec<PathBuf> = files_string.into_iter().map(PathBuf::from).collect();
+
+    let added_files = add::add(&files_pathbuf, &String::from(message), strict).map_err(|e| {
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     })?;
 
@@ -156,8 +158,10 @@ fn dvs_add_impl(globs: Vec<String>, message: &str, strict: bool, split_output: b
 }
 
 #[extendr]
-fn dvs_get_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
-    let got_files = get::get(&globs).map_err(|e|
+fn dvs_get_impl(files_string: Vec<String>, split_output: bool) -> Result<Robj> {
+    let files_pathbuf: Vec<PathBuf> = files_string.into_iter().map(PathBuf::from).collect();
+
+    let got_files = get::get(&files_pathbuf).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
 
@@ -286,6 +290,10 @@ struct RStatusFileError {
 
 #[extendr]
 fn dvs_status_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
+    // let globs_in = <Nullable<Vec<String>>>::try_from(&globs)?;
+    // if globs == r!(NULL) {
+
+    // }
     let status = status::status(&globs).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
@@ -304,7 +312,7 @@ fn dvs_status_impl(globs: Vec<String>, split_output: bool) -> Result<Robj> {
                 blake3_checksum: Some(fi.blake3_checksum.clone()),
                 error: None,
                 error_message: None,
-                input: fi.input.clone().map(|p| p.to_string_lossy().to_string()),
+                input: None,
             },
             Err(e) => RStatusFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
@@ -506,6 +514,43 @@ fn get_file_info_impl(paths: Vec<String>, split_output: bool) -> Robj {
     }
 }
 
+#[extendr]
+fn parse_files_from_globs_add_impl(globs: Vec<String>) -> Vec<String> {
+    parse::parse_files_from_globs_add(&globs)
+        .into_iter()
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect()
+}
+
+#[extendr]
+fn parse_files_from_globs_get_impl(globs: Vec<String>) -> Result<Vec<String>> {
+    Ok(parse::parse_files_from_globs_get(&globs)
+        .map_err(|e|Error::Other(format!("{}: {}",e.error.batch_error_to_string(),e.error_message)))? 
+        .into_iter()
+        .map(|path|path.to_string_lossy().into_owned())
+        .collect()
+    )
+    
+}
+
+#[extendr]
+fn parse_files_from_globs_status_impl(globs: Vec<String>) -> Result<Vec<String>> {
+    Ok(parse::parse_files_from_globs_status(&globs)
+        .map_err(|e|
+            Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message)))?
+        .into_iter()
+        .map(|path|path.to_string_lossy().into_owned())
+        .collect()
+    )
+}
+
+#[extendr] 
+fn is_explicit_path_impl(entry: String) -> bool {
+    parse::is_explicit_path(&entry)
+}
+
+
+
 extendr_module! {
     mod dvs;
     fn dvs_init_impl;
@@ -513,9 +558,20 @@ extendr_module! {
     fn dvs_get_impl;
     fn dvs_status_impl;
     fn get_file_info_impl;
+    fn parse_files_from_globs_add_impl;
+    fn parse_files_from_globs_get_impl;
+    fn parse_files_from_globs_status_impl;
+    fn is_explicit_path_impl;
 }
 
 
 
-
+// explicit existing file path -> true
+// explicit non-existing file path -> true
+// explicit existing dir path -> true
+// explicit non-existing dir path -> true
+// invalid file glob -> true (want to error that its metadata file dne)
+// valid file glob with hits -> false
+// valid file glob without hits that isn't a path to an existing file or dir with spec char -> false
+// valid file glob without hits that isn't a path to an existing file or dir without spec char -> true
 

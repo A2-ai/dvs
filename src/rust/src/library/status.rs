@@ -1,5 +1,5 @@
 
-use crate::helpers::{config, error::{BatchError, FileError, FileErrorType}, file, hash, outcome::Status, parse, repo};
+use crate::helpers::{config, error::{BatchError, FileError, FileErrorType}, file, hash, outcome::Status, repo};
 use std::path::PathBuf;
 
 #[derive(PartialEq, Debug)]
@@ -11,36 +11,25 @@ pub struct FileStatus {
     pub saved_by: String,
     pub message: String,
     pub absolute_path: Option<PathBuf>,
-    pub blake3_checksum: String,
-    pub input: Option<PathBuf>
+    pub blake3_checksum: String
 }
 
-pub fn status(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<FileStatus, FileError>>, BatchError> {
+pub fn status(files: &Vec<String>) -> std::result::Result<Vec<std::result::Result<FileStatus, FileError>>, BatchError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
     // load the config
     config::read(&git_dir)?;
-
-    let input_manually: bool;
     
-    let meta_paths: Vec<PathBuf> = 
-        if globs.contains(&String::from("")) && globs.len() == 1 { // if no arguments are provided, get the status of all files in the current git repository
-            input_manually = false;
-            parse::get_all_meta_files(&git_dir)
-        } 
-        else { // else, parse specifically inputted globs
-            input_manually = true;
-            parse::parse_meta_files_from_globs_status(globs)
-        };
+    //let meta_paths: Vec<PathBuf> = parse::parse_files_from_globs_status(globs)?;
 
     // get the status of each file and collect
-    Ok(meta_paths.into_iter().map(|path| {
-        status_file(&path, input_manually)
+    Ok(files.into_iter().map(|path| {
+        status_file(&PathBuf::from(path))
     }).collect::<Vec<std::result::Result<FileStatus, FileError>>>())
 } 
 
-fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Result<FileStatus, FileError> {
+fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileError> {
     // info function, so just try to get abs path
     let absolute_path = file::try_to_get_abs_path(local_path);
 
@@ -75,14 +64,6 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
             else {Status::Unsynced}
         };
 
-    let input = 
-        if input_manually {
-            Some(local_path.clone())
-        }
-        else {
-            None
-        };
-
     // assemble info into FileStatus
     Ok(FileStatus{
             relative_path,
@@ -92,8 +73,7 @@ fn status_file(local_path: &PathBuf, input_manually: bool) -> std::result::Resul
             blake3_checksum: metadata.blake3_checksum,
             time_stamp: metadata.time_stamp,
             saved_by: metadata.saved_by,
-            message: metadata.message,
-            input
+            message: metadata.message
         })
 }
 

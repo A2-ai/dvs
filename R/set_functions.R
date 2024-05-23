@@ -34,15 +34,9 @@ dvs_init <- function(storage_directory,
 }
 
 #' @import stringr
-clean_paths <- function(files) {
-  # REVIEW: this can be vectorized, and actually should likely be a separate R function
-  # that also expands globs
-  for (i in seq_along(files)) {
-    if (stringr::str_detect(files[i], "~")) {
-      files[i] <- normalizePath(files[i], mustWork = FALSE)
-    }
-  }
-  files
+normalize_paths <- function(files) {
+  # normalize if file path has ~
+  ifelse(stringr::str_detect(files, "~"), normalizePath(files, mustWork = FALSE), files)
 }
 
 #' copy files to the storage directory
@@ -81,7 +75,8 @@ clean_paths <- function(files) {
 #'
 #' @export
 dvs_add <- function(files, message = "", split_output = FALSE) {
-  files <- clean_paths(files)
+  files <- normalize_paths(files)
+  files <- parse_files_from_globs_add_impl(files)
   strict = TRUE
   dvs_add_impl(files, message, strict, split_output)
 }
@@ -122,7 +117,8 @@ dvs_add <- function(files, message = "", split_output = FALSE) {
 #'
 #' @export
 dvs_get <- function(files, split_output = FALSE) {
-  files <- clean_paths(files)
+  files <- normalize_paths(files)
+  files <- parse_files_from_globs_get_impl(files)
   dvs_get_impl(files, split_output)
 }
 
@@ -162,7 +158,8 @@ dvs_get <- function(files, split_output = FALSE) {
 #'
 #' @export
 dvs_status <- function(files = c(""), split_output = FALSE) {
-  files <- clean_paths(files)
+  files <- normalize_paths(files)
+  files <- parse_files_from_globs_status_impl(files)
   dvs_status_impl(files, split_output)
 }
 

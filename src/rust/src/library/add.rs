@@ -1,4 +1,4 @@
-use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, parse, repo};
+use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, repo};
 use std::{fs, path::PathBuf, u32};
 use chrono:: Utc;
 use file_owner::Group;
@@ -12,7 +12,7 @@ pub struct AddedFile {
     pub absolute_path: PathBuf,
 }
 
-pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
+pub fn add(files: &Vec<PathBuf>, message: &String, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
@@ -29,15 +29,15 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
     let permissions = config::get_mode_u32(&conf.permissions)?;
 
     // collect paths out of input - sort through globs/explicitly-named files
-    let queued_paths = parse::parse_files_from_globs(&globs);
+    //let queued_paths = parse::parse_files_from_globs_add(&globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
-    if queued_paths.is_empty() {
+    if files.is_empty() {
         println!("warning: no paths queued to add to dvs")
     }
 
     // return error if any files don't exist
-    queued_paths.iter().map(|file| {
+    files.iter().map(|file| {
        file.canonicalize().map_err(|e|
             BatchError{
                 error: BatchErrorType::AnyFilesDNE,
@@ -45,7 +45,7 @@ pub fn add(globs: &Vec<String>, message: &String, strict: bool) -> std::result::
             })
     }).collect::<std::result:: Result<Vec<PathBuf>, BatchError>>()?;
 
-    Ok(queued_paths.into_iter().map(|file| {
+    Ok(files.into_iter().map(|file| {
         add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict)
     }).collect::<Vec<std::result::Result<AddedFile, FileError>>>())
 }

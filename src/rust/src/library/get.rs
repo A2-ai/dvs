@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, outcome::Outcome, parse, repo};
+use crate::helpers::{config, copy, error::{BatchError, FileError}, file, hash, outcome::Outcome, repo};
 
 #[derive(Debug)]
 pub struct RetrievedFile {
@@ -10,7 +10,7 @@ pub struct RetrievedFile {
     pub blake3_checksum: String,
 }
 
-pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<RetrievedFile, FileError>>, BatchError> {
+pub fn get(files: &Vec<PathBuf>) -> std::result::Result<Vec<std::result::Result<RetrievedFile, FileError>>, BatchError> {
     // get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
@@ -20,35 +20,25 @@ pub fn get(globs: &Vec<String>) -> std::result::Result<Vec<std::result::Result<R
     // check storage directory exists
     let storage_dir = config::get_storage_dir(&conf.storage_dir)?;
 
-    for glob in globs { // for each input in globs
-        let file_path = PathBuf::from(glob);
-        if file_path.extension().is_some() { // if the input is an explicit file path
-            if !file::metadata_path(&file_path).exists() { // and that file path doesn't have a corresponding metadata file
-                return Err(BatchError { // return error
-                    error: BatchErrorType::AnyMetaFilesDNE,
-                    error_message: format!("missing for {}", file_path.display()),
-                })
-            }
-        }
-    }
         
     // collect queued paths
-    let queued_paths = parse::parse_meta_files_from_globs_get(globs);
+    //let queued_paths = parse::parse_files_from_globs_get(globs);
 
     // warn if no paths queued after sorting through input - likely not intentional by user
-    if queued_paths.is_empty() {
+    if files.is_empty() {
         println!("warning: no files were queued")
     }
 
     // check that metadata file exists for all files
-    file::check_meta_files_exist(&queued_paths)?;
+    file::check_meta_files_exist(files)?;
     
     // get each file in queued_paths
-    let retrieved_files = queued_paths.clone().into_iter().map(|file| {
-        get_file(&file, &storage_dir, &git_dir)
-    }).collect::<Vec<std::result::Result<RetrievedFile, FileError>>>();
-
-    Ok(retrieved_files)
+    Ok(files
+        .into_iter()
+        .map(|file| {
+            get_file(&file, &storage_dir, &git_dir)
+        })
+        .collect::<Vec<std::result::Result<RetrievedFile, FileError>>>())
 }
 
 
@@ -88,5 +78,6 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
         }
     )
 }
+
 
 

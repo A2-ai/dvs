@@ -1,2 +1,7 @@
 .Rproj.user
 /src/rust/target
+
+
+# dvs entry
+/test.txt
+!/test.txt.dvs

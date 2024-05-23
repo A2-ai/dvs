@@ -13,13 +13,21 @@ NULL
 
 dvs_init_impl <- function(storage_dir, mode, group) .Call(wrap__dvs_init_impl, storage_dir, mode, group)
 
-dvs_add_impl <- function(globs, message, strict, split_output) .Call(wrap__dvs_add_impl, globs, message, strict, split_output)
+dvs_add_impl <- function(files_string, message, strict, split_output) .Call(wrap__dvs_add_impl, files_string, message, strict, split_output)
 
-dvs_get_impl <- function(globs, split_output) .Call(wrap__dvs_get_impl, globs, split_output)
+dvs_get_impl <- function(files_string, split_output) .Call(wrap__dvs_get_impl, files_string, split_output)
 
 dvs_status_impl <- function(globs, split_output) .Call(wrap__dvs_status_impl, globs, split_output)
 
 get_file_info_impl <- function(paths, split_output) .Call(wrap__get_file_info_impl, paths, split_output)
+
+parse_files_from_globs_add_impl <- function(globs) .Call(wrap__parse_files_from_globs_add_impl, globs)
+
+parse_files_from_globs_get_impl <- function(globs) .Call(wrap__parse_files_from_globs_get_impl, globs)
+
+parse_files_from_globs_status_impl <- function(globs) .Call(wrap__parse_files_from_globs_status_impl, globs)
+
+is_explicit_path_impl <- function(entry) .Call(wrap__is_explicit_path_impl, entry)
 
 
 # nolint end
