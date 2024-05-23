@@ -11,7 +11,7 @@ pub struct Init {
     pub file_permissions: i32
 }
 
-pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str) -> Result<Init> { 
+pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: Option<&str>) -> Result<Init> { 
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
         InitError{
@@ -90,14 +90,21 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     }
 
     // check group exists
-    if group_name != "" {
-        Group::from_name(group_name).map_err(|e|
-            InitError{
-                error: InitErrorType::GroupNotFound,
-                error_message: format!("could not find group {group_name}. {e}")
-            }
-        )?;
-    }
+    let group: String = {
+        if let Some(some_name) = group_name {
+            Group::from_name(some_name).map_err(|e|
+                InitError{
+                    error: InitErrorType::GroupNotFound,
+                    error_message: format!("could not find group {some_name}. {e}")
+                }
+            )?;
+            String::from(some_name)
+        }
+        else {
+            String::from("")
+        }
+    };
+    
 
     // check permissions are convertible to u32
     u32::from_str_radix(&octal_permissions.to_string(), 8).map_err(|e|
@@ -112,7 +119,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
         &config::Config{
             storage_dir: storage_dir_abs.clone(), 
             permissions: octal_permissions.clone(),
-            group: group_name.to_string()
+            group: group.clone()
         }, 
         &git_dir).map_err(|e|
             InitError{
@@ -126,7 +133,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: &i32, group_name: &str
     return Ok(
         Init{
             storage_directory: storage_dir_abs,
-            group: String::from(group_name),
+            group,
             file_permissions: octal_permissions.clone()
         }
     )

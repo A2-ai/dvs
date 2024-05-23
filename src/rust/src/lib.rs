@@ -46,8 +46,9 @@ struct RInit {
 }
 
 #[extendr]
-fn dvs_init_impl(storage_dir: &str, mode: i32, group: &str) -> Result<Robj> {
-    let init = init::dvs_init(&PathBuf::from(storage_dir), &mode, group).map_err(|e|
+fn dvs_init_impl(storage_dir: &str, mode: i32, group: Nullable<&str>) -> Result<Robj> {
+    let group_in = <Option<&str>>::from(group);
+    let init = init::dvs_init(&PathBuf::from(storage_dir), &mode, group_in).map_err(|e|
         Error::Other(format!("{}: {}", e.error.init_error_to_string(), e.error_message))
     )?;
 

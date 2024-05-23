@@ -21,7 +21,7 @@
 #' @export
 dvs_init <- function(storage_directory,
                      permissions = 664,
-                     group = "") {
+                     group = NULL) {
   storage_directory <- normalizePath(storage_directory, mustWork = FALSE)
   # REVIEW: this will not be able to deliniate between permissions explicitly set vs
   # this set by default. Consideration should be taken whether explicit values
