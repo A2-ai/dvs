@@ -4,3 +4,4 @@
 ^\.Rproj\.user$
 ^src/\.cargo$
 ^LICENSE\.md$
+^src/rust/\.vscode$
