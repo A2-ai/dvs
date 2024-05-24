@@ -20,23 +20,69 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
         }
     )?;
 
-    // if already initialized
-    if git_dir.join(PathBuf::from(r"dvs.yaml")).exists() {
-        return Err(
-            InitError{
-                error: InitErrorType::ProjAlreadyInited,
-                error_message: format!("to change initialization settings, manually update dvs.yaml in project root")
-            }
-        )
-    }
+    // get group
+    let group: String = {
+        if let Some(some_name) = group_name {
+            Group::from_name(some_name).map_err(|e|
+                InitError{
+                    error: InitErrorType::GroupNotFound,
+                    error_message: format!("could not find group {some_name}. {e}")
+                }
+            )?;
+            String::from(some_name)
+        }
+        else {
+            String::from("")
+        }
+     };
 
-    // get absolute path, but don't check if it exists yet
+     // get permissions
+    let permissions = {
+        if let Some(some_perms) = octal_permissions {
+            u32::from_str_radix(&some_perms.to_string(), 8).map_err(|e|
+                InitError{
+                    error: InitErrorType::PermissionsInvalid,
+                    error_message: format!("linux permissions: {some_perms} not valid. {e}")
+                }
+            )?;
+            some_perms
+        }
+        else { 
+            // default value
+            664
+        }
+    };
+
+    // get storage_dir absolute path, but don't check if it exists yet
     let storage_dir_abs = repo::absolutize_result(&storage_dir).map_err(|e|
         InitError{
             error: InitErrorType::StorageDirAbsPathNotFound,
             error_message: e.to_string()
         }
     )?;
+
+    // if already initialized
+    if let Ok(conf) = config::read(&git_dir) {
+        // no-op if the same
+        if conf.storage_dir == storage_dir_abs && conf.group == group && conf.permissions == permissions {
+            return Ok(
+                Init{
+                    storage_directory: storage_dir_abs,
+                    group: group.clone(),
+                    permissions: permissions.clone()
+                }
+            )
+        }
+        // error if config attributes are different
+        else { 
+            return Err(
+                InitError{
+                    error: InitErrorType::ProjAlreadyInited,
+                    error_message: format!("dvs configuration settings already set in project; change manually by updating dvs.yaml in project root: {}", git_dir.join(PathBuf::from("dvs.yaml")).display())
+                }
+            )
+        }
+    }
     
     if storage_dir_abs.extension().and_then(OsStr::to_str).is_some() {
         println!("warning: file path inputted as storage directory. Is this intentional?")
@@ -52,6 +98,15 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
                 error_message: format!("{} not created. {e}", storage_dir.display())
             }
         )?;
+
+        // set permissions for storage dir
+        let storage_dir_perms = fs::Permissions::from_mode(0o770);
+        fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
+            InitError{
+                error: InitErrorType::StorageDirPermsNotSet,
+                error_message: e.to_string()
+            }
+        })?;
     } 
 
     else { // else, storage directory exists
@@ -75,53 +130,10 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
         }
     } // else, storage directory exists
 
-    // set permissions for storage dir
-    let storage_dir_perms = fs::Permissions::from_mode(0o770);
-    fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
-        InitError{
-            error: InitErrorType::StorageDirPermsNotSet,
-            error_message: e.to_string()
-        }
-    })?;
-
     // warn if storage directory is in git repo
     if repo::dir_in_git_repo(&storage_dir_abs, &git_dir) {
         println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git.")
     }
-
-    // check group exists
-    let group: String = {
-        if let Some(some_name) = group_name {
-            Group::from_name(some_name).map_err(|e|
-                InitError{
-                    error: InitErrorType::GroupNotFound,
-                    error_message: format!("could not find group {some_name}. {e}")
-                }
-            )?;
-            String::from(some_name)
-        }
-        else {
-            String::from("")
-        }
-    };
-    
-
-    // check permissions are convertible to u32
-    let permissions = {
-        if let Some(some_perms) = octal_permissions {
-            u32::from_str_radix(&some_perms.to_string(), 8).map_err(|e|
-                InitError{
-                    error: InitErrorType::PermissionsInvalid,
-                    error_message: format!("linux permissions: {some_perms} not valid. {e}")
-                }
-            )?;
-            some_perms
-        }
-        else { 
-            // default value
-            664
-        }
-    };
 
     // write config
     config::write(
@@ -142,8 +154,8 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
     return Ok(
         Init{
             storage_directory: storage_dir_abs,
-            group,
-            permissions
+            group: group.clone(),
+            permissions: permissions.clone()
         }
     )
     

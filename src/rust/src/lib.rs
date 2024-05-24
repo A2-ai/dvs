@@ -294,7 +294,6 @@ struct RStatusFileError {
 #[extendr]
 fn dvs_status_impl(files: Vec<String>, split_output: bool) -> Result<Robj> {
 
-    // }
     let status = status::status(&files).map_err(|e|
         Error::Other(format!("{}: {}", e.error.batch_error_to_string(), e.error_message))
     )?;
