@@ -155,9 +155,9 @@ dvs_status <- function(files = c(""), split_output = FALSE) {
   files <- parse_files_from_globs_status_impl(files)
   dvs_status_impl(files, split_output)
 }
-
-dvs_info <- function(files, split_output = FALSE) {
-  files <- clean_paths(files)
-  get_file_info_impl(files, split_output)
-}
+#
+# dvs_info <- function(files, split_output = FALSE) {
+#   files <- clean_paths(files)
+#   get_file_info_impl(files, split_output)
+# }
 
