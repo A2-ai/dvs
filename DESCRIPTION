@@ -1,6 +1,6 @@
 Package: dvs
 Title: Large/Sensitive File Linker for Git Repositories
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: c(
     person("Jenna", "Johnson", , "jenna@a2-ai.com", role = c("aut", "cre")),
     person("Devin", "Pastoor", , "devin@a2-ai.com", role = c("aut")))
