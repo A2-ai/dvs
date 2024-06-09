@@ -1,6 +1,7 @@
 use crate::helpers::{config, error::{InitError, InitErrorType}, repo};
 use std::{ffi::OsStr, fs::{self, create_dir}, os::unix::fs::PermissionsExt, path::PathBuf};
 use file_owner::Group;
+use std::env;
 
 pub type Result<T> = core::result::Result<T, InitError>;
 
@@ -13,7 +14,8 @@ pub struct Init {
 
 pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_name: Option<&str>) -> Result<Init> { 
     // Get git root
-    let git_dir = repo::get_nearest_repo_dir(&PathBuf::from(".")).map_err(|e|
+    let path = env::current_dir().unwrap_or(PathBuf::from("."));
+    let git_dir = repo::get_nearest_repo_dir(&path).map_err(|e|
         InitError{
             error: InitErrorType::GitRepoNotFound,
             error_message: format!("make sure you're in an active git repository. {e}")
