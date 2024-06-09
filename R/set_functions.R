@@ -83,7 +83,15 @@ dvs_add <- function(files, message = NULL, split_output = FALSE) {
 dvs_get <- function(files, split_output = FALSE) {
   files <- normalize_paths(files)
   files <- parse_files_from_globs_get_impl(files)
-  dvs_get_impl(files, split_output)
+  if (inherits(files, "extendr_error")) {
+    rlang::abort(files$value,"dvs_glob_error", parent = NA)
+  }
+  val_or_err <-   dvs_get_impl(files, split_output)
+  if (inherits(val_or_err, "extendr_error")) {
+    rlang::abort(val_or_err$value,"dvs_get_error", parent = NA)
+  }
+  return(val_or_err)
+
 }
 
 #' status report for added files
