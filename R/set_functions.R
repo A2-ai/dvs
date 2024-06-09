@@ -1,7 +1,6 @@
-#' @import stringr
 normalize_paths <- function(files) {
   # normalize if file path has ~
-  ifelse(stringr::str_detect(files, "~"), normalizePath(files, mustWork = FALSE), files)
+  path.expand(files)
 }
 
 #' copy files to the storage directory
