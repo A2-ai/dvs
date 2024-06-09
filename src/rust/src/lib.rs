@@ -10,7 +10,7 @@ use std::collections::HashMap;
 struct RFile {
     relative_path: Option<String>,
     outcome: String,
-    file_size_bytes: Option<u64>,
+    size: Option<u64>,
     blake3_checksum: Option<String>,
     absolute_path: Option<String>,
     input: Option<String>,
@@ -23,7 +23,7 @@ struct RFile {
 struct RFileSuccess {
     relative_path: String,
     outcome: String,
-    file_size_bytes: u64,
+    size: u64,
     blake3_checksum: String,
     absolute_path: String,
 }
@@ -82,7 +82,7 @@ fn dvs_add_impl(files_string: Vec<String>, message: Nullable<&str>, strict: bool
             Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
-                file_size_bytes: Some(fi.file_size_bytes),
+                size: Some(fi.size),
                 blake3_checksum: Some(fi.blake3_checksum.clone()),
                 absolute_path: Some(fi.absolute_path.display().to_string()),
                 input: None,
@@ -92,7 +92,7 @@ fn dvs_add_impl(files_string: Vec<String>, message: Nullable<&str>, strict: bool
             Err(e) => RFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
-                file_size_bytes: None,
+                size: None,
                 blake3_checksum:  None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 input: Some(e.input.display().to_string()),
@@ -133,7 +133,7 @@ fn dvs_add_impl(files_string: Vec<String>, message: Nullable<&str>, strict: bool
                         RFileSuccess{
                             relative_path: res.relative_path.unwrap(),
                             outcome: res.outcome,
-                            file_size_bytes: res.file_size_bytes.unwrap(),
+                            size: res.size.unwrap(),
                             blake3_checksum: res.blake3_checksum.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
                         }
@@ -174,7 +174,7 @@ fn dvs_get_impl(files_string: Vec<String>, split_output: bool) -> Result<Robj> {
             Ok(fi) => RFile{
                 relative_path: Some(fi.relative_path.display().to_string()),
                 outcome: fi.outcome.outcome_to_string(),
-                file_size_bytes: Some(fi.file_size_bytes),
+                size: Some(fi.size),
                 absolute_path: Some(fi.absolute_path.display().to_string()),
                 blake3_checksum: Some(fi.blake3_checksum.clone()),
                 input: None,
@@ -184,7 +184,7 @@ fn dvs_get_impl(files_string: Vec<String>, split_output: bool) -> Result<Robj> {
             Err(e) => RFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 outcome: Outcome::Error.outcome_to_string(),
-                file_size_bytes: None,
+                size: None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 blake3_checksum: None,
                 input: Some(e.input.display().to_string()),
@@ -225,7 +225,7 @@ fn dvs_get_impl(files_string: Vec<String>, split_output: bool) -> Result<Robj> {
                         RFileSuccess{
                             relative_path: res.relative_path.unwrap(),
                             outcome: res.outcome,
-                            file_size_bytes: res.file_size_bytes.unwrap(),
+                            size: res.size.unwrap(),
                             blake3_checksum: res.blake3_checksum.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
                         }
@@ -257,9 +257,9 @@ fn dvs_get_impl(files_string: Vec<String>, split_output: bool) -> Result<Robj> {
 struct RStatusFile {
     relative_path: Option<String>,
     status: String,
-    file_size_bytes: Option<u64>,
+    size: Option<u64>,
     blake3_checksum: Option<String>,
-    time_stamp: Option<String>,
+    add_time: Option<String>,
     saved_by: Option<String>,
     message: Option<String>,
     absolute_path: Option<String>,
@@ -273,8 +273,8 @@ struct RStatusFile {
 struct RStatusFileSuccess {
     relative_path: String,
     status: String,
-    file_size_bytes: u64,
-    time_stamp: String,
+    size: u64,
+    add_time: String,
     saved_by: String,
     message: String,
     blake3_checksum: String,
@@ -305,8 +305,8 @@ fn dvs_status_impl(files: Vec<String>, split_output: bool) -> Result<Robj> {
             Ok(fi) => RStatusFile{
                 relative_path: fi.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 status: fi.status.outcome_to_string(),
-                file_size_bytes: Some(fi.file_size_bytes.clone()),
-                time_stamp: Some(fi.time_stamp.clone()),
+                size: Some(fi.size.clone()),
+                add_time: Some(fi.add_time.clone()),
                 saved_by: Some(fi.saved_by.clone()),
                 message: Some(fi.message.clone()),
                 absolute_path: fi.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
@@ -318,9 +318,9 @@ fn dvs_status_impl(files: Vec<String>, split_output: bool) -> Result<Robj> {
             Err(e) => RStatusFile{
                 relative_path: e.relative_path.clone().map(|p| p.to_string_lossy().to_string()),
                 status: Status::Error.outcome_to_string(),
-                file_size_bytes: None,
+                size: None,
                 message: None,
-                time_stamp: None,
+                add_time: None,
                 saved_by: None,
                 absolute_path: e.absolute_path.clone().map(|p| p.to_string_lossy().to_string()),
                 blake3_checksum: None,
@@ -362,10 +362,10 @@ fn dvs_status_impl(files: Vec<String>, split_output: bool) -> Result<Robj> {
                         RStatusFileSuccess{
                             relative_path: res.relative_path.unwrap(),
                             status: res.status,
-                            time_stamp: res.time_stamp.unwrap(),
+                            add_time: res.add_time.unwrap(),
                             saved_by: res.saved_by.unwrap(),
                             message: res.message.unwrap(),
-                            file_size_bytes: res.file_size_bytes.unwrap(),
+                            size: res.size.unwrap(),
                             blake3_checksum: res.blake3_checksum.unwrap(),
                             absolute_path: res.absolute_path.unwrap(),
                         }

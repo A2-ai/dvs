@@ -6,8 +6,8 @@ use std::path::PathBuf;
 pub struct FileStatus {
     pub relative_path: Option<PathBuf>,
     pub status: Status,
-    pub file_size_bytes: u64,
-    pub time_stamp: String,
+    pub size: u64,
+    pub add_time: String,
     pub saved_by: String,
     pub message: String,
     pub absolute_path: Option<PathBuf>,
@@ -69,9 +69,9 @@ fn status_file(local_path: &PathBuf) -> std::result::Result<FileStatus, FileErro
             relative_path,
             absolute_path,
             status,
-            file_size_bytes: metadata.file_size_bytes,
+            size: metadata.size,
             blake3_checksum: metadata.blake3_checksum,
-            time_stamp: metadata.time_stamp,
+            add_time: metadata.add_time,
             saved_by: metadata.saved_by,
             message: metadata.message
         })

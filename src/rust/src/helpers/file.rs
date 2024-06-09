@@ -11,8 +11,8 @@ pub type Error = Box<dyn std::error::Error>;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Metadata {
     pub blake3_checksum: String,
-    pub file_size_bytes: u64,
-    pub time_stamp: String,
+    pub size: u64,
+    pub add_time: String,
     pub message: String,
     pub saved_by: String
 }

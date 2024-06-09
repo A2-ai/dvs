@@ -5,7 +5,7 @@ use crate::helpers::{config, copy, error::{BatchError, FileError}, file, hash, o
 pub struct RetrievedFile {
     pub relative_path: PathBuf,
     pub outcome: Outcome,
-    pub file_size_bytes: u64,
+    pub size: u64,
     pub absolute_path: PathBuf,
     pub blake3_checksum: String,
 }
@@ -74,7 +74,7 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
             absolute_path: file::get_absolute_path(local_path)?,
             blake3_checksum: hash::get_file_hash(local_path)?,
             outcome,
-            file_size_bytes: file::get_file_size(local_path)?
+            size: file::get_file_size(local_path)?
         }
     )
 }
