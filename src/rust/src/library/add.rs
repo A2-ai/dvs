@@ -7,7 +7,7 @@ use file_owner::Group;
 pub struct AddedFile {
     pub relative_path: PathBuf,
     pub outcome: Outcome,
-    pub file_size_bytes: u64,
+    pub size: u64,
     pub blake3_checksum: String,
     pub absolute_path: PathBuf,
 }
@@ -77,7 +77,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
                 outcome: Outcome::Present,
-                file_size_bytes: metadata.file_size_bytes,
+                size: metadata.size,
                 blake3_checksum: metadata.blake3_checksum,
             });
         }
@@ -96,8 +96,8 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     // create metadata
     let metadata = file::Metadata{
         blake3_checksum: blake3_checksum.clone(),
-        file_size_bytes,
-        time_stamp: Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
+        size: file_size_bytes,
+        add_time: Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         message: message.clone(),
         saved_by: user_name
     };
@@ -133,7 +133,7 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
             relative_path,
             absolute_path,
             outcome,
-            file_size_bytes,
+            size: file_size_bytes,
             blake3_checksum
         }
     )
