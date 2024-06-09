@@ -2,7 +2,7 @@ mod helpers;
 mod library;
 use helpers::{outcome::{Outcome, Status}, parse};
 use library::{init, add, get, status, info};
-use extendr_api::{prelude::*, robj::Robj};
+use extendr_api::{prelude::*,  Robj};
 use std::path::PathBuf;
 use std::collections::HashMap;
 
