@@ -63,7 +63,8 @@ pub fn load(local_path: &PathBuf) -> std::result::Result<Metadata, FileError> {
 }
 
 pub fn metadata_path(path: &PathBuf) -> PathBuf {
-    PathBuf::from(path.display().to_string() + ".dvs")
+    let path_without_meta = PathBuf::from(path.display().to_string().replace(".dvs", ""));
+    PathBuf::from(path_without_meta.display().to_string() + ".dvs")
 }
 
 pub fn path_without_metadata(path: &PathBuf) -> PathBuf {
