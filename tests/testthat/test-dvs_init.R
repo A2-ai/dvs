@@ -1,7 +1,7 @@
 # proj_dir
 # stor_dir
 
-test_that("init works first run", {
+test_that("init works first run [UNI-INI-001]", {
   proj_name <- "first-run-init"
   proj_dir <- create_project(proj_name)
 
@@ -11,9 +11,28 @@ test_that("init works first run", {
     stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
     expect_false(dir.exists(stor_dir))
 
+    # start capturing output
+    temp_file <- tempfile()
+    temp_connection <- file(temp_file, open = "wt")
+    sink(temp_connection)
+    #sink(temp_connection, type = "message")
+    print(temp_file)
+    #withr::defer(fs::file_delete(temp_file))
+
     # run dvs_init
     actual_df <- dvs_init(stor_dir)
     withr::defer(fs::dir_delete(stor_dir))
+
+    # stop capturing output
+    sink(temp_connection)
+    #sink(temp_connection, type = "message")
+
+    output <- readLines(temp_file)
+    print(glue::glue("HERE'S THE OUTPUT: {output}"))
+
+    # check output
+    expect_true(any(stringr::str_detect(output, "storage directory doesn't exist")))
+    print(output)
 
     # check stor_dir created
     expect_true(dir.exists(stor_dir))
@@ -32,8 +51,8 @@ test_that("init works first run", {
 
 })
 
-test_that("init works second run with same inputs", {
- dvs <- create_project_and_initialize_dvs("init_second_run", parent.frame())
+test_that("init works second run with same inputs [UNI-INI-002]", {
+  dvs <- create_project_and_initialize_dvs("init_second_run", parent.frame())
   withr::with_dir(dvs$proj_dir, {
     # check dvs.yaml exists
     expect_true(file.exists("dvs.yaml"))
@@ -57,7 +76,7 @@ test_that("init works second run with same inputs", {
   })
 })
 
-test_that("init doesn't work second run with different attributes", {
+test_that("init doesn't work second run with diff attributes [UNI-INI-003]", {
   dvs <- create_project_and_initialize_dvs("init_second_run", parent.frame())
   withr::with_dir(dvs$proj_dir, {
     # already inited
@@ -65,22 +84,25 @@ test_that("init doesn't work second run with different attributes", {
 
     # try to init again with ONLY different stor_dir
     new_stor_dir <- file.path(tempdir(), "data/dvs", "try_new_stor_dir")
-    expect_error(dvs_init(new_stor_dir), "user function panicked")
+    expect_error(dvs_init(new_stor_dir), "project already initialized")
 
     # try again, but this time ONLY change group
-    expect_error(dvs_init(dvs$stor_dir, group = "rstudio-superuser-admins"), "user function panicked")
+    expect_error(dvs_init(dvs$stor_dir, group = "rstudio-superuser-admins"),
+                 "project already initialized")
 
     # try again, but this time ONLY change perms
-    expect_error(dvs_init(dvs$stor_dir, permissions = 777), "user function panicked")
+    expect_error(dvs_init(dvs$stor_dir, permissions = 777),
+                 "project already initialized")
 
     # try again, this time don't change anything
     dvs_init(dvs$stor_dir)
   })
 })
 
-test_that("init works with a storage_dir that already exists", {
+test_that("init works with a storage_dir that already exists [UNI-INI-004]", {
   proj_name <- "stor_dir_exists"
   proj_dir <- create_project(proj_name)
+  expect_true(dir.exists(proj_dir))
 
   # run proj_dir
   withr::with_dir(proj_dir, {
@@ -116,32 +138,34 @@ test_that("init works with a storage_dir that already exists", {
 
     # try to init again with ONLY different stor_dir
     new_stor_dir <- file.path(tempdir(), "data/dvs", "try_new_stor_dir2")
-    expect_error(dvs_init(new_stor_dir), "user function panicked")
+    expect_error(dvs_init(new_stor_dir), "project already initialized")
 
     # try again, but this time ONLY change group
-    expect_error(dvs_init(stor_dir, group = "rstudio-superuser-admins"), "user function panicked")
+    expect_error(dvs_init(stor_dir, group = "rstudio-superuser-admins"),
+                 "project already initialized")
 
     # try again, but this time ONLY change perms
-    expect_error(dvs_init(stor_dir, permissions = 777), "user function panicked")
+    expect_error(dvs_init(stor_dir, permissions = 777),
+                 "project already initialized")
 
     # try again, this time don't change anything
     dvs_init(stor_dir)
   })
 })
 
-test_that("init doesn’t work when not in a git repo", {
+test_that("init doesn’t work when not in a git repo [UNI-INI-005]", {
   proj_name <- "no-git-repo"
   proj_dir <- fs::dir_create(file.path(tempdir(), proj_name))
   withr::defer(fs::dir_delete(proj_dir), envir = parent.frame())
   stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
   withr::with_dir(proj_dir, {
-    expect_error(dvs_init(stor_dir), "user function panicked")
+    expect_error(dvs_init(stor_dir), "git repository not found: make sure you're in an active git repository. could not find git repo root; make sure you're in an active git repository:")
   })
 
 })
 
 
-test_that("init works no defaults", {
+test_that("init works no defaults [UNI-INI-006]", {
   proj_name <- "no-defaults"
   proj_dir <- create_project(proj_name)
 
@@ -171,5 +195,59 @@ test_that("init works no defaults", {
     expect_equal(actual_df, expected_df)
   })
 
+})
+
+test_that("init works after updating inputs in yaml [UNI-INI-007]", {
+  dvs <- create_project_and_initialize_dvs("init_update_yaml", parent.frame())
+  withr::with_dir(dvs$proj_dir, {
+    # check dvs.yaml exists
+    expect_true(file.exists("dvs.yaml"))
+    # get yaml modification time
+    yaml_time1 <- file.info("dvs.yaml")$mtime
+    # check stor_dir exists
+    expect_true(dir.exists(dvs$stor_dir))
+    # run dvs_init
+    actual_df <-  dvs_init(dvs$stor_dir)
+    # check yaml not modified
+    yaml_time2 <- file.info("dvs.yaml")$mtime
+    expect_equal(yaml_time1, yaml_time2)
+
+    # Check dvs_init output
+    default_perms <- 664
+    expected_df <- data.frame(storage_directory = dvs$stor_dir,
+                              permissions = default_perms,
+                              group = "")
+
+    expect_equal(actual_df, expected_df)
+
+
+    # update yaml manually, check that init can be re-run with new attributes without error,
+    # and outputted df reflects the update
+
+    # create new storage dir and defer deletion
+    new_stor_dir <- file.path(tempdir(), "new_stor_dir")
+    fs::dir_create(new_stor_dir)
+    withr::defer(fs::dir_delete(new_stor_dir), envir = parent.frame())
+
+    new_perms <- 777
+    new_group <- "rstudio-superuser-admins"
+
+    yaml_data <- yaml::read_yaml("dvs.yaml")
+    yaml_data$storage_dir <- new_stor_dir
+    yaml_data$permissions <- new_perms
+    yaml_data$group <- new_group
+
+    yaml::write_yaml(yaml_data, "dvs.yaml")
+
+    # run dvs_init
+    new_actual_df <-  dvs_init(new_stor_dir, new_perms, new_group)
+
+    new_expected_df <- data.frame(storage_directory = new_stor_dir,
+                              permissions = new_perms,
+                              group = new_group)
+
+    expect_equal(new_actual_df, new_expected_df)
+
+  })
 })
 

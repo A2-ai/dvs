@@ -1,12 +1,12 @@
-test_that("get doesn't work outside a git repo", {
+test_that("get doesn't work outside a git repo [UNI-GET-001]", {
   temp_dir <- fs::dir_create(tempdir())
   withr::defer(fs::dir_delete(temp_dir), parent.frame())
   withr::with_dir(temp_dir, {
-    expect_error(dvs_get("file"), "user function panicked")
+    expect_error(dvs_get("*"), "git repository not found")
   })
 })
 
-test_that("get errors for a file that hasn't been added", {
+test_that("get errors for a file that hasn't been added [UNI-GET-002]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("file-error", parent.frame())
 
@@ -17,31 +17,31 @@ test_that("get errors for a file that hasn't been added", {
     print(file)
     fs::file_create(file)
 
-    expect_error(dvs_get(file), "user function panicked")
+    expect_error(dvs_get(file), "metadata file not found for at least one file:")
   })
 })
 
-test_that("get errors for a file that doesn't exist", {
+test_that("get errors for a file that doesn't exist [UNI-GET-003]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("file-dne", parent.frame())
 
   withr::with_dir(dvs$proj_dir, {
-    expect_error(dvs_get("dne.txt"), "user function panicked")
+    expect_error(dvs_get("dne.txt"), "metadata file not found for at least one file:")
 
   })
 })
 
-test_that("get errors for a bad input", {
+test_that("get errors for a bad input [UNI-GET-004]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("random", parent.frame())
 
   withr::with_dir(dvs$proj_dir, {
-    expect_error(dvs_get("random"), "user function panicked")
+    expect_error(dvs_get("random"), "metadata file not found for at least one file:")
 
   })
 })
 
-test_that("get doesn't error for a non-added file in a glob", {
+test_that("get doesn't error for a non-added file in a glob [UNI-GET-005]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("file-error", parent.frame())
 
@@ -58,7 +58,7 @@ test_that("get doesn't error for a non-added file in a glob", {
   })
 })
 
-test_that("get errors when dvs not inited", {
+test_that("get errors when dvs not inited [UNI-GET-006]", {
   # create git repo
   proj_dir <- create_project("status-init")
   # run get without initializing
@@ -66,11 +66,11 @@ test_that("get errors when dvs not inited", {
     # should be in git repo
     expect_true(file.exists(file.path(proj_dir, ".git")))
     # panic because not initialized
-    expect_error(dvs_get("file"), "user function panicked")
+    expect_error(dvs_get("*"), "could not load configuration file")
   })
 })
 
-test_that("get can input multiple files - explicit", {
+test_that("get can input multiple files - explicit [UNI-GET-007]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("multiple-files", parent.frame())
 
@@ -91,7 +91,7 @@ test_that("get can input multiple files - explicit", {
   })
 })
 
-test_that("get can input multiple files - implicit via file glob", {
+test_that("get can input multiple files - implicit via file glob [UNI-GET-008]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("multiple-files-glob", parent.frame())
 

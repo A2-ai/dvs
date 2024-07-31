@@ -1,4 +1,4 @@
-test_that("status works when no files have been added", {
+test_that("status works when no files have been added [UNI-STA-001]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("base-case", parent.frame())
 
@@ -9,7 +9,7 @@ test_that("status works when no files have been added", {
   })
 })
 
-test_that("status works with no input", {
+test_that("status works with no input [UNI-STA-002]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("no-args", parent.frame())
 
@@ -29,7 +29,7 @@ test_that("status works with no input", {
   })
 })
 
-test_that("status works with a single file input", {
+test_that("status works with a single file input [UNI-STA-003]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("explicit-arg", parent.frame())
 
@@ -49,7 +49,7 @@ test_that("status works with a single file input", {
   })
 })
 
-test_that("status works with * glob", {
+test_that("status works with * glob [UNI-STA-004]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("glob-1", parent.frame())
 
@@ -69,7 +69,7 @@ test_that("status works with * glob", {
   })
 })
 
-test_that("status works with *.txt glob", {
+test_that("status works with *.txt glob, [UNI-STA-005]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("glob-2", parent.frame())
 
@@ -89,7 +89,7 @@ test_that("status works with *.txt glob", {
   })
 })
 
-test_that("status errors when dvs not inited", {
+test_that("status errors when dvs not inited [UNI-STA-006]", {
   # create git repo
   proj_dir <- create_project("status-init")
   # run status without initializing
@@ -97,19 +97,19 @@ test_that("status errors when dvs not inited", {
     # should be in git repo
     expect_true(file.exists(file.path(proj_dir, ".git")))
     # panic because not inited
-    expect_error(dvs_status(), "user function panicked")
+    expect_error(dvs_status(), "could not load configuration file")
   })
 })
 
-test_that("status errors when not in a git repo", {
+test_that("status errors when not in a git repo [UNI-STA-007]", {
   temp_dir <- fs::dir_create(tempdir())
   withr::defer(fs::dir_delete(temp_dir), parent.frame())
   withr::with_dir(temp_dir, {
-    expect_error(dvs_status(), "user function panicked")
+    expect_error(dvs_status(), "could not find git repo root")
   })
 })
 
-test_that("status errors for a file that doesn't exist", {
+test_that("status errors for a file that doesn't exist [UNI-STA-008]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("file-error", parent.frame())
 
@@ -135,7 +135,7 @@ test_that("status errors for a file that doesn't exist", {
   })
 })
 
-test_that("status can input multiple files - explicit", {
+test_that("status can input multiple files - explicit [UNI-STA-009]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("multiple-files", parent.frame())
 
@@ -157,7 +157,7 @@ test_that("status can input multiple files - explicit", {
   })
 })
 
-test_that("status can input multiple files - implicit via file glob", {
+test_that("status can input multiple files - implicit via file glob [UNI-STA-010]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("multiple-files-glob", parent.frame())
 
@@ -176,7 +176,4 @@ test_that("status can input multiple files - implicit via file glob", {
     expect_equal(sum(status$status == "current"), 2)
   })
 })
-
-
-
 

@@ -39,7 +39,7 @@ dvs_get <- function(files, split_output = FALSE) {
   if (inherits(files, "extendr_error")) {
     rlang::abort(files$value,"dvs_glob_error", parent = NA)
   }
-  val_or_err <-   dvs_get_impl(files, split_output)
+  val_or_err <- dvs_get_impl(files, split_output)
   if (inherits(val_or_err, "extendr_error")) {
     rlang::abort(val_or_err$value,"dvs_get_error", parent = NA)
   }

@@ -44,7 +44,7 @@ pub fn get(files: &Vec<PathBuf>) -> std::result::Result<Vec<std::result::Result<
 
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
-    // check if file in git repo
+    // check if metadata file in git repo
     repo::check_file_in_git_repo(&file::metadata_path(local_path), git_dir)?;
 
     // get metadata

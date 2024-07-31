@@ -1,4 +1,4 @@
-test_that("can add a single file", {
+test_that("can add a single file [UNI-ADD-001]", {
 
   dvs <- create_project_and_initialize_real_repo("add_single_file", parent.frame())
 
@@ -35,7 +35,7 @@ test_that("can add a single file", {
   expect_true(file.exists(dvs_file_path))
 
   # check that it was added recently (not necessary?)
-  expect_true(is_near_time(dvs_json$time_stamp))
+  expect_true(is_near_time(dvs_json$add_time))
 
   #check that git ingore is created
   expect_true(file.exists(file.path(data_derived_dir, ".gitignore")))
@@ -60,7 +60,7 @@ test_that("can add a single file", {
 
 })
 
-test_that("can add multiple files - same directory", {
+test_that("can add multiple files - same directory [UNI-ADD-002]", {
   dvs <- create_project_and_initialize_real_repo("add_multiple_file", parent.frame())
 
   # check that directories exist after dvs_init
@@ -124,7 +124,7 @@ test_that("can add multiple files - same directory", {
   # })
 })
 
-test_that("can add two files in different directories", {
+test_that("can add two files in different directories [UNI-ADD-003]", {
   dvs <- create_project_and_initialize_real_repo("add_two_diff_directories", parent.frame())
 
   # check that directories exist after dvs_init
@@ -193,7 +193,7 @@ test_that("can add two files in different directories", {
   # })
 })
 
-test_that("dvs_add filters .dvs and .gitignore files", {
+test_that("dvs_add filters .dvs and .gitignore files [UNI-ADD-004]", {
   dvs <- create_project_and_initialize_real_repo("no_add_meta_gitignore", parent.frame())
 
   # check that directories exist after dvs_init
@@ -248,7 +248,7 @@ test_that("dvs_add filters .dvs and .gitignore files", {
   # })
 })
 
-test_that("errors when file DNE", {
+test_that("errors when file DNE [UNI-ADD-005]", {
 
   dvs <- create_project_and_initialize_real_repo("file_dne", parent.frame())
 
@@ -265,7 +265,8 @@ test_that("errors when file DNE", {
 
   # try to add a file that doesn't exist
   withr::with_dir(dvs$proj_dir, {
-    expect_error(dvs_add(file.path(data_derived_dir, "no_such_file.csv"), message = "finished pk data assembly"))
+    dne_file <- file.path(data_derived_dir, "no_such_file.csv")
+    expect_error(dvs_add(dne_file, message = "finished pk data assembly"))
   })
 
   # withr::with_dir(tempdir(), {
@@ -274,7 +275,7 @@ test_that("errors when file DNE", {
 
 })
 
-test_that("errors when not in a git repo", {
+test_that("errors when not in a git repo [UNI-ADD-006]", {
 
   dvs <- create_project_and_initialize_real_repo("no_repo", parent.frame())
 
@@ -311,7 +312,7 @@ test_that("errors when not in a git repo", {
 
 })
 
-test_that("errors when not initialized", {
+test_that("errors when not initialized [UNI-ADD-007]", {
 
   proj_dir <- create_project_no_dvs_init("no_init", parent.frame())
   expect_true(dir.exists(proj_dir))

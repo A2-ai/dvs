@@ -1,4 +1,4 @@
-test_that("get unsynced", {
+test_that("get unsynced [INT-GET-002]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("update", parent.frame())
 
@@ -26,7 +26,7 @@ test_that("get unsynced", {
 
     # check that file updated
     contents <- readLines(file)
-    expect_true(str_detect(contents, "This is an updated line."))
+    expect_true(stringr::str_detect(contents, "This is an updated line."))
 
     # check that status is unsynced
     status <- dvs_status(file)
@@ -39,7 +39,7 @@ test_that("get unsynced", {
 
     # check that contents doesn't have new line
     contents <- readLines(file)
-    expect_false(str_detect(contents, "This is an updated line."))
+    expect_false(stringr::str_detect(contents, "This is an updated line."))
 
     # check that status is current
     status2 <- dvs_status(file)

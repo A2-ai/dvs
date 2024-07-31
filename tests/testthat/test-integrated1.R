@@ -1,4 +1,4 @@
-test_that("add fn updates a file", {
+test_that("add fn updates a file [INT-ADD-001]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("update", parent.frame())
   withr::with_dir(dvs$proj_dir, {
@@ -12,7 +12,7 @@ test_that("add fn updates a file", {
     added_file1 <- dvs_add(file)
     # get timestamp from metadata path
     metafile1 <- jsonlite::fromJSON(txt = metapath, simplifyDataFrame = TRUE)
-    init_add_time <- metafile1$time_stamp
+    init_add_time <- metafile1$add_time
 
     # check that file was added close to system time
     expect_true(near_system_time(init_add_time))
@@ -37,7 +37,7 @@ test_that("add fn updates a file", {
 
     # get the timestamp again
     metafile2 <- jsonlite::fromJSON(txt = metapath, simplifyDataFrame = TRUE)
-    update_time <- metafile2$time_stamp
+    update_time <- metafile2$add_time
 
     # check that file was added close to system time
     expect_true(near_system_time(update_time))
