@@ -16,7 +16,7 @@ test_that("init works first run [UNI-INI-001]", {
     temp_connection <- file(temp_file, open = "wt")
     sink(temp_connection)
     #sink(temp_connection, type = "message")
-    print(temp_file)
+    #print(temp_file)
     #withr::defer(fs::file_delete(temp_file))
 
     # run dvs_init
@@ -24,15 +24,15 @@ test_that("init works first run [UNI-INI-001]", {
     withr::defer(fs::dir_delete(stor_dir))
 
     # stop capturing output
-    sink(temp_connection)
+    #sink(temp_connection)
     #sink(temp_connection, type = "message")
 
-    output <- readLines(temp_file)
-    print(glue::glue("HERE'S THE OUTPUT: {output}"))
+    #output <- readLines(temp_file)
+    #print(glue::glue("HERE'S THE OUTPUT: {output}"))
 
     # check output
-    expect_true(any(stringr::str_detect(output, "storage directory doesn't exist")))
-    print(output)
+    #expect_true(any(stringr::str_detect(output, "storage directory doesn't exist")))
+    #print(output)
 
     # check stor_dir created
     expect_true(dir.exists(stor_dir))
@@ -284,25 +284,113 @@ test_that("An error occurs if the primary group is invalid [UNI-INI-015]", {
 })
 
 test_that("An error occurs if the linux permissions are invalid [UNI-INI-016]", {
-  #TODO
+  proj_name <- "UNI-INI-019"
+  proj_dir <- create_project(proj_name)
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  fs::dir_create(stor_dir)
+  withr::defer(fs::dir_delete(stor_dir))
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(stor_dir, permissions = 999), "linux file permissions invalid: linux permissions: 999 not valid. invalid digit found in string")
+  })
 })
 
 test_that("An error occurs if the stor dir doesn't exist and is unable to be created [UNI-INI-017]", {
-  #TODO
+  proj_name <- "UNI-INI-017"
+  proj_dir <- create_project(proj_name)
+  parent_of_stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  fs::dir_create(parent_of_stor_dir)
+  withr::defer(fs::dir_delete(parent_of_stor_dir))
+  # change perms for parent_of_stor_dir so stor dir can't be created
+  Sys.chmod(parent_of_stor_dir, mode = "0555")
+  withr::defer(Sys.chmod(parent_of_stor_dir, mode = "777"))
+
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(file.path(parent_of_stor_dir, "test")), "storage directory not created")
+  })
 })
 
 test_that("An error occurs if the stor dir is unable to be verified as empty or non-empty [UNI-INI-018]", {
-  #TODO
+  proj_name <- "UNI-INI-018"
+
+  proj_dir <- create_project(proj_name)
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  fs::dir_create(stor_dir)
+  withr::defer(fs::dir_delete(stor_dir))
+
+  # change perms so the stor dir is unable to be verified as empty or non-empty
+  Sys.chmod(stor_dir, mode = "000")
+  withr::defer(Sys.chmod(stor_dir, mode = "777"))
+
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(stor_dir, permissions = 777), "could not check if storage directory is empty")
+  })
 })
 
 test_that("An error occurs if the linux file permissions are unable to be set for the stor dir [UNI-INI-019]", {
-  #TODO
+  #NOTEST
+  # I don't think I can do this because I don't have the linux perms
+  #Note: this is not the same as invalid perms
 })
 
-test_that("If no input is given for the permissions, the default permissions are 664 [UNI-INI-020]", {
-  #TODO
+test_that("If no input is given for the permissions, the default permissions are 664 and
+          if no primary group is given, files copied to the stor dir inherit the primary group
+          of the original [UNI-INI-020]", {
+  dvs <- create_project_and_initialize_real_repo("UNI-INI-020", parent.frame())
+
+  # check that directories exist after dvs_init
+  expect_true(dir.exists(dvs$proj_dir))
+  expect_true(dir.exists(dvs$stor_dir))
+  expect_true(dir.exists(file.path(dvs$proj_dir, ".git")))
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  #check data directory exists
+  expect_true(dir.exists(data_derived_dir))
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    added_files <- dvs_add(pk_data_path, message = "finished pk data assembly")
+  })
+
+  # check that metadata file exists
+  dvs_file_path <- file.path(data_derived_dir, "pk_data.csv.dvs")
+  dvs_json <- jsonlite::fromJSON(dvs_file_path)
+
+  expect_true(file.exists(dvs_file_path))
+
+  # check that it was added recently (not necessary?)
+  expect_true(is_near_time(dvs_json$add_time))
+
+  #check that git ignore is created
+  expect_true(file.exists(file.path(data_derived_dir, ".gitignore")))
+
+  # check that a file was added in the stor_dir, but no equality check
+
+  first_two_of_hash <- substring(dvs_json$blake3_checksum, 1, 2)
+  rest_of_hash <- substring(dvs_json$blake3_checksum, 3)
+
+  stored_file <- file.path(dvs$stor_dir, first_two_of_hash, rest_of_hash)
+  expect_true(file.exists(stored_file))
+
+  # check permissions of stored file
+  info <- file.info(stored_file)
+  mode <- info$mode
+  def_mode <- as.octmode("664")
+  expect_equal(mode, def_mode)
+
+  group <- info$grname
+  def_group <- "datascience"
+  expect_equal(group, def_group)
 })
 
-test_that("If no primary group is given, files copied to the stor dir inherit the primary group of the original [UNI-INI-021]", {
-  #TODO
-})

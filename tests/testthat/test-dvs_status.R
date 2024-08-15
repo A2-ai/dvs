@@ -184,38 +184,47 @@ file versioner, and input, error type, and error message if relevant [UNI-STA-01
   #TODO
 })
 
-test_that(" [UNI-STA-012]", {
+test_that("For split data frame output, the status function should output a list of two data frames: 
+1) a success data frame including the versioning status and metadata for a given set of versioned 
+files including the relative path, absolute path, file size, file hash, time of the most recent 
+file version, user who uploaded the most recent file version, and message from the most recent file versioner, and 
+2) a failure data frame, including input, relative path, absolute path, error type, and error message if relevant [UNI-STA-012]", {
   #TODO
 })
 
-test_that(" [UNI-STA-013]", {
+test_that("The status function can input files explicitly (by metadata file name) [UNI-STA-013]", {
   #TODO
 })
 
-test_that(" [UNI-STA-014]", {
+test_that("Sets of implicitly inputted files to the status function should exclude non-metadata files [UNI-STA-014]", {
   #TODO
 })
 
-test_that(" [UNI-STA-015]", {
+test_that("Users should be able to specify data frame output type as either a single data frame or split into two - 
+one for successfully statused files, and one for unsuccessfully statused files [UNI-STA-015]", {
   #TODO
 })
 
-test_that(" [UNI-STA-016]", {
+test_that("No file operations should be performed by the status function [UNI-STA-016]", {
   #TODO
 })
 
-test_that(" [UNI-STA-017]", {
+test_that("The status function should return an error if the repository hasn't been initialized 
+with the initialization function [UNI-STA-017]", {
   #TODO
 })
 
-test_that(" [UNI-STA-018]", {
+test_that("The status function, should not return an error, but rather indicate a file error in its data 
+frame output(s) if an inputted file is actually a directory path [UNI-STA-018]", {
   #TODO
 })
 
-test_that(" [UNI-STA-019]", {
+test_that("The status function, should not return an error, but rather indicate a file error in its data 
+frame output(s) if an inputted file hasn't been versioned with the versioning function [UNI-STA-019]", {
   #TODO
 })
 
-test_that(" [UNI-STA-020]", {
+test_that("The status function, should not return an error, but rather indicate a file error in its data 
+frame output(s) if an inputted file's contents cannot be hashed [UNI-STA-020]", {
   #TODO
 })
