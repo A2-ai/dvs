@@ -345,3 +345,112 @@ test_that("errors when not initialized [UNI-ADD-007]", {
   #   fs::dir_tree(all = TRUE)
   # })
 })
+
+test_that("Users can version files explicitly via metadata file [UNI-ADD-008]", {
+  #TODO
+})
+
+test_that("Users can specify a single data frame as output [UNI-ADD-009]", {
+  #TODO
+})
+
+test_that("Users can specify a list of two data frames as output [UNI-ADD-010]", {
+  #TODO
+})
+
+test_that("if a .gitignore file doesn't exist in the parent directory of the versioned file, adding a file should create a .gitignore 
+and append entries to it that exclude the inputted file and include its corresponding metadata file [UNI-ADD-011]", {
+  #TODO
+})
+
+test_that("if a .gitignore file doet exist in the parent directory of the versioned file, adding a file should
+append entries to it that exclude the inputted file and include its corresponding metadata file [UNI-ADD-012]", {
+  #TODO
+})
+
+test_that("metadata files include fields for the hash, file size, time of creation, message indicated by the user, 
+and the file versioner's username [UNI-ADD-013]", {
+  #TODO
+})
+
+test_that("For single data frame output, the versioning function outputs a data frame including the success state of each 
+versioned file and metadata for each versioned file including the relative path, absolute path, file size, file hash, and input, error type, 
+and error message in the case of error [UNI-ADD-014]", {
+  #TODO
+  # be sure to include an error file so that input, error type, and error message aren't NA in those columns
+})
+
+test_that("For split data frame output, the versioning function outputs a list of two data frames: 
+1) a success data frame including the success state of each versioned file and metadata for each versioned file including the relative path, 
+absolute path, file size, file hash, and 
+2) a failure data frame, including input, relative path, absolute path, error types and error messages if relevant [UNI-ADD-015]", {
+  #TODO
+})
+
+test_that("An error occurs if the initialized storage directory no longer exists [UNI-ADD-016]", {
+  #TODO
+})
+
+test_that("An error occurs if the file permissions in the configuration file are invalid [UNI-ADD-017]", {
+  #TODO
+})
+
+test_that("An error occurs if the primary group in the configuration file is invalid [UNI-ADD-018]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's absolute path cannot be found [UNI-ADD-019]", {
+  #TODO
+})
+
+test_that( "A file error occurs in the data frame output if an inputted file's relative path cannot be found [UNI-ADD-020]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's inputted file path is a directory [UNI-ADD-021]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's contents cannot be hashed [UNI-ADD-022]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file does not exist in the git repository [UNI-ADD-023]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's size cannot be found [UNI-ADD-024]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's owner cannot be found [UNI-ADD-025]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's metadata file couldn't be saved [UNI-ADD-026]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's corresponding .gitignore entries could not be saved [UNI-ADD-027]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's primary group could not be set [UNI-ADD-028]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's Linux permissions could not be set [UNI-ADD-029]", {
+  #TODO
+})
+
+test_that("If an error occurs in versioning a given inputted file, it should not be copied to the storage directory. [UNI-ADD-030]", {
+  #TODO
+  # I think this might not be the case for gitignore error
+})
+
+test_that("If an error occurs in copying a given inputted file's contents to the storage directory, the copied file and its 
+corresponding metadata file should be deleted [UNI-ADD-031]", {
+  #TODO
+})
+
+

@@ -111,3 +111,63 @@ test_that("get can input multiple files - implicit via file glob [UNI-GET-008]",
     expect_equal(sum(get$outcome == "present"), 2)
   })
 })
+
+test_that("files can be getted explicitly (by metadata file name) [UNI-GET-009]", {
+  #TODO
+})
+
+test_that("A user can retrieve files that they didn't originally version [UNI-GET-010]", {
+  #TODO
+})
+
+test_that("A list of two data frame outputs can be returned, in which case, get outputs a list of two data frames:
+ 1) a success data frame including the success state of each versioned file and metadata for each versioned file including the 
+ relative path, absolute path, file size, file hash, and 
+ 2) a failure data frame, including input, relative path, absolute path, error types and error messages if relevant [UNI-GET-011]", {
+  #TODO
+})
+
+test_that("A single data frame output can be returned, in which case, get outputs a data frame including the success state of each 
+versioned file and metadata for each versioned file including the relative path, absolute path, file size, file hash, and input, 
+error type, and error message in the case of error [UNI-GET-012]", {
+  #TODO
+})
+
+test_that("If get returns an error, no operations are performed on any inputs - i.e. no files should be recopied from the storage directory [UNI-GET-013]", {
+  #TODO
+})
+
+test_that("get returns an error if the initialized storage directory no longer exists [UNI-GET-014]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's absolute path cannot be found. [UNI-GET-015]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's relative path cannot be found [UNI-GET-016]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's contents cannot be hashed [UNI-GET-017]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file does not exist in the git repository [UNI-GET-018]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's size cannot be found [UNI-GET-019]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file's corresponding metadata file cannot be loaded and parsed [UNI-GET-020]", {
+  #TODO
+})
+
+test_that("A file error occurs in the data frame output if an inputted file cannot be recopied to the git repository [UNI-GET-021]", {
+  #TODO
+})
+
+
+

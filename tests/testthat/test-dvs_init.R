@@ -251,3 +251,58 @@ test_that("init works after updating inputs in yaml [UNI-INI-007]", {
   })
 })
 
+test_that("Users are warned if the stor dir isn't empty [UNI-INI-008]", {
+  #TODO
+})
+
+test_that("Users are warned if the stor dir has a file extension [UNI-INI-009]", {
+  #TODO
+})
+
+test_that("Users are warned if the stor dir is in the proj dir [UNI-INI-010]", {
+  #TODO
+})
+
+test_that("Users are told if the stor dir is created [UNI-INI-011]", {
+  #TODO
+})
+
+test_that("Users are told if the stor dir is already exists [UNI-INI-012]", {
+  #TODO
+})
+
+test_that("An error occurs if the absolute path of the stor dir can't be created [UNI-INI-013]", {
+  #TODO
+})
+
+test_that("An error occurs if the config file (dvs.yaml) can't be created [UNI-INI-014]", {
+  #TODO
+})
+
+test_that("An error occurs if the primary group is invalid [UNI-INI-015]", {
+  #TODO
+})
+
+test_that("An error occurs if the linux permissions are invalid [UNI-INI-016]", {
+  #TODO
+})
+
+test_that("An error occurs if the stor dir doesn't exist and is unable to be created [UNI-INI-017]", {
+  #TODO
+})
+
+test_that("An error occurs if the stor dir is unable to be verified as empty or non-empty [UNI-INI-018]", {
+  #TODO
+})
+
+test_that("An error occurs if the linux file permissions are unable to be set for the stor dir [UNI-INI-019]", {
+  #TODO
+})
+
+test_that("If no input is given for the permissions, the default permissions are 664 [UNI-INI-020]", {
+  #TODO
+})
+
+test_that("If no primary group is given, files copied to the stor dir inherit the primary group of the original [UNI-INI-021]", {
+  #TODO
+})

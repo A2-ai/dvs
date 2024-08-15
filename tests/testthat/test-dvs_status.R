@@ -177,3 +177,45 @@ test_that("status can input multiple files - implicit via file glob [UNI-STA-010
   })
 })
 
+test_that("For single data frame output, the status function should output a data frame including the versioning status 
+and metadata for a given set of versioned files including the relative path, absolute path, file size, file hash, 
+time of the most recent file version, user who uploaded the most recent file version, message from the most recent 
+file versioner, and input, error type, and error message if relevant [UNI-STA-011]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-012]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-013]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-014]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-015]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-016]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-017]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-018]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-019]", {
+  #TODO
+})
+
+test_that(" [UNI-STA-020]", {
+  #TODO
+})
