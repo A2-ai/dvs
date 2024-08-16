@@ -253,34 +253,48 @@ test_that("init works after updating inputs in yaml [UNI-INI-007]", {
 
 test_that("Users are warned if the stor dir isn't empty [UNI-INI-008]", {
   #TODO
+  #HELP
 })
 
 test_that("Users are warned if the stor dir has a file extension [UNI-INI-009]", {
   #TODO
+  #HELP
 })
 
 test_that("Users are warned if the stor dir is in the proj dir [UNI-INI-010]", {
   #TODO
+  #HELP
 })
 
 test_that("Users are told if the stor dir is created [UNI-INI-011]", {
   #TODO
+  #HELP
 })
 
 test_that("Users are told if the stor dir is already exists [UNI-INI-012]", {
   #TODO
+  #HELP
 })
 
 test_that("An error occurs if the absolute path of the stor dir can't be created [UNI-INI-013]", {
   #TODO
+  #NOTEST
 })
 
 test_that("An error occurs if the config file (dvs.yaml) can't be created [UNI-INI-014]", {
   #TODO
+  #NOTEST
 })
 
 test_that("An error occurs if the primary group is invalid [UNI-INI-015]", {
-  #TODO
+  proj_name <- "UNI-INI-019"
+  proj_dir <- create_project(proj_name)
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  fs::dir_create(stor_dir)
+  withr::defer(fs::dir_delete(stor_dir))
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(stor_dir, group = 'dne'), "linux primary group not found: could not find group dne.")
+  })
 })
 
 test_that("An error occurs if the linux permissions are invalid [UNI-INI-016]", {
