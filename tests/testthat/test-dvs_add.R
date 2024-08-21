@@ -715,6 +715,8 @@ test_that("A file error occurs in the data frame output if an inputted file's co
   pk_data_path <- file.path(dvs$proj_dir, "pk_data.csv")
   write.csv(pk_data, pk_data_path)
   Sys.chmod(pk_data_path, mode = "000")
+  withr::defer(Sys.chmod(pk_data_path, mode = "777"))
+  withr::defer
 
   # dvs_add
   withr::with_dir(dvs$proj_dir, {
@@ -743,19 +745,21 @@ test_that("A file error occurs in the data frame output if an inputted file does
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's size cannot be found [UNI-ADD-024]", {
-  dvs <- create_project_and_initialize_real_repo("UNI-ADD-024", parent.frame())
-
-  # dvs_add
-  withr::with_dir(dvs$proj_dir, {
-    dir <- file.path(getwd(), "fifo")
-    system(glue::glue("mkfifo {dir}"))
-    data_path <- file.path("fifo")
-
-    out <- dvs_add(data_path)
-    expect_equal(out$outcome, "error")
-    expect_equal(out$error, "file size not found")
-    #expect_equal(out$error_message, "Permission denied (os error 13)")
-  })
+  # dvs <- create_project_and_initialize_real_repo("UNI-ADD-024", parent.frame())
+  #
+  # # dvs_add
+  # browser()
+  # withr::with_dir(dvs$proj_dir, {
+  #   data_path <- file.path(dvs$proj_dir, "fifo")
+  #   #system(glue::glue("mkfifo {data_path}"))
+  #   processx::run("mkfifo", args = c(data_path))
+  #   out <- dvs_add(data_path)
+  #   expect_equal(out$outcome, "error")
+  #   expect_equal(out$error, "file size not found")
+  #   #expect_equal(out$error_message, "Permission denied (os error 13)")
+  # })
+  #NOTEST this might now be testable - get a stalling out when I try it with a fifo
+  #HELP
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's owner cannot be found [UNI-ADD-025]", {
@@ -764,18 +768,25 @@ test_that("A file error occurs in the data frame output if an inputted file's ow
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's metadata file couldn't be saved [UNI-ADD-026]", {
-  dvs <- create_project_and_initialize_real_repo("UNI-ADD-024", parent.frame())
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-026", parent.frame())
+
+  # create data file for testing
+  pk_data <- data.frame()
+  pk_data_path <- file.path(dvs$proj_dir, "..", "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  withr::defer(Sys.chmod(dvs$proj_dir, mode = "777"))
 
   # dvs_add
   withr::with_dir(dvs$proj_dir, {
     # create data file for testing
     pk_data <- data.frame()
-    pk_data_path <- file.path(dvs$proj_dir, "..", "pk_data.csv")
+    pk_data_path <- file.path(dvs$proj_dir, "pk_data.csv")
     write.csv(pk_data, pk_data_path)
 
     Sys.chmod(".", mode = "555")
 
-    out <- dvs_add(data_path)
+    out <- dvs_add(pk_data_path)
     expect_equal(out$outcome, "error")
     expect_equal(out$error, "metadata file not saved")
     expect_equal(out$error_message, "Permission denied (os error 13)")
@@ -783,25 +794,178 @@ test_that("A file error occurs in the data frame output if an inputted file's me
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's corresponding .gitignore entries could not be saved [UNI-ADD-027]", {
-  #TODO
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-027", parent.frame())
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  # create .gitignore ahead of time
+  gitignore_path <- file.path(data_derived_dir, ".gitignore")
+  fs::file_create(gitignore_path)
+  writeLines("*", gitignore_path)
+  Sys.chmod(gitignore_path, mode = "555")
+  withr::defer(Sys.chmod(gitignore_path, mode = "777"))
+
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    out <- dvs_add(pk_data_path)
+    expect_equal(out$outcome, "error")
+    expect_equal(out$error, "gitignore entry not saved")
+    expect_equal(out$error_message, glue::glue("could not create entry for {gitignore_path}: Permission denied (os error 13)"))
+  })
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's primary group could not be set [UNI-ADD-028]", {
-  #TODO
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-028", parent.frame())
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    new_group <- 'rstudio-superuser-admins'
+
+    yaml_data <- yaml::read_yaml("dvs.yaml")
+    yaml_data$group <- new_group
+
+    yaml::write_yaml(yaml_data, "dvs.yaml")
+
+    out <- dvs_add(pk_data_path)
+
+    expect_equal(out$outcome, "error")
+    expect_equal(out$error, "linux primary group not set")
+    expect_equal(out$error_message, "rstudio-superuser-admins *nix error")
+  })
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's Linux permissions could not be set [UNI-ADD-029]", {
   #TODO
+  #NOTEST I need sudo permissions to make the file permissions unchangeabe
 })
 
-test_that("If an error occurs in versioning a given inputted file, it should not be copied to the storage directory. [UNI-ADD-030]", {
+test_that("A file error occurs in the data frame output if an inputted file cannot be copied to the storage directory [UNI-ADD-030]", {
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-030", parent.frame())
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  Sys.chmod(dvs$stor_dir, mode = "666")
+  withr::defer(Sys.chmod(dvs$stor_dir, mode = "777"))
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    out <- dvs_add(pk_data_path)
+
+    expect_equal(out$outcome, "error")
+    expect_equal(out$error, "file not copied")
+  })
+})
+
+test_that("If an error occurs in versioning a given inputted file, it should not be copied to the storage directory [UNI-ADD-031]", {
   #TODO
-  # I think this might not be the case for gitignore error
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-031", parent.frame())
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    new_group <- 'rstudio-superuser-admins'
+
+    yaml_data <- yaml::read_yaml("dvs.yaml")
+    yaml_data$group <- new_group
+
+    yaml::write_yaml(yaml_data, "dvs.yaml")
+
+    out <- dvs_add(pk_data_path)
+
+    expect_equal(out$outcome, "error")
+    expect_equal(out$error, "linux primary group not set")
+    expect_equal(out$error_message, "rstudio-superuser-admins *nix error")
+
+    # now check that it isn't in the stor_dir
+    file_sub_dir <- file.path(dvs$stor_dir, "2c")
+    expect_equal(length(list.files(file_sub_dir)), 0)
+  })
 })
 
 test_that("If an error occurs in copying a given inputted file's contents to the storage directory, the copied file and its
-corresponding metadata file should be deleted [UNI-ADD-031]", {
-  #TODO
+corresponding metadata file should be deleted [UNI-ADD-032]", {
+  dvs <- create_project_and_initialize_real_repo("UNI-ADD-032", parent.frame())
+
+  # create data file for testing
+  pk_data <- data.frame(
+    USUBJID = c(1, 1, 1),
+    NTFD = c(0.5, 1, 2),
+    DV = c(379.444, 560.613, 0)
+  )
+
+  data_derived_dir <- file.path(dvs$proj_dir, "data/derived")
+  fs::dir_create(data_derived_dir)
+
+  pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
+  write.csv(pk_data, pk_data_path)
+
+  Sys.chmod(dvs$stor_dir, mode = "666")
+  withr::defer(Sys.chmod(dvs$stor_dir, mode = "777"))
+
+  # dvs_add
+  withr::with_dir(dvs$proj_dir, {
+    out <- dvs_add(pk_data_path)
+
+    expect_equal(out$outcome, "error")
+    expect_equal(out$error, "file not copied")
+
+    ## now check that it isn't in the stor_dir
+    file_sub_dir <- file.path(dvs$stor_dir, "2c")
+    expect_equal(length(list.files(file_sub_dir)), 0)
+
+    # check that metadata file not created
+    dvs_file_path <- file.path(data_derived_dir, "pk_data.csv.dvs")
+
+    expect_false(file.exists(dvs_file_path))
+  })
 })
 
 

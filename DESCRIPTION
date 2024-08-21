@@ -18,5 +18,6 @@ Suggests:
     jsonlite,
     withr,
     stringr,
-    yaml
+    yaml, 
+    processx
 Config/testthat/edition: 3
