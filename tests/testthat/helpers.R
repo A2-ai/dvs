@@ -55,7 +55,7 @@ create_project_and_initialize_real_repo <- function(proj_name, env) {
   proj_dir <- file.path(tempdir(), "projects", proj_name)
   stor_dir <- file.path(tempdir(), "data/dvs", proj_name)
   withr::defer(print(sprintf("Cleaning up %s...", tempdir())), envir = env)
-  withr::defer(fs::dir_delete(tempdir()), envir = env)
+  withr::defer(unlink(tempdir(), recursive = TRUE), envir = env)
 
   fs::dir_create(proj_dir)
 

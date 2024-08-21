@@ -716,7 +716,6 @@ test_that("A file error occurs in the data frame output if an inputted file's co
   write.csv(pk_data, pk_data_path)
   Sys.chmod(pk_data_path, mode = "000")
   withr::defer(Sys.chmod(pk_data_path, mode = "777"))
-  withr::defer
 
   # dvs_add
   withr::with_dir(dvs$proj_dir, {
