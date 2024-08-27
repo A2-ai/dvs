@@ -251,39 +251,44 @@ test_that("init works after updating inputs in yaml [UNI-INI-007]", {
   })
 })
 
-test_that("Users are warned if the stor dir isn't empty [UNI-INI-008]", {
-  #TODO
-  #HELP
+test_that("Users are warned if the stor dir isn't empty [MAN-INI-001]", {
+  testthat::skip("for manual review")
 })
 
-test_that("Users are warned if the stor dir has a file extension [UNI-INI-009]", {
-  #TODO
-  #HELP
+test_that("Users are warned if the stor dir has a file extension [MAN-INI-002]", {
+  testthat::skip("for manual review")
 })
 
-test_that("Users are warned if the stor dir is in the proj dir [UNI-INI-010]", {
-  #TODO
-  #HELP
+test_that("Users are warned if the stor dir is in the proj dir [MAN-INI-003]", {
+  testthat::skip("for manual review")
 })
 
-test_that("Users are told if the stor dir is created [UNI-INI-011]", {
-  #TODO
-  #HELP
+test_that("Users are told if the stor dir is created [MAN-INI-004]", {
+  testthat::skip("for manual review")
 })
 
-test_that("Users are told if the stor dir is already exists [UNI-INI-012]", {
-  #TODO
-  #HELP
+test_that("Users are told if the stor dir is already exists [MAN-INI-005]", {
+  testthat::skip("for manual review")
 })
 
-test_that("An error occurs if the absolute path of the stor dir can't be created [UNI-INI-013]", {
-  #TODO
-  #NOTEST
+test_that("An error occurs if the stor dir can't be created [MAN-INI-006]", {
+  testthat::skip("for manual review")
 })
 
 test_that("An error occurs if the config file (dvs.yaml) can't be created [UNI-INI-014]", {
-  #TODO
-  #NOTEST
+  proj_name <- "UNI-INI-014"
+  proj_dir <- create_project(proj_name)
+  stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
+  fs::dir_create(stor_dir)
+  withr::defer(fs::dir_delete(stor_dir))
+
+  # make proj dir unwritable
+  Sys.chmod(proj_dir, mode = "555")
+  withr::defer(Sys.chmod(proj_dir, mode = "777"))
+
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(stor_dir), "configuration file not created")
+  })
 })
 
 test_that("An error occurs if the primary group is invalid [UNI-INI-015]", {
@@ -340,10 +345,8 @@ test_that("An error occurs if the stor dir is unable to be verified as empty or 
   })
 })
 
-test_that("An error occurs if the linux file permissions are unable to be set for the stor dir [UNI-INI-019]", {
-  #NOTEST
-  # I don't think I can do this because I don't have the linux perms
-  #Note: this is not the same as invalid perms
+test_that("An error occurs if the linux file permissions are unable to be set for the stor dir [MAN-INI-007]", {
+  testthat::skip("for manual review")
 })
 
 test_that("If no input is given for the permissions, the default permissions are 664 and

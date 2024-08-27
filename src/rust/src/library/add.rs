@@ -88,10 +88,10 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     repo::check_file_in_git_repo(local_path, git_dir)?;
 
     // get file size
-    let file_size_bytes = file::get_file_size(local_path)?;
+    let file_size_bytes = file::get_file_size(local_path)?; // [MAN-ADD-003]
 
     // get user name
-    let user_name: String = file::get_user_name(local_path)?;
+    let user_name: String = file::get_user_name(local_path)?; // [MAN-ADD-002]
 
     // create metadata
     let metadata = file::Metadata{

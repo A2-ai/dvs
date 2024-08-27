@@ -70,13 +70,13 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
 
     // now that the file exists again, so info should be retrivable for data frame
     Ok(RetrievedFile {
-            relative_path: repo::get_relative_path_to_wd(local_path)?,
-            absolute_path: file::get_absolute_path(local_path)?,
+            relative_path: repo::get_relative_path_to_wd(local_path)?, // [MAN-GET-003]
+            absolute_path: file::get_absolute_path(local_path)?, // [MAN-GET-002]
             blake3_checksum: hash::get_file_hash(local_path)?,
             outcome,
-            size: file::get_file_size(local_path)?
+            size: file::get_file_size(local_path)?  // [MAN-GET-004]
         }
-    )
+    ) // [MAN-GET-001]: switch linux users/literally test with two users where one user adds, and another gets
 }
 
 

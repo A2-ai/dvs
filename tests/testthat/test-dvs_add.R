@@ -300,7 +300,7 @@ test_that("errors when not initialized [UNI-ADD-007]", {
 
   # dvs_add
   withr::with_dir(proj_dir, {
-    expect_error(dvs_add(pk_data_path, message = "finished pk data assembly"))
+    expect_error(dvs_add(pk_data_path, message = "finished pk data assembly"), "configuration file not found")
   })
 })
 
@@ -672,14 +672,12 @@ test_that("An error occurs if the primary group in the configuration file is inv
   })
 })
 
-test_that("A file error occurs in the data frame output if an inputted file's absolute path cannot be found [UNI-ADD-019]", {
-  #TODO
-  #NOTEST
+test_that("A file error occurs in the data frame output if an inputted file's absolute path cannot be found [MAN-ADD-004]", {
+  testthat::skip("for manual review")
 })
 
-test_that("A file error occurs in the data frame output if an inputted file's relative path cannot be found [UNI-ADD-020]", {
-  #TODO
-  #NOTEST
+test_that("A file error occurs in the data frame output if an inputted file's relative path cannot be found [MAN-ADD-005]", {
+  testthat::skip("for manual review")
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's path is a directory [UNI-ADD-021]", {
@@ -743,27 +741,12 @@ test_that("A file error occurs in the data frame output if an inputted file does
   })
 })
 
-test_that("A file error occurs in the data frame output if an inputted file's size cannot be found [UNI-ADD-024]", {
-  # dvs <- create_project_and_initialize_real_repo("UNI-ADD-024", parent.frame())
-  #
-  # # dvs_add
-  # browser()
-  # withr::with_dir(dvs$proj_dir, {
-  #   data_path <- file.path(dvs$proj_dir, "fifo")
-  #   #system(glue::glue("mkfifo {data_path}"))
-  #   processx::run("mkfifo", args = c(data_path))
-  #   out <- dvs_add(data_path)
-  #   expect_equal(out$outcome, "error")
-  #   expect_equal(out$error, "file size not found")
-  #   #expect_equal(out$error_message, "Permission denied (os error 13)")
-  # })
-  #NOTEST this might now be testable - get a stalling out when I try it with a fifo
-  #HELP
+test_that("A file error occurs in the data frame output if an inputted file's size cannot be found [MAN-ADD-003]", {
+  testthat::skip("for manual review")
 })
 
-test_that("A file error occurs in the data frame output if an inputted file's owner cannot be found [UNI-ADD-025]", {
-  #TODO
-  #NOTEST I think I need sudo access
+test_that("A file error occurs in the data frame output if an inputted file's owner cannot be found [MAN-ADD-002]", {
+  testthat::skip("for manual review")
 })
 
 test_that("A file error occurs in the data frame output if an inputted file's metadata file couldn't be saved [UNI-ADD-026]", {
@@ -858,9 +841,8 @@ test_that("A file error occurs in the data frame output if an inputted file's pr
   })
 })
 
-test_that("A file error occurs in the data frame output if an inputted file's Linux permissions could not be set [UNI-ADD-029]", {
-  #TODO
-  #NOTEST I need sudo permissions to make the file permissions unchangeabe
+test_that("A file error occurs in the data frame output if an inputted file's Linux permissions could not be set [MAN-ADD-001]", {
+  testthat::skip("for manual review")
 })
 
 test_that("A file error occurs in the data frame output if an inputted file cannot be copied to the storage directory [UNI-ADD-030]", {
@@ -892,7 +874,6 @@ test_that("A file error occurs in the data frame output if an inputted file cann
 })
 
 test_that("If an error occurs in versioning a given inputted file, it should not be copied to the storage directory [UNI-ADD-031]", {
-  #TODO
   dvs <- create_project_and_initialize_real_repo("UNI-ADD-031", parent.frame())
 
   # create data file for testing
