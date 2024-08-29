@@ -272,7 +272,7 @@ test_that("Users are told if the stor dir is already exists [MAN-INI-005]", {
 })
 
 test_that("An error occurs if the stor dir can't be created [UNI-INI-013]", {
-  proj_name <- "UNI-INI-014"
+  proj_name <- "UNI-INI-013"
   proj_dir <- create_project(proj_name)
   stor_dir_parent <- file.path(proj_dir, sprintf("%s_stor_dir_parent", proj_name))
   fs::dir_create(stor_dir_parent)
@@ -327,21 +327,6 @@ test_that("An error occurs if the linux permissions are invalid [UNI-INI-016]", 
   })
 })
 
-test_that("An error occurs if the stor dir doesn't exist and is unable to be created [UNI-INI-017]", {
-  proj_name <- "UNI-INI-017"
-  proj_dir <- create_project(proj_name)
-  parent_of_stor_dir <- file.path(tempdir(), sprintf("%s_stor_dir", proj_name))
-  fs::dir_create(parent_of_stor_dir)
-  withr::defer(fs::dir_delete(parent_of_stor_dir))
-  # change perms for parent_of_stor_dir so stor dir can't be created
-  Sys.chmod(parent_of_stor_dir, mode = "0555")
-  withr::defer(Sys.chmod(parent_of_stor_dir, mode = "777"))
-
-  withr::with_dir(proj_dir, {
-    expect_error(dvs_init(file.path(parent_of_stor_dir, "test")), "storage directory not created")
-  })
-})
-
 test_that("An error occurs if the stor dir is unable to be verified as empty or non-empty [UNI-INI-018]", {
   proj_name <- "UNI-INI-018"
 
@@ -363,9 +348,7 @@ test_that("An error occurs if the linux file permissions are unable to be set fo
   testthat::skip("for manual review")
 })
 
-test_that("If no input is given for the permissions, the default permissions are 664 and
-          if no primary group is given, files copied to the stor dir inherit the primary group
-          of the original [UNI-INI-020]", {
+test_that("default permissions and group for storage directoiry files [UNI-INI-020]", {
   dvs <- create_project_and_initialize_real_repo("UNI-INI-020", parent.frame())
 
   # check that directories exist after dvs_init
