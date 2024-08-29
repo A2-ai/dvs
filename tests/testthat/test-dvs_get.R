@@ -325,7 +325,7 @@ test_that("A file error occurs in the data frame output if an inputted file's co
 test_that("A file error occurs in the data frame output if an inputted file cannot be recopied to the git repository [UNI-GET-021]", {
   # delete the file in stor dir
 
-  dvs <- create_project_and_initialize_real_repo("UNI-GET-020", parent.frame())
+  dvs <- create_project_and_initialize_real_repo("UNI-GET-021", parent.frame())
 
   # create data file for testing
   pk_data <- data.frame(

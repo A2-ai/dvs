@@ -2,7 +2,7 @@
 # stor_dir
 
 test_that("init works first run [UNI-INI-001]", {
-  proj_name <- "first-run-init"
+  proj_name <- "UNI-INI-001"
   proj_dir <- create_project(proj_name)
 
   # run proj_dir
@@ -271,8 +271,22 @@ test_that("Users are told if the stor dir is already exists [MAN-INI-005]", {
   testthat::skip("for manual review")
 })
 
-test_that("An error occurs if the stor dir can't be created [MAN-INI-006]", {
-  testthat::skip("for manual review")
+test_that("An error occurs if the stor dir can't be created [UNI-INI-013]", {
+  proj_name <- "UNI-INI-014"
+  proj_dir <- create_project(proj_name)
+  stor_dir_parent <- file.path(proj_dir, sprintf("%s_stor_dir_parent", proj_name))
+  fs::dir_create(stor_dir_parent)
+  withr::defer(fs::dir_delete(stor_dir_parent))
+
+  # make proj dir unwritable
+  Sys.chmod(stor_dir_parent, mode = "000")
+  withr::defer(Sys.chmod(stor_dir_parent, mode = "777"))
+
+  stor_dir <- file.path(stor_dir_parent, "stor_dir")
+
+  withr::with_dir(proj_dir, {
+    expect_error(dvs_init(stor_dir), "storage directory not created")
+  })
 })
 
 test_that("An error occurs if the config file (dvs.yaml) can't be created [UNI-INI-014]", {

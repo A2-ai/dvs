@@ -214,7 +214,7 @@ test_that("For split data frame output, the status function should output a list
 files including the relative path, absolute path, file size, file hash, time of the most recent
 file version, user who uploaded the most recent file version, and message from the most recent file versioner, and
 2) a failure data frame, including input, relative path, absolute path, error type, and error message if relevant [UNI-STA-012]", {
-  dvs <- create_project_and_initialize_real_repo("UNI-STA-0124", parent.frame())
+  dvs <- create_project_and_initialize_real_repo("UNI-STA-012", parent.frame())
 
   # create data file for testing
   pk_data <- data.frame(
@@ -406,7 +406,7 @@ frame output(s) if an inputted file is actually a directory path [UNI-STA-018]",
 
 test_that("The status function, should not return an error, but rather indicate a file error in its data
 frame output(s) if an inputted file hasn't been versioned with the versioning function [UNI-STA-019]", {
-  dvs <- create_project_and_initialize_real_repo("UNI-STA-018", parent.frame())
+  dvs <- create_project_and_initialize_real_repo("UNI-STA-019", parent.frame())
 
   # create data file for testing
   pk_data <- data.frame(
@@ -439,7 +439,6 @@ frame output(s) if an inputted file's contents cannot be hashed [UNI-STA-020]", 
   #TODO
   dvs <- create_project_and_initialize_real_repo("UNI-STA-020", parent.frame())
 
-  #browser()
   # create data file for testing
   pk_data <- data.frame(
     USUBJID = c(1, 1, 1),
@@ -453,10 +452,7 @@ frame output(s) if an inputted file's contents cannot be hashed [UNI-STA-020]", 
   pk_data_path <- file.path(data_derived_dir, "pk_data.csv")
   write.csv(pk_data, pk_data_path)
 
-  #fs::file_delete("~/.cache/dvs/UNI-STA-020/data/derived/pk_data.csv")
-
   # dvs_status
-  #browser()
   withr::with_dir(dvs$proj_dir, {
     # add
     add <- dvs_add(pk_data_path)
