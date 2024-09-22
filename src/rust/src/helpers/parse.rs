@@ -22,6 +22,13 @@ pub fn parse_files_from_globs_add(globs: &Vec<String>) -> Vec<PathBuf> {
     let mut queued_paths: Vec<PathBuf> = Vec::new();
 
     for entry in globs {
+        // if entry is a file that explicitly exists
+        if is_explicit_path(entry) {
+            let clean_path = file::path_without_metadata(&PathBuf::from(entry));
+            queued_paths.push(PathBuf::from(clean_path));
+            continue;
+        }
+        
         let glob = match glob(&entry) {
             Ok(paths) => paths,
             Err(_) => {

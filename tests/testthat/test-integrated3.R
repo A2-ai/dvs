@@ -1,4 +1,4 @@
-test_that("add no-ops", {
+test_that("add no-ops [INT-ADD-002]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("no-op", parent.frame())
 

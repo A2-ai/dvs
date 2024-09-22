@@ -1,4 +1,4 @@
-test_that("a file can be getted", {
+test_that("a file can be getted [INT-GET-001]", {
   # initialize
   dvs <- create_project_and_initialize_dvs("update", parent.frame())
 

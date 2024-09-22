@@ -87,17 +87,17 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
     }
     
     if storage_dir_abs.extension().and_then(OsStr::to_str).is_some() {
-        println!("warning: file path inputted as storage directory. Is this intentional?")
+        println!("warning: file path inputted as storage directory. Is this intentional?") // [MAN-INI-002]
     }
     
     // create storage directory if it doesn't exist
     if !storage_dir_abs.exists() { 
-        println!("storage directory doesn't exist\ncreating storage directory...");
+        println!("storage directory doesn't exist\ncreating storage directory..."); // [MAN-INI-004]
         // create storage dir
         create_dir(&storage_dir_abs).map_err(|e|
             InitError{
                 error: InitErrorType::StorageDirNotCreated,
-                error_message: format!("{} not created. {e}", storage_dir.display())
+                error_message: format!("{} not created. {e}", storage_dir.display()) // [MAN-INI-006]
             }
         )?;
 
@@ -105,7 +105,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
         let storage_dir_perms = fs::Permissions::from_mode(0o770);
         fs::set_permissions(&storage_dir_abs, storage_dir_perms).map_err(|e| {
             InitError{
-                error: InitErrorType::StorageDirPermsNotSet,
+                error: InitErrorType::StorageDirPermsNotSet, // [MAN-INI-007]
                 error_message: e.to_string()
             }
         })?;
@@ -119,7 +119,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
             });
         }
 
-        println!("storage directory already exists");
+        println!("storage directory already exists"); // [MAN-INI-005]
 
         //  Warn if storage dir is not empty
         if !repo::is_directory_empty(&storage_dir_abs).map_err(|e|
@@ -128,13 +128,13 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
                 error_message: e.to_string()
             }
         )? {
-            println!("warning: storage directory not empty")
+            println!("warning: storage directory not empty") // [MAN-INI-001]
         }
     } // else, storage directory exists
 
     // warn if storage directory is in git repo
     if repo::dir_in_git_repo(&storage_dir_abs, &git_dir) {
-        println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git.")
+        println!("warning: the storage directory is located in the git repo directory.\nfiles added to the storage directory will be uploaded directly to git.") // [MAN-INI-003]
     }
 
     // write config

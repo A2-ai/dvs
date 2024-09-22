@@ -92,7 +92,7 @@ pub fn copy_file_to_storage_directory(local_path: &PathBuf, storage_path: &PathB
     copy(local_path, storage_path)?;
 
     // set file permissions
-    set_file_permissions(permissions, storage_path)?;
+    set_file_permissions(permissions, storage_path)?; // [MAN-ADD-001]
 
     // set group (if specified)
     Ok(set_group(group, storage_path)?)

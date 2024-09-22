@@ -21,6 +21,7 @@ pub fn status(files: &Vec<String>) -> std::result::Result<Vec<std::result::Resul
     // load the config
     config::read(&git_dir)?;
     
+    // parsing before entering fxn now
     //let meta_paths: Vec<PathBuf> = parse::parse_files_from_globs_status(globs)?;
 
     // get the status of each file and collect

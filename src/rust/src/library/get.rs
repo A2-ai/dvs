@@ -44,7 +44,7 @@ pub fn get(files: &Vec<PathBuf>) -> std::result::Result<Vec<std::result::Result<
 
 // gets a file from storage
 pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) -> std::result::Result<RetrievedFile, FileError> {
-    // check if file in git repo
+    // check if metadata file in git repo
     repo::check_file_in_git_repo(&file::metadata_path(local_path), git_dir)?;
 
     // get metadata
@@ -70,13 +70,13 @@ pub fn get_file(local_path: &PathBuf, storage_dir: &PathBuf, git_dir: &PathBuf) 
 
     // now that the file exists again, so info should be retrivable for data frame
     Ok(RetrievedFile {
-            relative_path: repo::get_relative_path_to_wd(local_path)?,
-            absolute_path: file::get_absolute_path(local_path)?,
+            relative_path: repo::get_relative_path_to_wd(local_path)?, // [MAN-GET-003]
+            absolute_path: file::get_absolute_path(local_path)?, // [MAN-GET-002]
             blake3_checksum: hash::get_file_hash(local_path)?,
             outcome,
-            size: file::get_file_size(local_path)?
+            size: file::get_file_size(local_path)?  // [MAN-GET-004]
         }
-    )
+    ) // [MAN-GET-001]: switch linux users/literally test with two users where one user adds, and another gets
 }
 
 
