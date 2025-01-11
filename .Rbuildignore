@@ -5,3 +5,4 @@
 ^src/\.cargo$
 ^LICENSE\.md$
 ^src/rust/\.vscode$
+^\.github$

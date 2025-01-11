@@ -6,7 +6,6 @@
 # This file was created with the following call:
 #   .Call("wrap__make_dvs_wrappers", use_symbols = TRUE, package_name = "dvs")
 
-#' @docType _PACKAGE
 #' @usage NULL
 #' @useDynLib dvs, .registration = TRUE
 NULL
