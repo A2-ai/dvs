@@ -141,7 +141,7 @@ test_that("init works with a storage_dir that already exists [UNI-INI-004]", {
     expect_error(dvs_init(new_stor_dir), "project already initialized")
 
     # try again, but this time ONLY change group
-    expect_error(dvs_init(stor_dir, group = "rstudio-superuser-admins"),
+    expect_error(dvs_init(stor_dir, group = system("id -gn", intern = TRUE)),
                  "project already initialized")
 
     # try again, but this time ONLY change perms
@@ -231,7 +231,8 @@ test_that("init works after updating inputs in yaml [UNI-INI-007]", {
     withr::defer(fs::dir_delete(new_stor_dir), envir = parent.frame())
 
     new_perms <- 777
-    new_group <- "rstudio-superuser-admins"
+    # TODO: do we need to actually switch group or just the fact we're now setting a group vs previously not
+    new_group <- system("id -gn", intern = TRUE) 
 
     yaml_data <- yaml::read_yaml("dvs.yaml")
     yaml_data$storage_dir <- new_stor_dir
