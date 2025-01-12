@@ -5,3 +5,6 @@
 # dvs entry
 /test.txt
 !/test.txt.dvs
+src/rust/vendor
+src/Makevars
+src/Makevars.win

@@ -7,3 +7,6 @@
 ^src/rust/\.vscode$
 ^\.github$
 ^\.vscode$
+^src/rust/vendor$
+^src/Makevars$
+^src/Makevars\.win$
