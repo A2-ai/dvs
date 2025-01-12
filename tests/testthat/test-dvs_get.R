@@ -244,7 +244,7 @@ test_that("get returns an error if the initialized storage directory no longer e
   fs::dir_delete(dvs$stor_dir)
 
   withr::with_dir(dvs$proj_dir, {
-    error <- glue::glue("storage directory not found: storage_dir: {dvs$stor_dir} in dvs.yaml, No such file or directory")
+    error <- sprintf("storage directory not found: storage_dir: %s in dvs.yaml, No such file or directory", dvs$stor_dir)
     print(error)
     expect_error(dvs_get(pk_data_path), error)
   })

@@ -803,7 +803,7 @@ test_that("A file error occurs in the data frame output if an inputted file's co
     out <- dvs_add(pk_data_path)
     expect_equal(out$outcome, "error")
     expect_equal(out$error, "gitignore entry not saved")
-    expect_equal(out$error_message, glue::glue("could not create entry for {gitignore_path}: Permission denied (os error 13)"))
+    expect_equal(out$error_message, sprintf("could not create entry for %s: Permission denied (os error 13)", gitignore_path))
   })
 })
 
@@ -895,7 +895,7 @@ test_that("If an error occurs in versioning a given inputted file, it should not
   withr::with_dir(dvs$proj_dir, {
 
     new_group <- 'test-grp-no-one'
-    testthat::skip_if_not(group_exists_unix(new_group), "group test-grp-no-one does not exist")
+
     yaml_data <- yaml::read_yaml("dvs.yaml")
     yaml_data$group <- new_group
 

@@ -28,7 +28,6 @@ test_that("init works first run [UNI-INI-001]", {
     #sink(temp_connection, type = "message")
 
     #output <- readLines(temp_file)
-    #print(glue::glue("HERE'S THE OUTPUT: {output}"))
 
     # check output
     #expect_true(any(stringr::str_detect(output, "storage directory doesn't exist")))
