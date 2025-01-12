@@ -6,3 +6,4 @@
 ^LICENSE\.md$
 ^src/rust/\.vscode$
 ^\.github$
+^\.vscode$

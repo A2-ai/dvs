@@ -87,7 +87,7 @@ test_that("init doesn't work second run with diff attributes [UNI-INI-003]", {
     expect_error(dvs_init(new_stor_dir), "project already initialized")
 
     # try again, but this time ONLY change group
-    expect_error(dvs_init(dvs$stor_dir, group = "rstudio-superuser-admins"),
+    expect_error(dvs_init(dvs$stor_dir, group = system("id -gn", intern = TRUE)),
                  "project already initialized")
 
     # try again, but this time ONLY change perms
