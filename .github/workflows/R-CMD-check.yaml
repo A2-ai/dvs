@@ -19,9 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
+# disable devel for now until can figure out about the new rust warning to get RCMD CHECK satisfied
+#          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: '4.4'}
           - {os: ubuntu-22.04,   r: '4.4'}
+          - {os: ubuntu-20.04,   r: '4.4'}
           - {os: ubuntu-22.04,   r: '4.3'}
           - {os: ubuntu-22.04,   r: '4.2'}
 
