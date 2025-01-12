@@ -177,7 +177,8 @@ test_that("init works no defaults [UNI-INI-006]", {
 
     # run dvs_init
     perms <- 776
-    group <- "datascience"
+    # TODO: will need to address with windows
+    group <- system("id -gn", intern = TRUE)
     actual_df <- dvs_init(stor_dir, perms, group)
     withr::defer(fs::dir_delete(stor_dir))
 

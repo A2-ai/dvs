@@ -101,3 +101,10 @@ is_near_time <- function(iso_time_string, threshold = 0.1) {
 
   return(time_difference <= threshold)
 }
+
+group_exists_unix <- function(group) {
+  # Use getent to check if the group exists
+  cmd <- paste("getent group", shQuote(group))
+  suppressWarnings({result <- system(cmd, intern = TRUE, ignore.stderr = TRUE)})
+  return(length(result) > 0)
+}
