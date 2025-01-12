@@ -20,13 +20,13 @@ pub fn add(files: &Vec<PathBuf>, message_in: Option<&str>, strict: bool) -> std:
     let conf = config::read(&git_dir)?;
 
     // get group, check if specified
-    let group = config::get_group(&conf.group)?;
+    let group = config::get_group(&conf.group.unwrap_or_default())?;
         
     // check storage directory exists
     let storage_dir = config::get_storage_dir(&conf.storage_dir)?;
 
     // get file permissions
-    let permissions = config::get_mode_u32(&conf.permissions)?;
+    let permissions = config::get_mode_u32(&conf.permissions.unwrap_or(664))?;
 
     // collect paths out of input - sort through globs/explicitly-named files
     //let queued_paths = parse::parse_files_from_globs_add(&globs);

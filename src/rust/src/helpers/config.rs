@@ -10,10 +10,11 @@ pub type Error = Box<dyn std::error::Error>;
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Config {
     pub storage_dir: PathBuf,
-    pub permissions: i32,
-    pub group: String
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>
 }
-
 
 pub fn read(root_dir: &PathBuf) -> std::result::Result<Config, BatchError> {
     // check if yaml is readable
