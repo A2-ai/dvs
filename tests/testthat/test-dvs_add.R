@@ -876,6 +876,7 @@ test_that("A file error occurs in the data frame output if an inputted file cann
 })
 
 test_that("If an error occurs in versioning a given inputted file, it should not be copied to the storage directory [UNI-ADD-031]", {
+  testthat::skip_if_not(group_exists_unix(new_group), "group test-grp-no-one does not exist")
   dvs <- create_project_and_initialize_real_repo("UNI-ADD-031", parent.frame())
 
   # create data file for testing
@@ -893,7 +894,6 @@ test_that("If an error occurs in versioning a given inputted file, it should not
 
   # dvs_add
   withr::with_dir(dvs$proj_dir, {
-
     new_group <- 'test-grp-no-one'
 
     yaml_data <- yaml::read_yaml("dvs.yaml")
