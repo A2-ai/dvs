@@ -405,7 +405,8 @@ test_that("default permissions and group for storage directoiry files [UNI-INI-0
   expect_equal(mode, def_mode)
 
   group <- info$grname
-  def_group <- "datascience"
+  # TODO: work on windows
+  def_group <- system("id -gn", intern = TRUE) 
   expect_equal(group, def_group)
 })
 
