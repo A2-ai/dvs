@@ -23,7 +23,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
     )?;
 
     // get group
-    let group: String = {
+    let group: Option<String> = {
         if let Some(some_name) = group_name {
             Group::from_name(some_name).map_err(|e|
                 InitError{
@@ -31,14 +31,14 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
                     error_message: format!("could not find group {some_name}. {e}")
                 }
             )?;
-            String::from(some_name)
+            Some(String::from(some_name))
         }
         else {
-            String::from("")
+            None
         }
      };
 
-     // get permissions
+     // check the permissions are valid octal permissions
     let permissions = {
         if let Some(some_perms) = octal_permissions {
             u32::from_str_radix(&some_perms.to_string(), 8).map_err(|e|
@@ -47,11 +47,11 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
                     error_message: format!("linux permissions: {some_perms} not valid. {e}")
                 }
             )?;
-            some_perms
+            Some(some_perms)
         }
         else { 
             // default value
-            664
+            None
         }
     };
 
@@ -70,8 +70,8 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
             return Ok(
                 Init{
                     storage_directory: storage_dir_abs,
-                    group: group.clone(),
-                    permissions: permissions.clone()
+                    group: group.unwrap_or_default(),
+                    permissions: permissions.unwrap_or(664)
                 }
             )
         }
@@ -141,7 +141,7 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
     config::write(
         &config::Config{
             storage_dir: storage_dir_abs.clone(), 
-            permissions: permissions.clone(),
+            permissions: permissions,
             group: group.clone()
         }, 
         &git_dir).map_err(|e|
@@ -156,8 +156,8 @@ pub fn dvs_init(storage_dir: &PathBuf, octal_permissions: Option<i32>, group_nam
     return Ok(
         Init{
             storage_directory: storage_dir_abs,
-            group: group.clone(),
-            permissions: permissions.clone()
+            group: group.unwrap_or_default(),
+            permissions: permissions.unwrap_or(664)
         }
     )
     
