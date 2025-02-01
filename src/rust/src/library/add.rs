@@ -1,9 +1,5 @@
 use crate::helpers::{
-    config, copy,
-    error::{BatchError, BatchErrorType, FileError},
-    file, hash, ignore,
-    outcome::Outcome,
-    repo,
+    audit::{write_entry, Action, HashType}, config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, repo
 };
 use chrono::Utc;
 use file_owner::Group;
@@ -163,16 +159,27 @@ fn add_file(
     // copy
     let outcome = if !storage_path.exists() {
         // if not already copied
-        if let Err(e) =
-            copy::copy_file_to_storage_directory(local_path, &storage_path, permissions, group)
-        {
-            if strict {
-                // remove metadata file
-                let _ = fs::remove_file(file::metadata_path(local_path));
-                // remove copied file from storage directory
-                let _ = fs::remove_file(storage_path);
+        let res = copy::copy_file_to_storage_directory(local_path, &storage_path, permissions, group);
+        match res {
+            Ok(_) => {
+                let log_path = storage_dir.join("audit.log");
+                write_entry(
+                    &log_path,
+                    relative_path.to_str().unwrap(),
+                    &blake3_checksum,
+                    HashType::Blake3,
+                    Action::Add,
+                ).expect(format!("unable to write log entry for {}", local_path.to_string_lossy()).as_str());
+            },
+            Err(e) => {
+                if strict {
+                    // remove metadata file
+                    let _ = fs::remove_file(file::metadata_path(local_path));
+                    // remove copied file from storage directory
+                    let _ = fs::remove_file(storage_path);
+                }
+                return Err(e);
             }
-            return Err(e);
         };
         Outcome::Copied
     } else {

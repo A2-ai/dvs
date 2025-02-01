@@ -1,7 +1,7 @@
 use crate::helpers::{
     config,
     error::{InitError, InitErrorType},
-    log::{self, Action, HashType}, repo,
+    audit::{self, Action, HashType}, repo,
 };
 use file_owner::Group;
 use std::env;
@@ -118,8 +118,8 @@ pub fn dvs_init(
             }
         })?;
         let log_path = storage_dir_abs.join("audit.log");
-        log::create_audit_log(&log_path, guid, &permissions).expect("able to make audit log");
-        log::write_entry(
+        audit::create_audit_log(&log_path, guid, &permissions).expect("able to make audit log");
+        audit::write_entry(
             &log_path,
             log_path.to_str().unwrap(),
             "",
