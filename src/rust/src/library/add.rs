@@ -1,7 +1,13 @@
-use crate::helpers::{config, copy, error::{BatchError, BatchErrorType, FileError}, file, hash, ignore, outcome::Outcome, repo};
-use std::{fs, path::PathBuf, u32};
-use chrono:: Utc;
+use crate::helpers::{
+    config, copy,
+    error::{BatchError, BatchErrorType, FileError},
+    file, hash, ignore,
+    outcome::Outcome,
+    repo,
+};
+use chrono::Utc;
 use file_owner::Group;
+use std::{fs, os::unix::fs::PermissionsExt, path::PathBuf, u32};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AddedFile {
@@ -12,7 +18,13 @@ pub struct AddedFile {
     pub absolute_path: PathBuf,
 }
 
-pub fn add(files: &Vec<PathBuf>, message_in: Option<&str>, strict: bool) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
+const DEFAULT_FILE_PERMISSIONS: u32 = 0o664;
+
+pub fn add(
+    files: &Vec<PathBuf>,
+    message_in: Option<&str>,
+    strict: bool,
+) -> std::result::Result<Vec<std::result::Result<AddedFile, FileError>>, BatchError> {
     // Get git root
     let git_dir = repo::get_nearest_repo_dir(&PathBuf::from("."))?;
 
@@ -21,13 +33,25 @@ pub fn add(files: &Vec<PathBuf>, message_in: Option<&str>, strict: bool) -> std:
 
     // get group, check if specified
     let group = config::get_group(&conf.group.unwrap_or_default())?;
-        
+
     // check storage directory exists
     let storage_dir = config::get_storage_dir(&conf.storage_dir)?;
 
     // get file permissions
-    let permissions = config::get_mode_u32(&conf.permissions.unwrap_or(664))?;
-
+    // check the permissions are valid octal permissions
+    let permissions = {
+        if let Some(some_perms) = conf.permissions {
+            fs::Permissions::from_mode(u32::from_str_radix(&some_perms.to_string(), 8).map_err(
+                |e| BatchError {
+                    error: BatchErrorType::PermissionsInvalid,
+                    error_message: format!("linux permissions: {some_perms} not valid. {e}"),
+                },
+            )?)
+        } else {
+            // default value
+            fs::Permissions::from_mode(DEFAULT_FILE_PERMISSIONS)
+        }
+    };
     // collect paths out of input - sort through globs/explicitly-named files
     //let queued_paths = parse::parse_files_from_globs_add(&globs);
 
@@ -37,27 +61,49 @@ pub fn add(files: &Vec<PathBuf>, message_in: Option<&str>, strict: bool) -> std:
     }
 
     // return error if any files don't exist
-    files.iter().map(|file| {
-       file.canonicalize().map_err(|e|
-            BatchError{
+    files
+        .iter()
+        .map(|file| {
+            file.canonicalize().map_err(|e| BatchError {
                 error: BatchErrorType::AnyFilesDNE,
-                error_message: format!("{} not found: {e}", file.display())
+                error_message: format!("{} not found: {e}", file.display()),
             })
-    }).collect::<std::result:: Result<Vec<PathBuf>, BatchError>>()?;
+        })
+        .collect::<std::result::Result<Vec<PathBuf>, BatchError>>()?;
 
     let message = {
         if let Some(message_some) = message_in {
             String::from(message_some)
+        } else {
+            String::from("")
         }
-        else {String::from("")}
     };
 
-    Ok(files.into_iter().map(|file| {
-        add_file(&file, &git_dir, &group, &storage_dir, &permissions, &message, strict)
-    }).collect::<Vec<std::result::Result<AddedFile, FileError>>>())
+    Ok(files
+        .into_iter()
+        .map(|file| {
+            add_file(
+                &file,
+                &git_dir,
+                &group,
+                &storage_dir,
+                &permissions.mode(),
+                &message,
+                strict,
+            )
+        })
+        .collect::<Vec<std::result::Result<AddedFile, FileError>>>())
 }
 
-fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, storage_dir: &PathBuf, permissions: &u32, message: &String, strict: bool) -> std::result::Result<AddedFile, FileError> {
+fn add_file(
+    local_path: &PathBuf,
+    git_dir: &PathBuf,
+    group: &Option<Group>,
+    storage_dir: &PathBuf,
+    permissions: &u32,
+    message: &String,
+    strict: bool,
+) -> std::result::Result<AddedFile, FileError> {
     // get absolute path
     let absolute_path = file::get_absolute_path(local_path)?;
 
@@ -71,9 +117,12 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let blake3_checksum = hash::get_file_hash(local_path)?;
 
     // if file already added and current, no-op
-    if let Ok(metadata) = file::load(local_path) { // check if already added
-        if blake3_checksum == metadata.blake3_checksum { // check if current
-            return Ok(AddedFile { // no-op
+    if let Ok(metadata) = file::load(local_path) {
+        // check if already added
+        if blake3_checksum == metadata.blake3_checksum {
+            // check if current
+            return Ok(AddedFile {
+                // no-op
                 relative_path: relative_path.clone(),
                 absolute_path: absolute_path.clone(),
                 outcome: Outcome::Present,
@@ -94,12 +143,12 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
     let user_name: String = file::get_user_name(local_path)?; // [MAN-ADD-002]
 
     // create metadata
-    let metadata = file::Metadata{
+    let metadata = file::Metadata {
         blake3_checksum: blake3_checksum.clone(),
         size: file_size_bytes,
         add_time: Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
         message: message.clone(),
-        saved_by: user_name
+        saved_by: user_name,
     };
 
     // write metadata file
@@ -107,36 +156,34 @@ fn add_file(local_path: &PathBuf, git_dir: &PathBuf, group: &Option<Group>, stor
 
     // Add file to gitignore
     ignore::add_gitignore_entry(local_path)?;
-    
+
     // get storage path
     let storage_path = hash::get_storage_path(storage_dir, &blake3_checksum);
-    
+
     // copy
-    let outcome = 
-        if !storage_path.exists() { // if not already copied
-            if let Err(e) = copy::copy_file_to_storage_directory(local_path, &storage_path, permissions, group) {
-                if strict {
-                    // remove metadata file
-                    let _ = fs::remove_file(file::metadata_path(local_path));
-                    // remove copied file from storage directory
-                    let _ = fs::remove_file(storage_path);
-                }
-                return Err(e)
-            };
-            Outcome::Copied
-        }
-        else {
-            Outcome::Present
+    let outcome = if !storage_path.exists() {
+        // if not already copied
+        if let Err(e) =
+            copy::copy_file_to_storage_directory(local_path, &storage_path, permissions, group)
+        {
+            if strict {
+                // remove metadata file
+                let _ = fs::remove_file(file::metadata_path(local_path));
+                // remove copied file from storage directory
+                let _ = fs::remove_file(storage_path);
+            }
+            return Err(e);
         };
+        Outcome::Copied
+    } else {
+        Outcome::Present
+    };
 
-    Ok(AddedFile{
-            relative_path,
-            absolute_path,
-            outcome,
-            size: file_size_bytes,
-            blake3_checksum
-        }
-    )
+    Ok(AddedFile {
+        relative_path,
+        absolute_path,
+        outcome,
+        size: file_size_bytes,
+        blake3_checksum,
+    })
 }
-
-

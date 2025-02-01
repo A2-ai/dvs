@@ -8,3 +8,4 @@ pub mod parse;
 pub mod cache;
 pub mod error;
 pub mod outcome;
+pub mod log;

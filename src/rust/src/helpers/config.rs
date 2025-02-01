@@ -11,7 +11,7 @@ pub type Error = Box<dyn std::error::Error>;
 pub struct Config {
     pub storage_dir: PathBuf,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permissions: Option<i32>,
+    pub permissions: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>
 }
@@ -40,14 +40,6 @@ pub fn write(config: &Config, dir: &PathBuf) -> Result<()> {
     Ok(())
 } // write
 
-pub fn get_mode_u32(permissions: &i32) -> std::result::Result<u32, BatchError> {
-    Ok(u32::from_str_radix(&permissions.to_string(), 8).map_err(|e| {
-        BatchError{
-            error: BatchErrorType::PermissionsInvalid,
-            error_message: format!("change permissions: {} in dvs.yaml, {e}", permissions)
-        }
-    })?)
-}
 
 pub fn get_group(group_name: &String) -> std::result::Result<Option<Group>, BatchError> {
     if group_name == "" {
