@@ -635,7 +635,7 @@ test_that("An error occurs if the file permissions in the configuration file are
     yaml::write_yaml(yaml_data, "dvs.yaml")
 
     expect_error(dvs_add(pk_data_path, split_output = TRUE),
-                 "linux file permissions invalid: change permissions: 999 in dvs.yaml, invalid digit found in string")
+                 "linux file permissions invalid: linux permissions: 999 not valid. invalid digit found in string")
   })
 })
 

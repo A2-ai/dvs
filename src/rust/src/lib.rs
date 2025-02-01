@@ -3,7 +3,7 @@ mod library;
 use helpers::{outcome::{Outcome, Status}, parse};
 use library::{init, add, get, status, info};
 use extendr_api::{prelude::*,  Robj};
-use std::path::PathBuf;
+use std::{fs::Permissions, os::unix::fs::PermissionsExt, path::PathBuf};
 use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug, IntoDataFrameRow)]
@@ -41,22 +41,28 @@ struct RFileError {
 #[derive(Debug, IntoDataFrameRow)]
 struct RInit {
     storage_directory: String,
-    permissions: i32,
+    permissions: u32,
     group: String,
 }
 
+fn permissions_to_mode(permissions: &Permissions) -> u32 {
+    let mode = permissions.mode(); //& 0o777;  // strip to last 3 octals
+    let octal_string = format!("{:o}", mode);  // will be "664" for 0o664
+    octal_string.parse().unwrap()
+}
+
 #[extendr]
-fn dvs_init_impl(storage_dir: &str, mode: Nullable<i32>, group: Nullable<&str>) -> Result<Robj> {
+fn dvs_init_impl(storage_dir: &str, mode: Nullable<u32>, group: Nullable<&str>) -> Result<Robj> {
     let group_in = <Option<&str>>::from(group);
-    let mode_in = <Option<i32>>::from(mode);
+    let mode_in = <Option<u32>>::from(mode);
     let init = init::dvs_init(&PathBuf::from(storage_dir), mode_in, group_in).map_err(|e|
         Error::Other(format!("{}: {}", e.error.init_error_to_string(), e.error_message))
     )?;
-
     let init_df = RInit{
         storage_directory: init.storage_directory.display().to_string(),
         group: init.group,
-        permissions: init.permissions,
+        // we need to strip
+        permissions: permissions_to_mode(&init.permissions),
     };
 
     Ok(vec![init_df]
