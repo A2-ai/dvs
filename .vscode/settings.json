@@ -1,6 +1,16 @@
 {
+    "files.associations": {
+        "Makefile.in": "makefile",
+        "Makefile.win": "makefile",
+        "Makefile.win.in": "makefile",
+        "Makevars.in": "makefile",
+        "configure.ac": "m4",
+        "*.ac": "m4",
+        "NAMESPACE": "r",
+        "DESCRIPTION": "yaml"
+    },
     "r.linting.enabled": false,
     "rust-analyzer.linkedProjects": [
         "${workspaceFolder}/src/rust/Cargo.toml"
-    ]
+    ],
 }
