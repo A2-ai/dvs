@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" tools/msrv.R
+"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" tools/config.R
 
 # Set CRAN_FLAGS based on the NOT_CRAN value
 if [ "${NOT_CRAN}" != "true" ] && [ -f ./src/rust/vendor.tar.xz ]; then
