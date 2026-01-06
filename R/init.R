@@ -1,4 +1,4 @@
-#' initialize devious to add/get versioned files from the storage directory
+#' initialize dvs to add/get versioned files from the storage directory
 #'
 #' @param storage_directory path to the desired storage directory for versioned files
 #' @param permissions optional: linux file permissions to set
