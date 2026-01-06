@@ -1,9 +1,11 @@
-## Use 
+## Use
+
 `dvs` (data versioning system) is a file linker that allows teams to version files under Git without directly tracking them.
 
 This R package allows teams to collaborate without uploading large or sensitive files to Git.
 
 ## How it works
+
 Instead of uploading data files to Git, a user can employ `dvs`, which copies the files to a shared storage directory and generates metadata files. The user can upload these metadata files to Git to make the versioned files accessible to collaborators.\
 `dvs` will generate a `.gitignore` in the immediate directory of each versioned file excluding the versioned file and including its corresponding metadata file.
 
@@ -17,22 +19,28 @@ A versioned file's metadata file contains a hash of the versioned file's content
 This hash is used to both track the most current version of the file and create the path for a versioned file's copy in the storage directory.
 
 ## Tutorial
-See a detailed tutorial [here](https://github.com/A2-ai/dvs_demo/tree/main).
+
+See a [detailed tutorial here](https://github.com/A2-ai/dvs_demo/tree/main).
 
 ## Example Workflow
-### To add files to dvs:
+
+### To add files to dvs
+
 **Step 1**: Initialize with `dvs_init` to set an accessible storage directory outside the git repo.
+
 ```
 dvs_init("/data/dvs/storage_directory")
 ```
+
 Output data frame:\
 <img width="526" alt="Screenshot 2024-05-14 at 3 25 53 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/4c974fc1-9b26-43e6-b5ac-fa5a51cd99c9">
 
+**Step 2**: Add files to the storage directory with `dvs_add`.
 
-**Step 2**: Add files to the storage directory with `dvs_add`. 
 ```
 dvs_add("data.csv")
 ```
+
 Output data frame:\
 <img width="802" alt="Screenshot 2024-05-14 at 3 26 38 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/132255a1-5382-4131-84d8-a91b3424bdf0">
 
@@ -40,21 +48,24 @@ Output data frame:\
 
 <br />
 
-### To get files from dvs:
+### To get files from dvs
+
 **Step 1**: Pull from Git.
 
 **Step 2**: Generate a report with `dvs_status` to view versioned files.
+
 ```
 dvs_status()
 ```
+
 Output data frame:\
 <img width="799" alt="Screenshot 2024-05-14 at 3 29 05 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/c655002b-c756-4d6f-bfc2-eb5280557579">
 
 **Step 3**: Get files from the storage directory with `dvs_get`.
+
 ```
 dvs_get("data.csv")
 ```
+
 Output data frame:\
 <img width="798" alt="Screenshot 2024-05-14 at 3 29 50 PM" src="https://github.com/a2-ai-tech-training/dvs/assets/145997132/66260d57-d100-4a9e-87ea-73bd59e4e316">
-
-
