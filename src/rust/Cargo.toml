@@ -13,15 +13,15 @@ name = 'dvs'
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0.79"
-clap = { version = "4.4.17", features = ["derive"] }
+clap = { version = "4.4.17", features = ["derive"], optional = true }
 blake3 = { version = "1.5.1", features = ["rayon"] }
 memmap2 = "0.9.4"
-rayon = "1.7.0"
+rayon = { version = "1.7.0", optional = true }
 file-owner = "0.1.2"
 chrono = "0.4.37"
 walkdir = "2.4.0"
 path-absolutize = "3.1.1"
-anyhow = "1.0.81"
+anyhow = { version = "1.0.81", optional = true }
 glob = "0.3.1"
 xdg = "2.5.2"
 pathdiff = "0.2.1"
