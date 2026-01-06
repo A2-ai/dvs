@@ -1,3 +1,6 @@
 {
-    "r.linting.enabled": false
+    "r.linting.enabled": false,
+    "rust-analyzer.linkedProjects": [
+        "${workspaceFolder}/src/rust/Cargo.toml"
+    ]
 }
