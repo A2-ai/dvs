@@ -1,9 +1,12 @@
 [package]
 name = 'dvs'
 publish = false
-version = '0.1.0'
-edition = '2021'
-rust-version = '1.78'
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
 [lib]
 crate-type = ['staticlib']
@@ -30,3 +33,20 @@ extendr-api = { version = "0.8.1", features = ["serde", "result_condition"] }
 [profile.release]
 lto = true
 codegen-units = 1
+
+[workspace]
+members = ["dvs-cli"]
+default-members = ["."]
+
+[workspace.package]
+version = "0.0.2-9000"
+authors = [
+  'Jenna Johnson <jenna@a2-ai.com>',
+  'Devin Pastoor <devin@a2-ai.com>',
+  'Mossa Merhi Reimert <mossa@a2-ai.com>',
+  'A2-Ai',
+]
+description = 'This package allows users to version large or sensitive files under Git without tracking the file directly.'
+license = 'MIT'
+edition = '2021'
+rust-version = '1.78'

@@ -4,6 +4,7 @@ Version: 0.0.2.9000
 Authors@R: c(
     person("Jenna", "Johnson", , "jenna@a2-ai.com", role = c("aut", "cre")),
     person("Devin", "Pastoor", , "devin@a2-ai.com", role = c("aut")),
+    person("Mossa", "Merhi Reimert", , "mossa@a2-ai.com", role = c("aut")),
     person("A2-Ai", role = "cph")
     )
 Description: This package allows users to version large or sensitive files under Git without tracking the file directly.

@@ -1,0 +1,13 @@
+[package]
+name = "dvs-cli"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+
+[dependencies]
+anyhow = "*"
+clap = "*"
